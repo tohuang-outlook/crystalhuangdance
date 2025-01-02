@@ -18,7 +18,7 @@ const Hero = () => {
             Discover the Art of Dance
           </h1>
           <p className="text-xl text-gray-200 mb-8">
-            Join Crystal Huang Dance Studio and experience the joy of movement through expert instruction and creative expression
+            Join Crystal Huang and experience the joy of movement through expert instruction and creative expression
           </p>
           <div className="space-x-4">
             <button className="bg-purple-600 text-white px-8 py-3 rounded-md text-lg font-semibold hover:bg-purple-700">
