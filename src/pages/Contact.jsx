@@ -11,6 +11,7 @@ import {
   Instagram, Youtube, Twitter, 
   Calendar, Star, Send, CheckCircle 
 } from "lucide-react";
+import { SendEmail } from "@/api/integrations"; // added
 
 const contactInfo = [
   {
@@ -105,6 +106,20 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const smsNumber = "14086666203"; // target SMS number
+
+  const buildSmsBody = () => {
+    return [
+      `New Inquiry from ${formData.name}`,
+      `Email: ${formData.email || '-'}`,
+      `Phone: ${formData.phone || '-'}`,
+      `Event Type: ${formData.eventType || '-'}`,
+      `Event Date: ${formData.eventDate || '-'}`,
+      `Venue: ${formData.venue || '-'}`,
+      `Message: ${formData.message || '-'}`
+    ].join("\n");
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -116,10 +131,43 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
+    const subject = `New inquiry from ${formData.name} (${formData.eventType || "General"})`;
+    const body = `
+New inquiry submitted from the contact form.
+
+Name: ${formData.name}
+Email: ${formData.email || '-'}
+Phone: ${formData.phone || '-'}
+
+Event Type: ${formData.eventType || '-'}
+Event Date: ${formData.eventDate || '-'}
+Venue: ${formData.venue || '-'}
+
+Message:
+${formData.message || '-'}
+
+-- 
+Sent from Crystal Huang Dance website contact form
+    `.trim();
+
+    // Send email (fallback notification to your inbox)
+    await SendEmail({
+      to: "crystalhuangdance@gmail.com",
+      subject,
+      body
+    });
+
+    // On mobile devices, open SMS composer with prefilled message to 408-666-6203
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      const smsBody = encodeURIComponent(buildSmsBody());
+      // Use ?&body to maximize compatibility
+      setTimeout(() => {
+        window.location.href = `sms:${smsNumber}?&body=${smsBody}`;
+      }, 300);
+    }
+
     setIsSubmitted(true);
     setIsSubmitting(false);
   };
@@ -136,6 +184,17 @@ export default function Contact() {
             <p className="text-gray-600 mb-6">
               Thank you for your inquiry. I'll get back to you within 24 hours to discuss your performance needs.
             </p>
+
+            {/* Quick SMS option for desktop users */}
+            <a
+              href={`sms:${smsNumber}?&body=${encodeURIComponent(buildSmsBody())}`}
+              className="block mb-4"
+            >
+              <Button className="w-full dance-gradient text-white">
+                Send via SMS now
+              </Button>
+            </a>
+
             <Button 
               onClick={() => {
                 setIsSubmitted(false);
@@ -144,7 +203,7 @@ export default function Contact() {
                 });
               }}
               variant="outline"
-              className="border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white"
+              className="w-full border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white"
             >
               Send Another Message
             </Button>
@@ -308,6 +367,11 @@ export default function Contact() {
                       </div>
                     )}
                   </Button>
+
+                  {/* Optional visible SMS shortcut before submit (kept minimal) */}
+                  {/* <a href={`sms:${smsNumber}?&body=${encodeURIComponent(buildSmsBody())}`} className="block text-center text-sm text-pink-600 hover:text-pink-700">
+                    Or send via SMS
+                  </a> */}
                 </form>
                 {/* New contact email information added here after the form */}
                 <p className="text-gray-400 text-sm mt-6">

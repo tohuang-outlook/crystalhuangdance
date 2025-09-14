@@ -48,7 +48,7 @@ const danceStyles = [
     title: "Jazz",
     subtitle: "Broadway Energy & Expressive Musicality",
     description: "Jazz blends classic technique with contemporary flair—syncopated rhythms, expressive lines, and show-stopping stage presence. From vintage Broadway to modern commercial styles, Jazz brings infectious energy and personality to every performance.",
-    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/b0f5b3f40_Jazz.png",
     icon: Music,
     color: "from-amber-500 to-pink-500",
     techniques: ["Isolation", "Syncopation", "Turns & Kicks", "Across-the-floor combos"],
@@ -75,6 +75,38 @@ const danceStyles = [
       "Cultural authenticity and respect"
     ],
     perfectFor: ["Music Videos", "Commercial Events", "Youth Programs", "Fashion Shows"]
+  },
+  {
+    title: "Tap",
+    subtitle: "Rhythm, Precision, and Musicality",
+    description: "Tap is percussion through movement—syncopated rhythms, crisp footwork, and playful musicality that turns the floor into an instrument.",
+    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+    icon: Music,
+    color: "from-sky-500 to-cyan-500",
+    techniques: ["Shuffles", "Time Steps", "Wings", "Pullbacks", "Improvisation"],
+    keyFeatures: [
+      "Live musicality with the feet",
+      "Clean, articulate sounds",
+      "Playful call-and-response",
+      "Solo and ensemble versatility"
+    ],
+    perfectFor: ["Live Music Events", "Theater Shows", "Corporate Entertainment", "Festivals"]
+  },
+  {
+    title: "Ballroom",
+    subtitle: "Elegance, Partnership, and Flow",
+    description: "Ballroom highlights classic partner dance forms with refined technique and stunning presentation—from Waltz and Foxtrot to Cha-Cha and Rumba.",
+    image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+    icon: Heart,
+    color: "from-rose-500 to-pink-500",
+    techniques: ["Waltz", "Foxtrot", "Tango", "Cha-Cha", "Rumba"],
+    keyFeatures: [
+      "Graceful partnering",
+      "Sophisticated lines",
+      "Musical phrasing",
+      "Classic showcase appeal"
+    ],
+    perfectFor: ["Weddings", "Galas", "Corporate Events", "Ballroom Showcases"]
   }
 ];
 

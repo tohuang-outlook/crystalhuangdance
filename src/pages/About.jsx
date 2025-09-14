@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,16 +94,21 @@ export default function About() {
                 the art of movement, transforming emotions into stories that resonate with audiences worldwide.
               </p>
 
-              <div className="grid grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
                 <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
                   <Calendar className="w-8 h-8 text-pink-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">8+ Years</h3>
-                  <p className="text-sm text-gray-600">Professional Experience</p>
+                  <h3 className="font-bold text-gray-900">14+ years</h3>
+                  <p className="text-sm text-gray-600">Dance Experience</p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
                   <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
                   <h3 className="font-semibold text-gray-900">500+</h3>
                   <p className="text-sm text-gray-600">Performances Worldwide</p>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
+                  <Sparkles className="w-8 h-8 text-rose-500 mx-auto mb-2" />
+                  <h3 className="font-bold text-gray-900">3+ Years</h3>
+                  <p className="text-sm text-gray-600">Solo and Group Choreograph</p>
                 </div>
               </div>
             </div>
@@ -142,6 +146,47 @@ export default function About() {
             <p className="text-gray-700 leading-relaxed">
               In 2024, I won a Prize at the prestigious Prix de Lausanne in Switzerland, one of the most respected ballet competitions globally. I also earned the Female Contemporary Dance Award at the same event. That same year, I placed second in the senior division at the Youth America Grand Prix finals in New York and won the Grand Prix at the South Africa International Ballet Competition.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Awards Section (moved up) */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">
+              Awards & <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600">Recognition</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Recognition from peers and industry leaders for dedication to the art of dance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {achievements.map((achievement, index) => (
+              <Card key={index} className="bg-gradient-to-r from-pink-50 to-purple-50 border-0 hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <Award className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge variant="outline" className="text-purple-600 border-purple-600">
+                          {achievement.year}
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {achievement.title}
+                      </h3>
+                      <p className="text-gray-600">{achievement.organization}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -223,47 +268,6 @@ export default function About() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Awards Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              Awards & <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600">Recognition</span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Recognition from peers and industry leaders for dedication to the art of dance.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {achievements.map((achievement, index) => (
-              <Card key={index} className="bg-gradient-to-r from-pink-50 to-purple-50 border-0 hover:shadow-lg transition-shadow duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <Award className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge variant="outline" className="text-purple-600 border-purple-600">
-                          {achievement.year}
-                        </Badge>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {achievement.title}
-                      </h3>
-                      <p className="text-gray-600">{achievement.organization}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>

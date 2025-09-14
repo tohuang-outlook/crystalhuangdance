@@ -16,7 +16,7 @@ const mediaItems = [
     venue: "Lincoln Center",
     year: "2024",
     duration: "4:32",
-    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/402a7a9e8_doucare.jpg",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/f388c1b90_doucare.jpg",
     description: "A deeply personal contemporary piece exploring the journey from heartbreak to healing.",
     featured: true,
     awards: ["Best Solo Performance 2024"],
@@ -34,7 +34,7 @@ const mediaItems = [
   },
   {
     type: "video",
-    title: "La Esmeralda - Ballet Solo",
+    title: "La Esmeralda - Ballet Variation",
     style: "Ballet",
     venue: "Metropolitan Opera House",
     year: "2023",
@@ -98,7 +98,7 @@ const mediaItems = [
     venue: "Downtown Theater",
     year: "2024",
     duration: "3:05",
-    thumbnail: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Using an existing thumbnail as a placeholder
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/103cb8ad5_Jazz.png",
     description: "Upbeat jazz number with classic lines and expressive musicality."
   }
 ];
@@ -128,7 +128,8 @@ export default function Gallery() {
     : mediaItems.filter(item => item.style === selectedFilter);
 
   const featuredItem = mediaItems.find(item => item.featured);
-  const balletSoloItem = mediaItems.find(item => item.style === "Ballet" && item.type === "video");
+  // Ensure the ballet solo item is still correctly identified after title change
+  const balletSoloItem = mediaItems.find(item => item.title === "La Esmeralda - Ballet Variation" && item.type === "video");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-50">
@@ -183,7 +184,11 @@ export default function Gallery() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Button size="lg" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-full p-4">
+                        <Button 
+                          size="lg" 
+                          className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-full p-4"
+                          onClick={() => setShowBalletPlayer(!showBalletPlayer)}
+                        >
                           <Play className="w-8 h-8" />
                         </Button>
                       </div>
@@ -275,7 +280,11 @@ export default function Gallery() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Button size="lg" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-full p-4">
+                        <Button 
+                          size="lg" 
+                          className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-full p-4"
+                          onClick={() => setShowContemporaryPlayer(!showContemporaryPlayer)}
+                        >
                           <Play className="w-8 h-8" />
                         </Button>
                       </div>

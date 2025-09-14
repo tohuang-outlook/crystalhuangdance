@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowRight, Sparkles, Zap, Crown, Music } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Crown, Music, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,7 +26,7 @@ const danceStyles = [
   {
     title: "Jazz",
     description: "Stylish, rhythmic movement blending classic technique with modern flair and Broadway energy",
-    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/103cb8ad5_Jazz.png",
     icon: Music,
     color: "from-amber-500 to-pink-500",
     tags: ["Rhythmic", "Expressive", "Broadway"]
@@ -38,6 +38,22 @@ const danceStyles = [
     icon: Zap,
     color: "from-purple-500 to-indigo-500",
     tags: ["Urban", "High-Energy", "Rhythmic"]
+  },
+  {
+    title: "Tap",
+    description: "Rhythmic footwork and crisp sounds that turn the floor into an instrument.",
+    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    icon: Music,
+    color: "from-sky-500 to-cyan-500",
+    tags: ["Rhythm", "Precision", "Musicality"]
+  },
+  {
+    title: "Ballroom",
+    description: "Elegant partner dancing with refined lines and flowing movement.",
+    image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    icon: Heart,
+    color: "from-rose-500 to-pink-500",
+    tags: ["Elegance", "Partnership", "Flow"]
   }
 ];
 

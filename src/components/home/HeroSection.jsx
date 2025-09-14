@@ -80,19 +80,28 @@ export default function HeroSection() {
             <div className="flex flex-wrap items-center gap-6 text-gray-600">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Ballet</span>
+                <span className="font-medium text-[20px]">Ballet</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse delay-200"></div>
-                <span className="text-sm font-medium">Contemporary</span>
+                <span className="font-medium text-[20px]">Contemporary</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse delay-400"></div>
-                <span className="text-sm font-medium">Jazz</span>
+                <span className="font-medium text-[20px]">Jazz</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse delay-600"></div>
-                <span className="text-sm font-medium">Hip-Hop</span>
+                <span className="font-medium text-[20px]">Hip-Hop</span>
+              </div>
+              {/* Added Tap and Ballroom */}
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse delay-800"></div>
+                <span className="font-medium text-[20px]">Tap</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse delay-1000"></div>
+                <span className="font-medium text-[20px]">Ballroom</span>
               </div>
             </div>
           </div>

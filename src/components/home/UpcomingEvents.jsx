@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -8,15 +9,16 @@ import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
 
 const upcomingEvents = [
   {
-    title: "Contemporary Evening",
-    venue: "Metropolitan Arts Center",
-    date: "March 15, 2024",
+    title: "Press Play Dance Convention",
+    venue: "Loews Hollywood Hotel",
+    date: "Oct 24-26, 2025",
     time: "7:30 PM",
-    location: "New York, NY",
+    location: "Los Angeles, CA",
     type: "Solo Performance",
     description: "An intimate evening of contemporary dance exploring themes of connection and solitude.",
     image: "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    status: "Available"
+    status: "Available",
+    ticketUrl: "https://www.pressplay.com/tour-dates"
   },
   {
     title: "Urban Dance Showcase",
@@ -103,9 +105,17 @@ export default function UpcomingEvents() {
                     </div>
                   </div>
                   
-                  <Button className="w-full dance-gradient text-white hover:opacity-90 transition-opacity">
-                    Get Tickets
-                  </Button>
+                  {event.ticketUrl ? (
+                    <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <Button className="w-full dance-gradient text-white hover:opacity-90 transition-opacity">
+                        Get Tickets
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button className="w-full dance-gradient text-white hover:opacity-90 transition-opacity">
+                      Get Tickets
+                    </Button>
+                  )}
                 </CardContent>
               </div>
             </Card>

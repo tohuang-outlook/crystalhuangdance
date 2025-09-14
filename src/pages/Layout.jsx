@@ -8,6 +8,7 @@ import {
   Calendar, User, Palette, Camera, Phone, Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BackgroundMusic from "@/components/music/BackgroundMusic";
 
 const navigationItems = [
   { title: "Home", url: createPageUrl("Home"), icon: Home },
@@ -260,6 +261,9 @@ export default function Layout({ children, currentPageName }) {
       <main className="pt-4 lg:pt-20">
         {children}
       </main>
+
+      {/* Background Music - subtle floating control */}
+      <BackgroundMusic />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white">
