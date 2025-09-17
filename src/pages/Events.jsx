@@ -13,19 +13,19 @@ import { createPageUrl } from "@/utils";
 const events = [
   {
     id: 1,
-    title: "Contemporary Evening: Emotions in Motion",
+    title: "Press Play Dance Convention, Workshop & Competition.",
     date: "2024-03-15",
     time: "7:30 PM",
     venue: "Metropolitan Arts Center",
     location: "New York, NY",
     type: "Solo Performance",
-    style: "Contemporary",
+    style: "Dance Convention",
     duration: "90 minutes",
     capacity: 150,
     ticketsAvailable: 45,
     price: "$35-65",
-    description: "An intimate evening of contemporary dance exploring themes of connection, loss, and rebirth. This solo performance combines original choreography with live piano accompaniment.",
-    image: "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    description: "A NEW ERA OF DANCE EVENTS, it's more than just a bold statement—it's a promise. For over 80 combined years, our journeys have taken us through every facet of the dance world. Ray began his teaching career alongside the legendary Joe Tremaine on Tremaine Dance Convention, Danny started as an assistant to the iconic Mia Michaels, and Brad, our CEO, cut his teeth as the Associate General Manager for the hit show STOMP before going on to shape some of the largest dance events globally.",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/346907192_pressplay.jpg",
     status: "on-sale",
     featured: true
   },
@@ -134,7 +134,7 @@ const events = [
 ];
 
 const eventTypes = ["All", "Solo Performance", "Group Performance", "Private Event", "Workshop + Performance", "Gala Performance", "Outdoor Performance"];
-const danceStyles = ["All", "Contemporary", "Hip-Hop", "Ballet", "Fusion", "Mixed", "Jazz"];
+const danceStyles = ["All", "Contemporary", "Hip-Hop", "Ballet", "Fusion", "Mixed", "Jazz", "Dance Convention"];
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -296,14 +296,18 @@ export default function Events() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
-                      <Button size="lg" className="dance-gradient text-white flex-1">
-                        <Ticket className="w-5 h-5 mr-2" />
-                        Get Tickets - {featuredEvent.price}
-                      </Button>
-                      <Button variant="outline" size="lg" className="border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white">
-                        <ExternalLink className="w-5 h-5 mr-2" />
-                        More Details
-                      </Button>
+                      <a href="https://www.pressplay.com/" target="_blank" rel="noopener noreferrer" className="flex-1">
+                        <Button size="lg" className="w-full dance-gradient text-white">
+                          <Ticket className="w-5 h-5 mr-2" />
+                          Get Tickets
+                        </Button>
+                      </a>
+                      <a href="https://www.pressplay.com/" target="_blank" rel="noopener noreferrer" className="flex-1">
+                        <Button variant="outline" size="lg" className="w-full border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white">
+                          <ExternalLink className="w-5 h-5 mr-2" />
+                          More Details
+                        </Button>
+                      </a>
                     </div>
                   </div>
                 </CardContent>

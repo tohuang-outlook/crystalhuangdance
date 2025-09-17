@@ -112,15 +112,37 @@ export default function Gallery() {
   const [showBalletPlayer, setShowBalletPlayer] = useState(false);
   const [playingIndex, setPlayingIndex] = useState(null);
   const [showContemporaryPlayer, setShowContemporaryPlayer] = useState(false);
+  // New: inline jazz player state
+  const [showJazzPlayer, setShowJazzPlayer] = useState(false);
 
   const toEmbedUrl = (url) => {
     if (!url) return "";
-    // Check if it's already an embed URL to avoid double conversion issues
-    if (url.includes("youtube.com/embed/")) {
-      return url.includes("?") ? url + "&rel=0&autoplay=1" : url + "?rel=0&autoplay=1";
+    try {
+      const u = new URL(url);
+      // Handle youtu.be short links
+      if (u.hostname.includes("youtu.be")) {
+        const id = u.pathname.slice(1);
+        const t = u.searchParams.get("t") || u.searchParams.get("start");
+        const start = t ? parseInt(String(t).replace("s", ""), 10) || 0 : 0;
+        const params = new URLSearchParams({ rel: "0", autoplay: "1" });
+        if (start > 0) params.set("start", String(start));
+        return `https://www.youtube.com/embed/${id}?${params.toString()}`;
+      }
+      // Handle youtube.com/watch or embed
+      let id = "";
+      if (u.pathname === "/watch") {
+        id = u.searchParams.get("v") || "";
+      } else if (u.pathname.startsWith("/embed/")) {
+        id = u.pathname.split("/embed/")[1];
+      }
+      const t = u.searchParams.get("t") || u.searchParams.get("start");
+      const start = t ? parseInt(String(t).replace("s", ""), 10) || 0 : 0;
+      const params = new URLSearchParams({ rel: "0", autoplay: "1" });
+      if (start > 0) params.set("start", String(start));
+      return id ? `https://www.youtube.com/embed/${id}?${params.toString()}` : url;
+    } catch {
+      return url;
     }
-    // Convert watch URL to embed URL
-    return url.replace("watch?v=", "embed/") + "?rel=0&autoplay=1";
   };
 
   const filteredItems = selectedFilter === "All" 
@@ -130,6 +152,20 @@ export default function Gallery() {
   const featuredItem = mediaItems.find(item => item.featured);
   // Ensure the ballet solo item is still correctly identified after title change
   const balletSoloItem = mediaItems.find(item => item.title === "La Esmeralda - Ballet Variation" && item.type === "video");
+  // Find the Jazz item from mediaItems for its properties like video_url and thumbnail
+  const jazzItemFromMedia = mediaItems.find(item => item.title === "Broadway Jazz - Live" && item.type === "video");
+
+  // Specific featured data for Jazz, overriding details from jazzItemFromMedia if needed for display
+  const jazzFeaturedDisplayData = {
+    type: "video",
+    title: "Give it - Jazz Solo",
+    style: "Jazz",
+    year: "2021",
+    duration: "3:10",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg", // updated thumbnail
+    description: "Award-winning jazz solo highlighting syncopated rhythms and expressive musicality.",
+    video_url: "https://www.youtube.com/watch?v=NAx5malU5Jc&t=24s"
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-50">
@@ -159,7 +195,7 @@ export default function Gallery() {
       </section>
 
       {/* Featured Performance */}
-      {(featuredItem || balletSoloItem) && (
+      {(featuredItem || balletSoloItem || jazzItemFromMedia) && (
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -218,8 +254,8 @@ export default function Gallery() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                           <div>
-                            <span className="font-medium">Venue:</span>
-                            <p>{balletSoloItem.venue}</p>
+                            <span className="font-medium">Award:</span>
+                            <p className="font-semibold text-gray-800">YAGP 2023 Finals Junior Women Bronze Medalist</p>
                           </div>
                           <div>
                             <span className="font-medium">Year:</span>
@@ -314,8 +350,8 @@ export default function Gallery() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                           <div>
-                            <span className="font-medium">Venue:</span>
-                            <p>{featuredItem.venue}</p>
+                            <span className="font-medium">Award:</span>
+                            <p className="font-semibold text-gray-800">Prix de Lausanne 2024 Contemporary Dance Award</p>
                           </div>
                           <div>
                             <span className="font-medium">Year:</span>
@@ -359,6 +395,100 @@ export default function Gallery() {
                               className="absolute top-0 left-0 w-full h-full rounded-lg"
                               src={toEmbedUrl(featuredItem.video_url)}
                               title={featuredItem.title}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            ></iframe>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              )}
+
+              {/* New: Jazz Featured card */}
+              {jazzItemFromMedia && (
+                <Card className="overflow-hidden elegant-shadow hover:shadow-2xl transition-all duration-500">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                    <div className="relative group">
+                      <img 
+                        src={jazzFeaturedDisplayData.thumbnail}
+                        alt={jazzFeaturedDisplayData.title}
+                        className="w-full h-64 lg:h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Button 
+                          size="lg" 
+                          className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-full p-4"
+                          onClick={() => setShowJazzPlayer(!showJazzPlayer)}
+                        >
+                          <Play className="w-8 h-8" />
+                        </Button>
+                      </div>
+                      <div className="absolute top-4 left-4">
+                        <Badge className="bg-yellow-500 text-white">
+                          <Award className="w-4 h-4 mr-1" />
+                          Award Winner
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <CardContent className="p-8 lg:p-12">
+                      <div className="space-y-6">
+                        <div>
+                          <Badge className="mb-4 bg-pink-100 text-pink-700">
+                            {jazzFeaturedDisplayData.style}
+                          </Badge>
+                          <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                            {jazzFeaturedDisplayData.title}
+                          </h3>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            {jazzFeaturedDisplayData.description}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                          <div>
+                            <span className="font-medium">Award:</span>
+                            <p className="font-semibold text-gray-800">Radix 2021 Junior Core Performer Winner</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Year:</span>
+                            <p>{jazzFeaturedDisplayData.year}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Duration:</span>
+                            <p>{jazzFeaturedDisplayData.duration}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Type:</span>
+                            <p>{jazzFeaturedDisplayData.type === 'video' ? 'Video' : 'Photo'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <Button 
+                            size="lg" 
+                            className="dance-gradient text-white flex-1"
+                            onClick={() => setShowJazzPlayer(!showJazzPlayer)}
+                          >
+                            <Play className="w-5 h-5 mr-2" />
+                            {showJazzPlayer ? "Hide Performance" : "Watch Full Performance"}
+                          </Button>
+                          <Button variant="outline" size="lg" className="border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white">
+                            <ExternalLink className="w-5 h-5 mr-2" />
+                            Share
+                          </Button>
+                        </div>
+
+                        {showJazzPlayer && jazzFeaturedDisplayData.video_url && (
+                          <div className="mt-4 relative w-full" style={{ paddingTop: "56.25%" }}>
+                            <iframe
+                              className="absolute top-0 left-0 w-full h-full rounded-lg"
+                              src={toEmbedUrl(jazzFeaturedDisplayData.video_url)}
+                              title={jazzFeaturedDisplayData.title}
                               frameBorder="0"
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen

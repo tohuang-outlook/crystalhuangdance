@@ -16,7 +16,7 @@ const upcomingEvents = [
     location: "Los Angeles, CA",
     type: "Solo Performance",
     description: "An intimate evening of contemporary dance exploring themes of connection and solitude.",
-    image: "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/346907192_pressplay.jpg",
     status: "Available",
     ticketUrl: "https://www.pressplay.com/tour-dates"
   },

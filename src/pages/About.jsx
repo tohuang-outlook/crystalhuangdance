@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,17 +97,17 @@ export default function About() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
                 <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
-                  <Calendar className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+                  <Calendar className="w-12 h-12 text-pink-500 mx-auto mb-2" />
                   <h3 className="font-bold text-gray-900">14+ years</h3>
                   <p className="text-sm text-gray-600">Dance Experience</p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
-                  <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                  <Users className="w-12 h-12 text-purple-500 mx-auto mb-2" />
                   <h3 className="font-semibold text-gray-900">500+</h3>
                   <p className="text-sm text-gray-600">Performances Worldwide</p>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg elegant-shadow">
-                  <Sparkles className="w-8 h-8 text-rose-500 mx-auto mb-2" />
+                  <Sparkles className="w-12 h-12 text-rose-500 mx-auto mb-2" />
                   <h3 className="font-bold text-gray-900">3+ Years</h3>
                   <p className="text-sm text-gray-600">Solo and Group Choreograph</p>
                 </div>
