@@ -91,8 +91,7 @@ export default function About() {
               </h1>
               
               <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                Dance isn't just what I do—it's who I am. For over eight years, I've dedicated my life to 
-                the art of movement, transforming emotions into stories that resonate with audiences worldwide.
+                Dance isn’t just something I do—it’s the essence of who I am. For over 14 years, I’ve devoted myself to the art of movement, channeling emotion into storytelling that connects with audiences across the globe.
               </p>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
