@@ -43,7 +43,7 @@ const events = [
     ticketsAvailable: 12,
     price: "$25-40",
     description: "High-energy hip-hop and street dance showcase featuring original choreography and guest performers from the NYC dance scene.",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/604b92dbe_ballet.jpg",
     status: "nearly-sold-out"
   },
   {
@@ -60,7 +60,7 @@ const events = [
     ticketsAvailable: 320,
     price: "$50-150",
     description: "Classical ballet gala featuring variations from Swan Lake, Giselle, and original contemporary ballet pieces.",
-    image: "https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/346907192_pressplay.jpg",
     status: "on-sale"
   },
   {
@@ -77,7 +77,7 @@ const events = [
     ticketsAvailable: 0,
     price: "Private",
     description: "Intimate contemporary dance performance for a wedding celebration, featuring custom choreography created for the couple.",
-    image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg",
     status: "private"
   },
   {
@@ -94,7 +94,7 @@ const events = [
     ticketsAvailable: 25,
     price: "$45",
     description: "Interactive workshop followed by a fusion performance blending contemporary, hip-hop, and ballet elements.",
-    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg",
     status: "on-sale"
   },
   {
@@ -111,7 +111,7 @@ const events = [
     ticketsAvailable: 180,
     price: "Free",
     description: "Free outdoor performance showcasing the best of summer dance intensive programs, featuring multiple dance styles.",
-    image: "https://images.unsplash.com/photo-1547153760-18fc86324498?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg",
     status: "free"
   },
   {
@@ -128,7 +128,7 @@ const events = [
     ticketsAvailable: 50,
     price: "$20",
     description: "An energetic evening of classic and contemporary jazz dance, featuring improvised solos and group numbers.",
-    image: "https://images.unsplash.com/photo-1543781326-764acb364817?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/0e42ab5b1_front.jpg",
     status: "on-sale"
   }
 ];

@@ -10,7 +10,7 @@ const testimonials = [
     company: "Metropolitan Arts Center",
     content: "Crystal's performance was absolutely breathtaking. Her ability to convey emotion through movement left our entire audience in awe. A true professional and artist.",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg"
   },
   {
     name: "Marcus Rivera",
@@ -18,7 +18,7 @@ const testimonials = [
     company: "Brooklyn Dance Collective",
     content: "Working with Crystal has been an incredible experience. Her versatility across dance styles and her creative vision make her an exceptional performer and collaborator.",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/604b92dbe_ballet.jpg"
   },
   {
     name: "Elena Martinez",
@@ -26,7 +26,7 @@ const testimonials = [
     company: "Elegant Affairs",
     content: "Crystal transformed our client's wedding into a magical experience. Her contemporary piece during the ceremony brought tears to everyone's eyes. Absolutely stunning work.",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/f388c1b90_doucare.jpg"
   }
 ];
 

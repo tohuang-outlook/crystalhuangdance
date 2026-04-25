@@ -28,7 +28,7 @@ const upcomingEvents = [
     location: "Brooklyn, NY",
     type: "Group Performance",
     description: "High-energy hip-hop and street dance showcase featuring original choreography.",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/604b92dbe_ballet.jpg",
     status: "Nearly Sold Out"
   }
 ];

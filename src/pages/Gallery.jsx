@@ -29,7 +29,7 @@ const mediaItems = [
     venue: "Brooklyn Dance Center",
     year: "2024",
     duration: "3:45",
-    thumbnail: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/87546e8d0_con.jpg",
     description: "High-energy hip-hop performance celebrating street culture and individual expression."
   },
   {
@@ -50,7 +50,7 @@ const mediaItems = [
     style: "Contemporary",
     venue: "Studio Portrait",
     year: "2024",
-    thumbnail: "https://images.unsplash.com/photo-1547153760-18fc86324498?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/103cb8ad5_Jazz.png",
     description: "Professional portrait capturing the essence of contemporary movement."
   },
   {
@@ -60,7 +60,7 @@ const mediaItems = [
     venue: "Private Event",
     year: "2023",
     duration: "5:28",
-    thumbnail: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/3a6de7483_1.jpg",
     description: "Romantic contemporary piece performed at an intimate wedding ceremony."
   },
   {
@@ -69,7 +69,7 @@ const mediaItems = [
     style: "Hip-Hop",
     venue: "Street Performance",
     year: "2024",
-    thumbnail: "https://images.unsplash.com/photo-1520637836862-4d197d17c82a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/f388c1b90_doucare.jpg",
     description: "Capturing the raw energy and attitude of street dance culture."
   },
   {
@@ -79,7 +79,7 @@ const mediaItems = [
     venue: "Arts Festival",
     year: "2024",
     duration: "7:15",
-    thumbnail: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/87546e8d0_con.jpg",
     description: "Innovative choreography blending contemporary, hip-hop, and ballet elements."
   },
   {
@@ -88,7 +88,7 @@ const mediaItems = [
     style: "Ballet",
     venue: "Dance Studio",
     year: "2023",
-    thumbnail: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    thumbnail: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/3a6de7483_1.jpg",
     description: "Showcasing the timeless elegance and technical precision of classical ballet."
   },
   {
