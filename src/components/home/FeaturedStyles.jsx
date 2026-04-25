@@ -34,7 +34,7 @@ const danceStyles = [
   {
     title: "Hip-Hop",
     description: "High-energy urban dance with sharp movements, rhythm, and street-style choreography",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/346907192_pressplay.jpg",
     icon: Zap,
     color: "from-purple-500 to-indigo-500",
     tags: ["Urban", "High-Energy", "Rhythmic"]
@@ -42,7 +42,7 @@ const danceStyles = [
   {
     title: "Tap",
     description: "Rhythmic footwork and crisp sounds that turn the floor into an instrument.",
-    image: "https://images.unsplash.com/photo-1594736797933-d0cb71b2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/993eb9977_2.jpg",
     icon: Music,
     color: "from-sky-500 to-cyan-500",
     tags: ["Rhythm", "Precision", "Musicality"]
@@ -50,7 +50,7 @@ const danceStyles = [
   {
     title: "Ballroom",
     description: "Elegant partner dancing with refined lines and flowing movement.",
-    image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/0e42ab5b1_front.jpg",
     icon: Heart,
     color: "from-rose-500 to-pink-500",
     tags: ["Elegance", "Partnership", "Flow"]
