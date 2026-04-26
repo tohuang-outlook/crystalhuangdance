@@ -26,9 +26,9 @@ export default function HeroSection() {
       <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:block bg-pink-100">
         <div className="relative h-full">
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/3a6de7483_1.jpg"
-            alt="Crystal Huang ballet performance - dance performer"
-            className="w-full h-full object-cover object-center movement-animation"
+            src="/hero-esmeralda.jpg"
+            alt="Crystal Huang ballet performance - Esmeralda"
+            className="w-full h-full object-cover object-top movement-animation"
           />
           <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-slate-50/90"></div>
         </div>
@@ -116,9 +116,9 @@ export default function HeroSection() {
       {/* Mobile Hero Image */}
       <div className="absolute inset-0 lg:hidden opacity-40 bg-pink-100">
         <img 
-          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c06b01a75c8c986b674f79/3a6de7483_1.jpg"
-          alt="Crystal Huang ballet performance - dance performer"
-          className="w-full h-full object-cover object-center"
+          src="/hero-esmeralda.jpg"
+          alt="Crystal Huang ballet performance - Esmeralda"
+          className="w-full h-full object-cover object-top"
         />
       </div>
     </section>
