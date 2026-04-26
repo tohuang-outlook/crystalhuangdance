@@ -15,111 +15,50 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-pink-50 to-purple-50">
-      {/* Background Elements */}
+      {/* Hero Image - Fullscreen Background */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-gradient-to-r from-pink-300/30 to-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-1/4 w-80 h-80 bg-gradient-to-r from-purple-300/30 to-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-r from-pink-200/20 to-purple-200/20 rounded-full blur-2xl movement-animation"></div>
-      </div>
-
-      {/* Hero Image - Desktop */}
-      <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:block bg-pink-100">
-        <div className="relative h-full">
-          <img 
-            src="/hero-esmeralda.jpg"
-            alt="Crystal Huang ballet performance - Esmeralda"
-            className="w-full h-full object-cover object-top movement-animation"
-          />
-          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-slate-50/90"></div>
-        </div>
+        <img 
+          src="/hero-esmeralda.jpg"
+          alt="Crystal Huang ballet performance - Esmeralda"
+          className="w-full h-full object-cover object-top opacity-90 scale-105 animate-slow-zoom"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/80"></div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl lg:max-w-2xl">
-          <div className={`transition-all duration-1000 transform ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}>
-            <div className="mb-6">
-              <span className="inline-flex items-center px-4 py-2 rounded-full bg-pink-100 text-pink-700 text-sm font-medium mb-4">
-                ✨ Award-Winning Dance Artist
-              </span>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight mb-6 text-shadow">
-              Crystal
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600">
-                Huang
-              </span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-gray-600 leading-relaxed mb-8 max-w-xl">
-              Professional dancer transforming emotions into movement. 
-              Bringing stories to life through contemporary, hip-hop, and ballet performances.
-            </p>
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 mt-20">
+        <div className={`transition-all duration-1000 transform ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+        }`}>
+          <h2 className="text-sm md:text-md uppercase tracking-[0.3em] text-white/80 font-light mb-4">
+            Professional Dance Artist
+          </h2>
+          
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white leading-none mb-8 drop-shadow-2xl font-light tracking-wide">
+            Crystal <br className="md:hidden" />
+            <span className="font-serif italic text-pink-200">Huang</span>
+          </h1>
+          
+          <p className="text-lg md:text-xl text-gray-200 font-light max-w-2xl mx-auto mb-12 tracking-wide leading-relaxed">
+            Transforming emotion into movement. 
+            Exploring the boundless intersection of classical elegance and contemporary raw power.
+          </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link to={createPageUrl("Gallery")}>
-                <Button size="lg" className="dance-gradient text-white text-lg px-8 py-4 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
-                  <Play className="mr-2 w-5 h-5" />
-                  Watch Performances
-                </Button>
-              </Link>
-              
-              <Link to={createPageUrl("Contact")}>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="border-2 border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white text-lg px-8 py-4 rounded-full transition-all duration-300 w-full sm:w-auto"
-                >
-                  Schedule Private
-                </Button>
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-6 text-gray-600">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-[20px]">Ballet</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse delay-200"></div>
-                <span className="font-medium text-[20px]">Contemporary</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse delay-400"></div>
-                <span className="font-medium text-[20px]">Jazz</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse delay-600"></div>
-                <span className="font-medium text-[20px]">Hip-Hop</span>
-              </div>
-              {/* Added Tap and Ballroom */}
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse delay-800"></div>
-                <span className="font-medium text-[20px]">Tap</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse delay-1000"></div>
-                <span className="font-medium text-[20px]">Ballroom</span>
-              </div>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <Link to={createPageUrl("Gallery")}>
+              <Button size="lg" className="bg-white/10 backdrop-blur-md border border-white/30 text-white hover:bg-white hover:text-black text-lg px-10 py-6 rounded-none uppercase tracking-widest transition-all duration-500 w-full sm:w-auto">
+                <Play className="mr-3 w-4 h-4" />
+                View Showreel
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <ArrowDown className="w-6 h-6 text-gray-400" />
-      </div>
-
-      {/* Mobile Hero Image */}
-      <div className="absolute inset-0 lg:hidden opacity-40 bg-pink-100">
-        <img 
-          src="/hero-esmeralda.jpg"
-          alt="Crystal Huang ballet performance - Esmeralda"
-          className="w-full h-full object-cover object-top"
-        />
+      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce flex flex-col items-center gap-2 opacity-70">
+        <span className="text-white text-xs uppercase tracking-widest">Scroll</span>
+        <ArrowDown className="w-4 h-4 text-white" />
       </div>
     </section>
   );
