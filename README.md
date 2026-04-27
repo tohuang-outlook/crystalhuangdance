@@ -1,20 +1,34 @@
-# Base44 App
+# Crystal Huang | Dancer 💃✨
 
+A personal dance portfolio website for Crystal Huang, built with React, TypeScript, Vite, and Tailwind CSS.
 
-This app was created automatically by Base44.
-It's a Vite+React app that communicates with the Base44 API.
+## Features
 
-## Running the app
+- 🎨 Dark elegant design with blue/gold gradient accents
+- 📱 Fully responsive (mobile-first)
+- 🖼️ Hero section with professional dance photography
+- 💃 Dance styles showcase
+- 🏆 Achievements timeline
+- 🖼️ Gallery with lightbox viewer
+- 📬 Contact form
+
+## Tech Stack
+
+- **React 18** + **TypeScript**
+- **Vite** for build tooling
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
+
+## Getting Started
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Building the app
+## Build
 
 ```bash
 npm run build
+npm run preview
 ```
-
-For more information and support, please contact Base44 support at app@base44.com.
