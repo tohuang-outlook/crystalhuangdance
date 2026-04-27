@@ -46,7 +46,7 @@ export const danceStyles: DanceStyle[] = [
     name: 'Jazz',
     description: 'High-energy, rhythmic, and dynamic choreography with attitude.',
     icon: '⭐',
-    image: '',
+    image: '/crystal-jazz.jpg',
   },
   {
     name: 'Lyrical',
