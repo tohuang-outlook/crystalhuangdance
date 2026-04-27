@@ -15,7 +15,7 @@ export const siteConfig = {
   name: 'Crystal Huang',
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
-  heroSubtitle: 'Ballet · Contemporary · Jazz',
+  heroSubtitle: 'Ballet · Contemporary · Jazz · Lyrical · Hip Hop · Musical Theatre',
   bio: `A passionate and dedicated dancer with years of training in classical ballet, contemporary, jazz, and more. Crystal brings joy, discipline, and artistry to every performance and class she leads.`,
   aboutParagraphs: [
     `From her first plié to commanding the stage, Crystal's journey in dance has been one of passion, perseverance, and grace. Trained in multiple disciplines, she has developed a unique style that blends classical technique with contemporary expression.`,
