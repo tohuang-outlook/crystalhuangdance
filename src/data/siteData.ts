@@ -52,7 +52,7 @@ export const danceStyles: DanceStyle[] = [
     name: 'Lyrical',
     description: 'Story-driven choreography that interprets lyrics through graceful motion.',
     icon: '💫',
-    image: '',
+    image: '/crystal-lyrical.jpg',
   },
   {
     name: 'Hip Hop',
