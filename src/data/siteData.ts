@@ -40,7 +40,7 @@ export const danceStyles: DanceStyle[] = [
     name: 'Contemporary',
     description: 'Expressive and fluid movement that blends modern techniques with emotion.',
     icon: '🌊',
-    image: '',
+    image: '/crystal-contemporary.jpg',
   },
   {
     name: 'Jazz',
