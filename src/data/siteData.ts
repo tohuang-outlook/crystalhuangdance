@@ -2,6 +2,7 @@ export interface DanceStyle {
   name: string;
   description: string;
   icon: string;
+  image: string;
 }
 
 export interface Achievement {
@@ -33,31 +34,37 @@ export const danceStyles: DanceStyle[] = [
     name: 'Ballet',
     description: 'Classical ballet with precision, grace, and storytelling through movement.',
     icon: '🩰',
+    image: '/crystal-hero.jpg',
   },
   {
     name: 'Contemporary',
     description: 'Expressive and fluid movement that blends modern techniques with emotion.',
     icon: '🌊',
+    image: '',
   },
   {
     name: 'Jazz',
     description: 'High-energy, rhythmic, and dynamic choreography with attitude.',
     icon: '⭐',
+    image: '',
   },
   {
     name: 'Lyrical',
     description: 'Story-driven choreography that interprets lyrics through graceful motion.',
     icon: '💫',
+    image: '',
   },
   {
     name: 'Hip Hop',
     description: 'Urban grooves, sharp isolations, and powerful stage presence.',
     icon: '🔥',
+    image: '',
   },
   {
     name: 'Musical Theatre',
     description: 'Theatrical performance combining dance, acting, and stagecraft.',
     icon: '🎭',
+    image: '',
   },
 ];
 

@@ -18,16 +18,32 @@ export default function DanceStyles() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {danceStyles.map((style, index) => (
+          {danceStyles.map((style) => (
             <div
               key={style.name}
-              className="group relative p-6 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 transition-all duration-500"
+              className="group relative rounded-2xl overflow-hidden bg-white/[0.03] border border-white/5 hover:border-blue-500/30 transition-all duration-500"
             >
-              {/* Hover glow */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/5 group-hover:via-purple-500/5 group-hover:to-pink-500/5 transition-all duration-500 opacity-0 group-hover:opacity-100" />
+              {/* Card image */}
+              {style.image ? (
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={style.image}
+                    alt={style.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/20 to-transparent" />
+                </div>
+              ) : (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="text-center">
+                    <span className="text-4xl block mb-3">{style.icon}</span>
+                    <p className="text-gray-500 text-sm">Photo coming soon</p>
+                  </div>
+                </div>
+              )}
 
-              <div className="relative z-10">
-                <span className="text-4xl block mb-4">{style.icon}</span>
+              {/* Content */}
+              <div className="relative z-10 p-6">
                 <h3 className="text-xl font-semibold mb-3 text-white group-hover:gradient-text transition-all">
                   {style.name}
                 </h3>
