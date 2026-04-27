@@ -35,7 +35,7 @@ export const danceStyles: DanceStyle[] = [
     name: 'Ballet',
     description: 'Classical ballet with precision, grace, and storytelling through movement.',
     icon: '🩰',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-ballet.jpg',
   },
   {
     name: 'Contemporary',
