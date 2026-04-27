@@ -7,16 +7,17 @@ export default function Hero() {
       id="home"
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/40 via-[#0a0a0f]/60 to-[#0a0a0f]" />
+      {/* Background Image - using contain to show full photo */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <img
+          src="/crystal-hero.jpg"
+          alt="Crystal Huang ballet performance"
+          className="w-full h-full object-contain"
+        />
+      </div>
 
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: 'url("/crystal-hero.jpg")',
-        }}
-      />
+      {/* Background gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/60 via-[#0a0a0f]/50 to-[#0a0a0f]" />
 
       {/* Decorative elements */}
       <div className="absolute top-1/4 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
