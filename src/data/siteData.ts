@@ -16,10 +16,11 @@ export const siteConfig = {
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
   heroSubtitle: 'Ballet · Contemporary · Jazz · Lyrical · Hip Hop · Musical Theatre',
-  bio: `A passionate and dedicated dancer with years of training in classical ballet, contemporary, jazz, and more. Crystal brings joy, discipline, and artistry to every performance and class she leads.`,
+  bio: `Prix de Lausanne 2024 Prize Winner. Dancer · ABT JKO School · Bayer Ballet Academy. Ballet, contemporary, jazz, and beyond.`,
   aboutParagraphs: [
-    `From her first plié to commanding the stage, Crystal's journey in dance has been one of passion, perseverance, and grace. Trained in multiple disciplines, she has developed a unique style that blends classical technique with contemporary expression.`,
-    `Whether performing under the spotlight or inspiring the next generation of dancers in the studio, Crystal believes that dance is not just movement — it's a conversation between the body, the music, and the soul.`,
+    `Crystal Huang, 15, is having a remarkable year. In 2024, she became a Prize Winner at the prestigious Prix de Lausanne — one of only nine dancers worldwide awarded a scholarship. She also earned the Female Contemporary Dance Award at the same competition, and went on to win Second Place in the Senior Division at YAGP Finals in New York and the Grand Prix at the South Africa International Ballet Competition.`,
+    `Trained initially in commercial dance at The Rock Center for Dance in Las Vegas, Crystal discovered her passion for ballet and transferred to Bayer Ballet Academy to study under the Vaganova method. Her hard work paid off, earning her a scholarship to the American Ballet Theatre's Jacqueline Kennedy Onassis School in New York, where she continues to pursue her dream of becoming a principal dancer.`,
+    `Crystal believes that dance is not just about technical perfection — it's about making the audience feel something. With a motto to always make every performance tell a story, she brings love, discipline, and artistry to the stage.`,
   ],
   email: 'crystal@example.com',
   social: {
@@ -70,29 +71,29 @@ export const danceStyles: DanceStyle[] = [
 
 export const achievements: Achievement[] = [
   {
-    year: '2025',
-    title: 'Regional Champion',
-    description: 'First Place - Contemporary Solo, Regional Dance Competition',
+    year: '2024',
+    title: 'Prix de Lausanne Prize Winner',
+    description: 'One of nine worldwide — awarded scholarship to top partner schools',
   },
   {
     year: '2024',
-    title: 'National Finalist',
-    description: 'Top 5 - Ballet Division, National Youth Dance Championships',
+    title: 'Female Contemporary Dance Award',
+    description: 'Special award for contemporary performance at Prix de Lausanne 2024',
   },
   {
     year: '2024',
-    title: 'Scholarship Award',
-    description: 'Full scholarship to prestigious summer intensive program',
+    title: 'YAGP Senior Division Silver Medalist',
+    description: '2nd Place — Youth America Grand Prix Finals, New York',
+  },
+  {
+    year: '2024',
+    title: 'Grand Prix — SA International Ballet Competition',
+    description: 'Top honor at the South Africa International Ballet Competition',
   },
   {
     year: '2023',
-    title: 'Gold Medalist',
-    description: 'Classical Ballet - Gold Medal, State Dance Festival',
-  },
-  {
-    year: '2023',
-    title: 'Outstanding Performer',
-    description: 'Recognized for exceptional stage presence and artistry',
+    title: 'National Commercial Dance Champion',
+    description: 'Won two of the biggest commercial dance conventions in the US',
   },
 ];
 
