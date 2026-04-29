@@ -1,18 +1,18 @@
-import { siteConfig } from '../data/siteData';
-import { Award, Music, Heart } from 'lucide-react';
+import { siteConfig, trainingTimeline } from '../data/siteData';
+import { Award, Music, Heart, MapPin, GraduationCap } from 'lucide-react';
 
 const highlights = [
   {
     icon: Award,
     title: 'Years of Training',
-    value: '10+',
-    description: 'Years of dedicated dance education',
+    value: '15+',
+    description: 'Since age 3 at Yoko\'s Dance Academy',
   },
   {
     icon: Music,
     title: 'Dance Styles',
-    value: '6',
-    description: 'Mastered disciplines across genres',
+    value: '8',
+    description: 'Ballet, Contemporary, Jazz, Lyrical, Hip Hop, Musical Theatre, Contemporary Fusion, Tap',
   },
   {
     icon: Heart,
@@ -39,9 +39,9 @@ export default function About() {
           </h2>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* Image side */}
-          <div className="relative">
+          <div className="relative lg:sticky lg:top-24">
             <div className="relative rounded-2xl overflow-hidden glow-border">
               <img
                 src="/crystal-hero.jpg"
@@ -80,6 +80,51 @@ export default function About() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Training Timeline Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+              Training <span className="gradient-text">Journey</span>
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+              From Yoko's Dance to San Francisco Ballet School — a path of dedication.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {trainingTimeline.map((training, i) => (
+              <div
+                key={i}
+                className={`p-5 rounded-xl border transition-all duration-300 ${
+                  training.highlight
+                    ? 'bg-blue-500/[0.05] border-blue-500/20 hover:bg-blue-500/[0.08]'
+                    : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                }`}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <GraduationCap
+                    size={18}
+                    className={`mt-0.5 shrink-0 ${
+                      training.highlight ? 'text-blue-400' : 'text-gray-500'
+                    }`}
+                  />
+                  <div>
+                    <p className="text-xs text-blue-300/70 font-medium">
+                      {training.period}
+                    </p>
+                    <h3 className="text-white font-semibold text-sm mt-0.5">
+                      {training.school}
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-gray-500 text-xs leading-relaxed pl-9">
+                  {training.teachers}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
