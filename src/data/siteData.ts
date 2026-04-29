@@ -29,11 +29,12 @@ export const siteConfig = {
     `Crystal's training journey is as diverse as her achievements. She began at Yoko's Dance Academy in Fremont, trained extensively at The Rock Center for Dance in Las Vegas, and later studied under the Vaganova method at Bayer Ballet Academy. She spent the 2024-25 season at American Ballet Theatre's Jacqueline Kennedy Onassis School (Upper 3) under teachers including Stella Abrera and Yan Chen. As of September 2025, she has joined San Francisco Ballet School as a Trainee (Level 8), training with Pascal Molat, Grace Holmes, and Dana Genshaft.`,
     `Beyond competition, Crystal has performed on global stages — from Sicily to Japan, Belgium to South Africa — and has toured extensively as NYCDA National Teen Outstanding Dancer and The Dance Awards Best Dancer. She has also choreographed solo and group works for dancers across the U.S., sharing her artistry and love for dance with the next generation. She believes dance is about making the audience feel something, and brings love, discipline, and artistry to every performance.`,
   ],
+  // TODO: 換成姐姐的真實 email
   email: 'crystal@example.com',
   social: {
-    instagram: '#',
-    youtube: '#',
-    tiktok: '#',
+    instagram: 'https://www.instagram.com/crystalhuangdance/',
+    youtube: 'https://www.youtube.com/@crystalhuangdance',
+    tiktok: 'https://www.tiktok.com/@crystalhuangdance',
   },
 };
 
