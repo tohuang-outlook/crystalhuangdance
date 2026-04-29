@@ -85,7 +85,7 @@ export const danceStyles: DanceStyle[] = [
     description:
       'A blend of contemporary with other movement styles. Mentored by Tessandra Chavez, Chaz Buzan, and Jason Parsons.',
     icon: '🌀',
-    image: '',
+    image: '/crystal-contemporary-fusion.jpg',
   },
   {
     name: 'Tap',
