@@ -15,15 +15,18 @@ export const siteConfig = {
   name: 'Crystal Huang',
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
-  heroSubtitle: 'Ballet · Contemporary · Jazz · Lyrical · Hip Hop · Musical Theatre',
+  heroSubtitle:
+    'Ballet · Contemporary · Jazz · Lyrical · Hip Hop · Musical Theatre',
   bio: `Prix de Lausanne 2024 Prize Winner. Dancer · ABT JKO School · Bayer Ballet Academy. Ballet, contemporary, jazz, and beyond.`,
   aboutParagraphs: [
     `Crystal Huang, 15, is having a remarkable year. In 2024, she became a Prize Winner at the prestigious Prix de Lausanne — one of only nine dancers worldwide awarded a scholarship. She also earned the Female Contemporary Dance Award at the same competition, and went on to win Second Place in the Senior Division at YAGP Finals in New York and the Grand Prix at the South Africa International Ballet Competition.`,
     `Trained initially in commercial dance at The Rock Center for Dance in Las Vegas, Crystal discovered her passion for ballet and transferred to Bayer Ballet Academy to study under the Vaganova method. Her hard work paid off, earning her a scholarship to the American Ballet Theatre's Jacqueline Kennedy Onassis School in New York, where she continues to pursue her dream of becoming a principal dancer.`,
     `Crystal believes that dance is not just about technical perfection — it's about making the audience feel something. With a motto to always make every performance tell a story, she brings love, discipline, and artistry to the stage.`,
   ],
+  // TODO: 換成姐姐的真實 email
   email: 'crystal@example.com',
   social: {
+    // TODO: 換成姐姐的真實社交連結
     instagram: '#',
     youtube: '#',
     tiktok: '#',

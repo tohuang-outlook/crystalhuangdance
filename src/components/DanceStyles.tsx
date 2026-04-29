@@ -34,10 +34,10 @@ export default function DanceStyles() {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/20 to-transparent" />
                 </div>
               ) : (
-                <div className="h-48 flex items-center justify-center">
+                <div className="h-48 flex items-center justify-center bg-white/[0.02]">
                   <div className="text-center">
-                    <span className="text-4xl block mb-3">{style.icon}</span>
-                    <p className="text-gray-500 text-sm">Photo coming soon</p>
+                    <span className="text-5xl block mb-2">{style.icon}</span>
+                    <p className="text-gray-500 text-xs italic">Photo coming soon</p>
                   </div>
                 </div>
               )}
