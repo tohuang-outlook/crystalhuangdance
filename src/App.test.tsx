@@ -29,9 +29,7 @@ describe('App dossier layout', () => {
     render(<App />);
 
     for (const entryPoint of siteConfig.archiveEntryPoints) {
-      expect(
-        screen.getByText(new RegExp(`^${entryPoint.title}$`, 'i'))
-      ).toBeInTheDocument();
+      expect(screen.getByText(entryPoint.title, { exact: true })).toBeInTheDocument();
     }
   });
 });

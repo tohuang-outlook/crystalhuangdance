@@ -31,6 +31,8 @@ export interface DistinctionFeature {
   bodyZh: string;
 }
 
+type DistinctionFeatureDetail = Omit<DistinctionFeature, 'year' | 'title'>;
+
 export interface ArchiveEntryPoint {
   title: string;
   titleZh: string;
@@ -284,29 +286,49 @@ export const achievements: Achievement[] = [
   },
 ];
 
-export const distinctionFeatures: DistinctionFeature[] = [
-  {
-    year: '2025',
-    title: 'T.O.P. Award — Asian American Outstanding Dancer',
+const featuredDistinctionTitles = [
+  'T.O.P. Award — Asian American Outstanding Dancer',
+  'Prix de Lausanne Prize Winner',
+  'Prix de Lausanne — Contemporary Dance Award',
+] as const;
+
+type FeaturedDistinctionTitle = (typeof featuredDistinctionTitles)[number];
+
+const distinctionFeatureDetails: Record<FeaturedDistinctionTitle, DistinctionFeatureDetail> = {
+  'T.O.P. Award — Asian American Outstanding Dancer': {
     titleZh: 'T.O.P. 獎 — 亞裔美國傑出舞者',
     body: 'Recognized for artistry, discipline, and impact across major training and performance settings.',
     bodyZh: '表彰其在重要訓練與演出場域中的藝術性、紀律與影響力。',
   },
-  {
-    year: '2024',
-    title: 'Prix de Lausanne Prize Winner',
+  'Prix de Lausanne Prize Winner': {
     titleZh: '洛桑國際芭蕾舞比賽得獎者',
     body: 'One of nine dancers worldwide recognized with a scholarship at the 2024 competition.',
     bodyZh: '2024 年賽事中全球九位獲得獎學金資格的舞者之一。',
   },
-  {
-    year: '2024',
-    title: 'Prix de Lausanne — Contemporary Dance Award',
+  'Prix de Lausanne — Contemporary Dance Award': {
     titleZh: '洛桑比賽 — 當代舞蹈特別獎',
     body: 'A distinction that underscores her fluency beyond classical vocabulary.',
     bodyZh: '突顯其在古典語彙之外的當代表現能力。',
   },
-];
+};
+
+const achievementByTitle = new Map(
+  achievements.map((achievement) => [achievement.title, achievement] as const)
+);
+
+export const distinctionFeatures: DistinctionFeature[] = featuredDistinctionTitles.map((title) => {
+  const achievement = achievementByTitle.get(title);
+
+  if (!achievement) {
+    throw new Error(`Missing achievement for distinction feature: ${title}`);
+  }
+
+  return {
+    year: achievement.year,
+    title: achievement.title,
+    ...distinctionFeatureDetails[title],
+  };
+});
 
 export const trainingTimeline = [
   {
