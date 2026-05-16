@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
+import { siteConfig } from './data/siteData';
 
 describe('App dossier layout', () => {
   it('renders the dossier-first sections in English by default', () => {
@@ -22,5 +23,15 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('heading', { name: '精選榮譽' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '藝術家簡介' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
+  });
+
+  it('renders archive entry point labels from shared site data', () => {
+    render(<App />);
+
+    for (const entryPoint of siteConfig.archiveEntryPoints) {
+      expect(
+        screen.getByText(new RegExp(`^${entryPoint.title}$`, 'i'))
+      ).toBeInTheDocument();
+    }
   });
 });

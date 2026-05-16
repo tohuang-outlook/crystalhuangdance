@@ -18,7 +18,49 @@ export interface GalleryImage {
   caption: string;
 }
 
-export const siteConfig = {
+export interface CredentialTag {
+  label: string;
+  labelZh: string;
+}
+
+export interface DistinctionFeature {
+  year: string;
+  title: string;
+  titleZh: string;
+  body: string;
+  bodyZh: string;
+}
+
+export interface ArchiveEntryPoint {
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  href: string;
+}
+
+export interface SiteConfig {
+  name: string;
+  title: string;
+  tagline: string;
+  heroSubtitle: string;
+  bio: string;
+  aboutParagraphs: string[];
+  coverIdentity: string;
+  coverIdentityZh: string;
+  coverStatement: string;
+  coverStatementZh: string;
+  identityStrip: CredentialTag[];
+  archiveEntryPoints: ArchiveEntryPoint[];
+  email: string;
+  social: {
+    instagram: string;
+    youtube: string;
+    tiktok: string;
+  };
+}
+
+export const siteConfig: SiteConfig = {
   name: 'Crystal Huang',
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
@@ -28,6 +70,48 @@ export const siteConfig = {
     `Crystal Huang, 16, is having a remarkable journey in dance. In 2024, she became a Prize Winner at the prestigious Prix de Lausanne — one of only nine dancers worldwide awarded a scholarship — and won the Female Contemporary Dance Award at the same competition. That same year, she earned the Silver Medal in the Senior Division at YAGP Finals in New York and the Grand Prix at the South Africa International Ballet Competition. In 2025, she was honored with the T.O.P. Award as Asian American Outstanding Dancer.`,
     `Crystal's training journey is as diverse as her achievements. She began at Yoko's Dance Academy in Fremont, trained extensively at The Rock Center for Dance in Las Vegas, and later studied under the Vaganova method at Bayer Ballet Academy. She spent the 2024-25 season at American Ballet Theatre's Jacqueline Kennedy Onassis School (Upper 3) under teachers including Stella Abrera and Yan Chen. As of September 2025, she has joined San Francisco Ballet School as a Trainee (Level 8), training with Pascal Molat, Grace Holmes, and Dana Genshaft.`,
     `Beyond competition, Crystal has performed on global stages — from Sicily to Japan, Belgium to South Africa — and has toured extensively as NYCDA National Teen Outstanding Dancer and The Dance Awards Best Dancer. She has also choreographed solo and group works for dancers across the U.S., sharing her artistry and love for dance with the next generation. She believes dance is about making the audience feel something, and brings love, discipline, and artistry to every performance.`,
+  ],
+  coverIdentity: 'San Francisco Ballet School Trainee',
+  coverIdentityZh: '舊金山芭蕾舞學校培訓生',
+  coverStatement:
+    'Emerging artist with elite training across ballet, contemporary, and commercial performance.',
+  coverStatementZh:
+    '橫跨古典芭蕾、當代與商業演出的新生代舞者，具備國際級訓練背景。',
+  identityStrip: [
+    { label: 'San Francisco Ballet School Trainee', labelZh: '舊金山芭蕾舞學校培訓生' },
+    { label: 'ABT JKO School', labelZh: 'ABT JKO 學校' },
+    { label: 'Prix de Lausanne Prize Winner', labelZh: '洛桑國際芭蕾舞比賽得獎者' },
+    { label: 'Contemporary Dance Award', labelZh: '當代舞蹈特別獎' },
+  ],
+  archiveEntryPoints: [
+    {
+      title: 'Training',
+      titleZh: '訓練',
+      description: 'Elite institutions, teachers, and formative programs.',
+      descriptionZh: '菁英學校、師資與重要養成計畫。',
+      href: '#profile',
+    },
+    {
+      title: 'Awards',
+      titleZh: '榮譽',
+      description: 'Major distinctions and competitive milestones.',
+      descriptionZh: '重要獎項與比賽里程碑。',
+      href: '#distinctions',
+    },
+    {
+      title: 'Repertoire',
+      titleZh: '舞作範圍',
+      description: 'Classical foundations and contemporary range.',
+      descriptionZh: '古典基礎與當代延展能力。',
+      href: '#range',
+    },
+    {
+      title: 'Media',
+      titleZh: '影像',
+      description: 'Performance reels and curated stills.',
+      descriptionZh: '精選演出影片與影像。',
+      href: '#media',
+    },
   ],
   email: 'crystalhuangdance@yahoo.com',
   social: {
@@ -197,6 +281,30 @@ export const achievements: Achievement[] = [
     title: 'Showstopper & StarPower Nationals',
     description:
       'Junior Competitive National Champion (Showstopper) & Grand Champion/Title Winner (StarPower) at Anaheim Finals.',
+  },
+];
+
+export const distinctionFeatures: DistinctionFeature[] = [
+  {
+    year: '2025',
+    title: 'T.O.P. Award — Asian American Outstanding Dancer',
+    titleZh: 'T.O.P. 獎 — 亞裔美國傑出舞者',
+    body: 'Recognized for artistry, discipline, and impact across major training and performance settings.',
+    bodyZh: '表彰其在重要訓練與演出場域中的藝術性、紀律與影響力。',
+  },
+  {
+    year: '2024',
+    title: 'Prix de Lausanne Prize Winner',
+    titleZh: '洛桑國際芭蕾舞比賽得獎者',
+    body: 'One of nine dancers worldwide recognized with a scholarship at the 2024 competition.',
+    bodyZh: '2024 年賽事中全球九位獲得獎學金資格的舞者之一。',
+  },
+  {
+    year: '2024',
+    title: 'Prix de Lausanne — Contemporary Dance Award',
+    titleZh: '洛桑比賽 — 當代舞蹈特別獎',
+    body: 'A distinction that underscores her fluency beyond classical vocabulary.',
+    bodyZh: '突顯其在古典語彙之外的當代表現能力。',
   },
 ];
 
