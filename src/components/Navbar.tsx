@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-
-const navLinks = [
-  { label: 'Home', href: '#home' },
-  { label: 'About', href: '#about' },
-  { label: 'Dance Styles', href: '#styles' },
-  { label: 'Achievements', href: '#achievements' },
-  { label: 'Gallery', href: '#gallery' },
-  { label: 'Contact', href: '#contact' },
-];
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { lang, setLang, t } = useLanguage();
+
+  const navLinks = [
+    { label: t('Home', '首頁'), href: '#home' },
+    { label: t('About', '關於我'), href: '#about' },
+    { label: t('Dance Styles', '舞蹈風格'), href: '#styles' },
+    { label: t('Achievements', '成就'), href: '#achievements' },
+    { label: t('Videos', '影片'), href: '#videos' },
+    { label: t('Gallery', '相簿'), href: '#gallery' },
+    { label: t('Contact', '聯絡'), href: '#contact' },
+  ];
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -31,15 +34,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <a
-            href="#home"
-            className="text-xl sm:text-2xl font-bold tracking-wide"
-          >
+          <a href="#home" className="text-xl sm:text-2xl font-bold tracking-wide">
             <span className="gradient-text">Crystal Huang</span>
           </a>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <a
                 key={link.href}
@@ -50,22 +50,42 @@ export default function Navbar() {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 transition-all duration-300 group-hover:w-full" />
               </a>
             ))}
+
+            {/* Language toggle */}
+            <button
+              onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
+              className="ml-2 px-3 py-1.5 rounded-full border border-white/20 text-sm font-medium text-gray-300 hover:text-white hover:border-white/40 transition-all duration-300 flex items-center gap-1.5"
+              aria-label="Toggle language"
+            >
+              <span className="text-base">{lang === 'en' ? '🇹🇼' : '🇺🇸'}</span>
+              <span>{lang === 'en' ? '中文' : 'EN'}</span>
+            </button>
+
             <a
               href="#contact"
-              className="ml-4 px-5 py-2.5 text-sm font-semibold rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/25"
+              className="ml-2 px-5 py-2.5 text-sm font-semibold rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/25"
             >
-              Get in Touch
+              {t('Get in Touch', '聯絡我')}
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-gray-300 hover:text-white transition-colors"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile right side */}
+          <div className="md:hidden flex items-center gap-3">
+            {/* Language toggle mobile */}
+            <button
+              onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
+              className="px-2.5 py-1 rounded-full border border-white/20 text-xs font-medium text-gray-300"
+            >
+              {lang === 'en' ? '中文' : 'EN'}
+            </button>
+            <button
+              className="text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -91,7 +111,7 @@ export default function Navbar() {
             className="block px-4 py-3 text-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold mt-4"
             onClick={() => setIsOpen(false)}
           >
-            Get in Touch
+            {t('Get in Touch', '聯絡我')}
           </a>
         </div>
       </div>
