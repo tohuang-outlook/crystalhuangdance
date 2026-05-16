@@ -14,7 +14,7 @@ interface Video {
 
 const videos: Video[] = [
   {
-    id: 'GJ2g_hWSVyg',
+    id: 'e2Z9UXevvIg',
     title: 'Prix de Lausanne 2024 — Prize Winner Performance',
     titleZh: '2024 洛桑國際芭蕾舞比賽 — 得獎演出',
     description: 'Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world\'s most prestigious ballet competitions.',
@@ -23,7 +23,7 @@ const videos: Video[] = [
     featured: true,
   },
   {
-    id: 'Hd2hQd1PYG4',
+    id: 'Uow5_-Nev_g&t=29s',
     title: 'The Dance Awards 2023 — Teen Best Dancer Winner',
     titleZh: '舞蹈獎 2023 — 青少年最佳舞者',
     description: "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
