@@ -15,20 +15,20 @@ interface Video {
 const videos: Video[] = [
   {
     id: 'GJ2g_hWSVyg',
-    title: 'Prix de Lausanne 2024 — Prize Winner Performance',
-    titleZh: '2024 洛桑國際芭蕾舞比賽 — 得獎演出',
+    title: 'Prix de Lausanne 2024 — Contemporary Dance Award Winner ',
+    titleZh: '2024 洛桑國際芭蕾舞比賽 — 當代舞獎得主',
     description: 'Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world\'s most prestigious ballet competitions.',
     descriptionZh: '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
-    thumbnail: '/crystal-hero.jpg',
+    thumbnail: '/crystal-contemporary.jpg',
     featured: true,
   },
   {
-    id: 'Hd2hQd1PYG4',
-    title: 'The Dance Awards 2023 — Teen Best Dancer Winner',
-    titleZh: '舞蹈獎 2023 — 青少年最佳舞者',
+    id: 'Uow5_-Nev_g',
+    title: ' 2023 The Dance Awards — Teen Best Dancer Winner',
+    titleZh: '舞蹈大獎賽 — 少年組最佳舞者得主',
     description: "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
     descriptionZh: '「Grasping Intentions」——讓 Crystal 奪得 2023 年舞蹈獎青少年女子最佳舞者的獨舞。',
-    thumbnail: '/crystal-contemporary.jpg',
+    thumbnail: '/Grasping_intentions.jpg',
   },
   {
     id: 'FIe3dBF5N7E',
