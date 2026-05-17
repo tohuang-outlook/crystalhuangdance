@@ -48,4 +48,15 @@ describe('App dossier layout', () => {
     expect(screen.getAllByRole('link', { name: /Archive/i }).length).toBeGreaterThan(0);
     expect(screen.getByText(/curated artist archive/i)).toBeInTheDocument();
   });
+
+  it('keeps the archive entry points and professional inquiries visible in Chinese', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({ user: userEvent.setup() }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /toggle language/i }));
+
+    expect(screen.getAllByText('舞作範圍', { exact: true }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: '精選影像' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
+  });
 });
