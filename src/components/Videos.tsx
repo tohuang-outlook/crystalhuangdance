@@ -63,7 +63,7 @@ const videos: Video[] = [
     thumbnail: '/Crystal-teenBD-moonlight.jpg',
   },
   {
-    id: 'V_PmbfbqHfY&t=16s',
+    id: 'NAx5malU5Jc',
     title: 'Radix 2021 — National Junior Female Core Performer',
     titleZh: 'Radix 2021 — 全國青少年女子核心表演者',
     description: 'Crystal wins the National Junior Female Core Performer title at Radix Dance Convention 2021.',
@@ -76,7 +76,7 @@ const videos: Video[] = [
     titleZh: '美國舞蹈大獎賽 2019 — 迷你組最佳舞者',
     description: 'Crystal wins the Mini Female Best Dancer title at The Dance Awards Las Vegas Nationals 2019, at just 10 years old.',
     descriptionZh: 'Crystal 僅10歲便在 2019 年拉斯維加斯美國舞蹈大獎賽全國賽奪得迷你組最佳舞者冠軍。',
-    thumbnail: '/crystal-hero.jpg',
+    thumbnail: '/Crystal TDA mini BD Flat Red.jpg',
   },
   {
     id: '0Hw23baOUWs',
