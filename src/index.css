@@ -10,14 +10,14 @@
   }
 
   :root {
-    --bg: #11100d;
-    --surface: #181714;
-    --surface-soft: #211f1a;
-    --text: #f3eee4;
-    --text-muted: #b6afa1;
-    --line: rgba(243, 238, 228, 0.12);
-    --accent: #a67c52;
-    --accent-strong: #6f1d1b;
+    --bg: #faf7f2;
+    --surface: rgba(250, 247, 242, 0.82);
+    --surface-soft: rgba(255, 255, 255, 0.56);
+    --text: #4a3728;
+    --text-muted: #86634b;
+    --line: rgba(74, 55, 40, 0.12);
+    --accent: #ff6b6b;
+    --accent-strong: #ff9a56;
   }
 
   html {
@@ -28,8 +28,9 @@
   body {
     font-family: 'Instrument Sans', 'Inter', sans-serif;
     background:
-      radial-gradient(circle at top, rgba(166, 124, 82, 0.08), transparent 32%),
-      linear-gradient(180deg, #11100d 0%, #161411 48%, #0f0e0c 100%);
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 32%),
+      radial-gradient(circle at 85% 14%, rgba(255, 107, 107, 0.12), transparent 22%),
+      linear-gradient(180deg, #ff9a56 0%, #ffd4a3 100%);
     color: var(--text);
     overflow-x: hidden;
   }
@@ -64,7 +65,7 @@
   }
 
   .gradient-text {
-    color: var(--text);
+    color: var(--accent);
   }
 
   .gold-text {
@@ -72,7 +73,7 @@
   }
 
   .glow-border {
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 24px 60px rgba(255, 154, 86, 0.16);
   }
 }
 
@@ -87,16 +88,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #11100d;
+  background: rgba(250, 247, 242, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4c4439;
+  background: rgba(74, 55, 40, 0.28);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #655b4d;
+  background: rgba(74, 55, 40, 0.42);
 }
 
 @keyframes float {

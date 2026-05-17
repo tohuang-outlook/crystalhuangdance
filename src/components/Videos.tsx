@@ -116,7 +116,7 @@ export default function Videos() {
             className="group relative overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
             onClick={() => setActiveVideo(featuredVideo.id)}
           >
-            <div className="absolute left-6 top-6 z-10 rounded-full border border-[var(--line)] bg-[rgba(17,16,13,0.72)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <div className="absolute left-6 top-6 z-10 rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.78)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               {t('Featured Reel', '精選主片')}
             </div>
             <div className="relative aspect-video overflow-hidden">
@@ -126,11 +126,11 @@ export default function Videos() {
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-[rgba(17,16,13,0.52)] text-white transition-transform duration-300 group-hover:scale-105">
-                  <Play size={30} className="ml-1 fill-white" />
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[rgba(250,247,242,0.48)] bg-[rgba(74,55,40,0.48)] text-[var(--bg)] transition-transform duration-300 group-hover:scale-105">
+                  <Play size={30} className="ml-1 fill-current" />
                 </div>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.88)] via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.76)] via-transparent to-transparent" />
             </div>
             <div className="space-y-3 p-6">
               <h3 className="text-2xl text-[var(--text)]">
@@ -156,8 +156,8 @@ export default function Videos() {
                   alt={video.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
-                  <Play size={18} className="ml-0.5 fill-white text-white" />
+                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(74,55,40,0.24)]">
+                  <Play size={18} className="ml-0.5 fill-[var(--bg)] text-[var(--bg)]" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -188,11 +188,11 @@ export default function Videos() {
 
       {activeVideo && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)] p-4"
           onClick={() => setActiveVideo(null)}
         >
           <button
-            className="absolute right-4 top-4 z-10 p-2 text-white/80 transition-colors hover:text-white"
+            className="absolute right-4 top-4 z-10 p-2 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={() => setActiveVideo(null)}
             aria-label="Close"
           >

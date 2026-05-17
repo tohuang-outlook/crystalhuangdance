@@ -11,8 +11,8 @@ export default function Hero() {
 
   return (
     <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
-      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(166,124,82,0.18),transparent_60%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.18))]" />
+      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(255,107,107,0.16),transparent_60%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
 
       <div className="container-max relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
         <div className="space-y-8">
@@ -62,8 +62,8 @@ export default function Hero() {
             alt="Crystal Huang cover portrait"
             className="h-[34rem] w-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#11100d]/30 via-transparent to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-[linear-gradient(180deg,transparent,rgba(17,16,13,0.82))] px-6 py-5">
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.22)] via-transparent to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 border-t border-[rgba(250,247,242,0.35)] bg-[linear-gradient(180deg,transparent,rgba(250,247,242,0.78))] px-6 py-5">
             <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
               {t('Professional Focus', '專業重點')}
             </p>

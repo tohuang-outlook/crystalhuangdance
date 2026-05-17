@@ -54,7 +54,7 @@ export default function Gallery() {
               alt={curatedImages[0].alt}
               className="h-full min-h-[32rem] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.82)] via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 text-left">
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
                 {t('Primary Still', '主影像')}
@@ -78,7 +78,7 @@ export default function Gallery() {
                   alt={image.alt}
                   className="h-60 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.82)] via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
                   <p className="text-sm text-[var(--text)]">
                     {t(image.caption, captionsZh[image.caption] ?? image.caption)}
@@ -92,18 +92,18 @@ export default function Gallery() {
 
       {selectedIndex !== null && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)]"
           onClick={() => setSelectedIndex(null)}
         >
           <button
-            className="absolute right-4 top-4 z-10 text-white/80 transition-colors hover:text-white"
+            className="absolute right-4 top-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={() => setSelectedIndex(null)}
             aria-label="Close"
           >
             <X size={32} />
           </button>
           <button
-            className="absolute left-4 z-10 text-white/80 transition-colors hover:text-white"
+            className="absolute left-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={(e) => {
               e.stopPropagation();
               goPrev();
@@ -113,7 +113,7 @@ export default function Gallery() {
             <ChevronLeft size={40} />
           </button>
           <button
-            className="absolute right-4 z-10 text-white/80 transition-colors hover:text-white"
+            className="absolute right-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={(e) => {
               e.stopPropagation();
               goNext();
