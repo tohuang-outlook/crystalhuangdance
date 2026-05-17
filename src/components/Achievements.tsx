@@ -1,5 +1,4 @@
-import { achievements } from '../data/siteData';
-import { Trophy, Award, Sparkles } from 'lucide-react';
+import { achievements, distinctionFeatures } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 const titlesZh: Record<string, string> = {
@@ -42,83 +41,58 @@ export default function Achievements() {
   const { t } = useLanguage();
 
   return (
-    <section id="achievements" className="section-padding relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-yellow-500/[0.02] to-transparent" />
-
-      <div className="container-max relative z-10">
-        <div className="text-center mb-16">
-          <p className="text-blue-300 tracking-[0.2em] uppercase text-sm mb-4 font-medium">
-            {t('Milestones', '里程碑')}
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            <span className="gold-text">{t('Achievements', '成就')}</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            {t(
-              'A timeline of dedication, hard work, and moments of glory — from national conventions to international ballet stages.',
-              '一條充滿奉獻、努力與榮耀的時間線——從全國大賽到國際芭蕾舞台。'
-            )}
-          </p>
+    <section id="distinctions" className="section-padding section-divider">
+      <div className="container-max space-y-16">
+        <div className="space-y-4">
+          <p className="eyebrow">{t('Selected Distinctions', '精選榮譽')}</p>
+          <h2 className="text-4xl sm:text-5xl">{t('Selected Distinctions', '精選榮譽')}</h2>
         </div>
 
-        <div className="relative max-w-3xl mx-auto">
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/40 via-yellow-500/40 to-purple-500/40 md:-translate-x-px" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {distinctionFeatures.map((item) => (
+            <article
+              key={item.title}
+              className="min-h-[18rem] border border-[var(--line)] bg-[var(--surface)] p-6"
+            >
+              <p className="text-sm uppercase tracking-[0.18em] text-[var(--accent)]">
+                {item.year}
+              </p>
+              <h3 className="mt-6 text-2xl leading-tight">{t(item.title, item.titleZh)}</h3>
+              <p className="mt-4 text-sm leading-7 text-[var(--text-muted)]">
+                {t(item.body, item.bodyZh)}
+              </p>
+            </article>
+          ))}
+        </div>
 
-          <div className="space-y-12">
-            {achievements.map((achievement, index) => (
-              <div
-                key={index}
-                className={`relative flex flex-col md:flex-row gap-6 md:gap-8 ${
-                  index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                }`}
-              >
-                <div
-                  className={`absolute left-4 md:left-1/2 top-0 w-5 h-5 -translate-x-1/2 rounded-full shadow-lg z-10 ${
-                    achievement.highlight
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 shadow-yellow-500/40'
-                      : 'bg-gradient-to-r from-blue-500 to-purple-600 shadow-blue-500/30'
-                  }`}
-                />
-
-                <div className={`md:w-1/2 pl-14 md:pl-0 ${index % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}`}>
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-sm font-bold ${
-                    achievement.highlight
-                      ? 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-500/30 text-yellow-300'
-                      : 'bg-white/[0.05] border-white/10 text-gray-400'
-                  }`}>
-                    {achievement.highlight ? <Award size={14} /> : <Trophy size={14} />}
-                    {achievement.year}
-                  </div>
-                </div>
-
-                <div className={`md:w-1/2 pl-14 md:pl-0 ${index % 2 === 0 ? 'md:pl-12' : 'md:pr-12 md:text-right'}`}>
-                  <div className={`p-5 rounded-xl border transition-all duration-300 ${
-                    achievement.highlight
-                      ? 'bg-gradient-to-br from-yellow-500/[0.06] to-amber-500/[0.03] border-yellow-500/20 hover:bg-yellow-500/[0.09]'
-                      : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
-                  }`}>
-                    <h3 className={`text-lg font-semibold mb-2 flex items-center gap-2 ${
-                      achievement.highlight ? 'text-yellow-200' : 'text-white'
-                    }`}>
-                      {achievement.highlight && <Sparkles size={16} className="text-yellow-400 shrink-0" />}
-                      {t(achievement.title, titlesZh[achievement.title] ?? achievement.title)}
-                    </h3>
-                    <p className={`text-sm leading-relaxed ${achievement.highlight ? 'text-yellow-300/70' : 'text-gray-400'}`}>
-                      {t(achievement.description, descriptionsZh[achievement.title] ?? achievement.description)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="space-y-6">
+          <div className="space-y-2 border-t border-[var(--line)] pt-8">
+            <p className="eyebrow">{t('Archive Timeline', '完整檔案時間線')}</p>
+            <h3 className="text-3xl">{t('Archive Timeline', '完整檔案時間線')}</h3>
           </div>
-        </div>
 
-        <p className="text-center text-gray-500 text-xs mt-12">
-          {t(
-            'Plus numerous regional titles at KAR, Showstopper, StarPower, Showbiz, and more.',
-            '另有多項 KAR、Showstopper、StarPower、Showbiz 等地區賽事冠軍頭銜。'
-          )}
-        </p>
+          {achievements.map((achievement) => (
+            <article
+              key={`${achievement.year}-${achievement.title}`}
+              className="grid gap-3 border-t border-[var(--line)] py-5 md:grid-cols-[7rem_1fr]"
+            >
+              <p className="text-sm uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                {achievement.year}
+              </p>
+              <div className="space-y-2">
+                <h4 className="text-lg text-[var(--text)]">
+                  {t(achievement.title, titlesZh[achievement.title] ?? achievement.title)}
+                </h4>
+                <p className="text-sm leading-7 text-[var(--text-muted)]">
+                  {t(
+                    achievement.description,
+                    descriptionsZh[achievement.title] ?? achievement.description
+                  )}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

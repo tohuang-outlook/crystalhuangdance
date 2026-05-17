@@ -1,6 +1,6 @@
-import { galleryImages } from '../data/siteData';
 import { useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { galleryImages } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 const captionsZh: Record<string, string> = {
@@ -15,84 +15,119 @@ const captionsZh: Record<string, string> = {
 export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { t } = useLanguage();
+  const curatedImages = galleryImages.slice(0, 4);
 
-  const openLightbox = (index: number) => setSelectedIndex(index);
-  const closeLightbox = () => setSelectedIndex(null);
   const goNext = () => {
-    if (selectedIndex !== null)
-      setSelectedIndex((selectedIndex + 1) % galleryImages.length);
+    if (selectedIndex !== null) {
+      setSelectedIndex((selectedIndex + 1) % curatedImages.length);
+    }
   };
+
   const goPrev = () => {
-    if (selectedIndex !== null)
-      setSelectedIndex((selectedIndex - 1 + galleryImages.length) % galleryImages.length);
+    if (selectedIndex !== null) {
+      setSelectedIndex((selectedIndex - 1 + curatedImages.length) % curatedImages.length);
+    }
   };
 
   return (
-    <section id="gallery" className="section-padding bg-white/[0.02]">
-      <div className="container-max">
-        <div className="text-center mb-16">
-          <p className="text-blue-300 tracking-[0.2em] uppercase text-sm mb-4 font-medium">
-            {t('Moments', '精彩瞬間')}
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            <span className="gradient-text">{t('Gallery', '相簿')}</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+    <section id="gallery" className="section-padding section-divider">
+      <div className="container-max space-y-12">
+        <div className="max-w-3xl space-y-4">
+          <p className="eyebrow">{t('Curated Stills', '精選影像')}</p>
+          <h2 className="text-4xl sm:text-5xl">{t('Curated Stills', '精選影像')}</h2>
+          <p className="max-w-2xl text-base leading-8 text-[var(--text-muted)]">
             {t(
-              'A glimpse into the world of dance through captured moments.',
-              '透過定格的瞬間，一窺舞蹈的美麗世界。'
+              'A concise edit of still images chosen for atmosphere, stage presence, and archival clarity.',
+              '為舞台氣質、存在感與檔案清晰度所挑選的精簡影像編輯。'
             )}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {galleryImages.map((image, index) => (
-            <div
-              key={index}
-              className="group relative overflow-hidden rounded-xl cursor-pointer aspect-[4/3]"
-              onClick={() => openLightbox(index)}
-            >
-              <img
-                src={image.src}
-                alt={image.alt}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-white font-medium text-sm">
+        <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
+          <button
+            type="button"
+            className="group relative overflow-hidden border border-[var(--line)]"
+            onClick={() => setSelectedIndex(0)}
+          >
+            <img
+              src={curatedImages[0].src}
+              alt={curatedImages[0].alt}
+              className="h-full min-h-[32rem] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.82)] via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-6 text-left">
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                {t('Primary Still', '主影像')}
+              </p>
+              <p className="mt-2 text-lg text-[var(--text)]">
+                {t(curatedImages[0].caption, captionsZh[curatedImages[0].caption] ?? curatedImages[0].caption)}
+              </p>
+            </div>
+          </button>
+
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1">
+            {curatedImages.slice(1).map((image, index) => (
+              <button
+                key={image.src}
+                type="button"
+                className="group relative overflow-hidden border border-[var(--line)] text-left"
+                onClick={() => setSelectedIndex(index + 1)}
+              >
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="h-60 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.82)] via-transparent to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4">
+                  <p className="text-sm text-[var(--text)]">
                     {t(image.caption, captionsZh[image.caption] ?? image.caption)}
                   </p>
                 </div>
-              </div>
-            </div>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {selectedIndex !== null && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
-          onClick={closeLightbox}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+          onClick={() => setSelectedIndex(null)}
         >
-          <button className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors z-10" onClick={closeLightbox} aria-label="Close">
+          <button
+            className="absolute right-4 top-4 z-10 text-white/80 transition-colors hover:text-white"
+            onClick={() => setSelectedIndex(null)}
+            aria-label="Close"
+          >
             <X size={32} />
           </button>
-          <button className="absolute left-4 text-white/80 hover:text-white transition-colors z-10" onClick={(e) => { e.stopPropagation(); goPrev(); }} aria-label="Previous">
+          <button
+            className="absolute left-4 z-10 text-white/80 transition-colors hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              goPrev();
+            }}
+            aria-label="Previous"
+          >
             <ChevronLeft size={40} />
           </button>
-          <button className="absolute right-4 text-white/80 hover:text-white transition-colors z-10" onClick={(e) => { e.stopPropagation(); goNext(); }} aria-label="Next">
+          <button
+            className="absolute right-4 z-10 text-white/80 transition-colors hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              goNext();
+            }}
+            aria-label="Next"
+          >
             <ChevronRight size={40} />
           </button>
           <img
-            src={galleryImages[selectedIndex].src}
-            alt={galleryImages[selectedIndex].alt}
-            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+            src={curatedImages[selectedIndex].src}
+            alt={curatedImages[selectedIndex].alt}
+            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
-            {selectedIndex + 1} / {galleryImages.length}
-          </div>
         </div>
       )}
     </section>
