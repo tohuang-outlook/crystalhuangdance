@@ -45,7 +45,7 @@ export default function Hero() {
               <a
                 key={entryPoint.title}
                 href={archiveHrefMap[entryPoint.href] ?? entryPoint.href}
-                className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(24,23,20,0.72)] p-5 transition-colors hover:border-[rgba(243,238,228,0.24)] hover:bg-[rgba(24,23,20,0.92)]"
+                className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(184,196,210,0.58)] p-5 transition-colors hover:border-[rgba(36,24,18,0.22)] hover:bg-[rgba(197,208,221,0.78)]"
               >
                 <p className="text-lg text-[var(--text)]">{t(entryPoint.title, entryPoint.titleZh)}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">

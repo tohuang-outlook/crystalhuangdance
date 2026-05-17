@@ -10,14 +10,14 @@
   }
 
   :root {
-    --bg: #faf7f2;
-    --surface: rgba(250, 247, 242, 0.82);
-    --surface-soft: rgba(255, 255, 255, 0.56);
-    --text: #4a3728;
-    --text-muted: #86634b;
-    --line: rgba(74, 55, 40, 0.12);
+    --bg: #eef6ff;
+    --surface: rgba(250, 247, 242, 0.76);
+    --surface-soft: rgba(255, 255, 255, 0.52);
+    --text: #241812;
+    --text-muted: #5d4332;
+    --line: rgba(36, 24, 18, 0.16);
     --accent: #ff6b6b;
-    --accent-strong: #ff9a56;
+    --accent-strong: #8ec5ff;
   }
 
   html {
@@ -28,9 +28,9 @@
   body {
     font-family: 'Instrument Sans', 'Inter', sans-serif;
     background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 32%),
-      radial-gradient(circle at 85% 14%, rgba(255, 107, 107, 0.12), transparent 22%),
-      linear-gradient(180deg, #ff9a56 0%, #ffd4a3 100%);
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.42), transparent 34%),
+      radial-gradient(circle at 84% 16%, rgba(255, 107, 107, 0.08), transparent 18%),
+      linear-gradient(180deg, #d8ecff 0%, #c6e0fb 46%, #b9d8f5 100%);
     color: var(--text);
     overflow-x: hidden;
   }

@@ -56,10 +56,10 @@ export default function Gallery() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 text-left">
-              <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+              <p className="text-xs uppercase tracking-[0.22em] text-[rgba(250,247,242,0.82)]">
                 {t('Primary Still', '主影像')}
               </p>
-              <p className="mt-2 text-lg text-[var(--text)]">
+              <p className="mt-2 text-lg text-[var(--bg)]">
                 {t(curatedImages[0].caption, captionsZh[curatedImages[0].caption] ?? curatedImages[0].caption)}
               </p>
             </div>
@@ -80,7 +80,7 @@ export default function Gallery() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
-                  <p className="text-sm text-[var(--text)]">
+                  <p className="text-sm text-[var(--bg)]">
                     {t(image.caption, captionsZh[image.caption] ?? image.caption)}
                   </p>
                 </div>

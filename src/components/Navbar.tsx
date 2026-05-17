@@ -25,7 +25,7 @@ export default function Navbar() {
     <nav
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'border-b border-[var(--line)] bg-[rgba(250,247,242,0.86)] backdrop-blur-md'
+          ? 'border-b border-[var(--line)] bg-[rgba(238,246,255,0.84)] backdrop-blur-md'
           : 'bg-transparent'
       }`}
     >
@@ -78,7 +78,7 @@ export default function Navbar() {
       </div>
 
       {isOpen && (
-        <div className="border-t border-[var(--line)] bg-[rgba(250,247,242,0.96)] md:hidden">
+        <div className="border-t border-[var(--line)] bg-[rgba(238,246,255,0.94)] md:hidden">
           <div className="container-max space-y-2 px-4 py-4 sm:px-6">
           {navLinks.map((link) => (
             <a
