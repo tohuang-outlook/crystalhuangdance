@@ -46,8 +46,8 @@ export default function Contact() {
             <h2 className="text-4xl sm:text-5xl">{t('Professional Inquiries', '專業洽詢')}</h2>
             <p className="max-w-xl text-base leading-8 text-[var(--text-muted)]">
               {t(
-                'For auditions, collaborations, workshops, and press inquiries, please use the form below or email directly.',
-                '如需試演、合作、工作坊或媒體洽詢，請使用下列表單或直接來信。'
+                'For auditions, collaborations, choreography, teaching engagements, and press inquiries, please use the form below or email directly.',
+                '如需試演、合作、編舞、教學邀約或媒體洽詢，請使用下列表單或直接來信。'
               )}
             </p>
           </div>
@@ -150,7 +150,7 @@ export default function Contact() {
             </option>
             <option value="audition">{t('Audition / School Inquiry', '試演 / 校方洽詢')}</option>
             <option value="collaboration">{t('Collaboration', '合作')}</option>
-            <option value="teaching">{t('Teaching / Workshop', '教學 / 工作坊')}</option>
+            <option value="teaching">{t('Teaching / Workshop / Choreography', '教學 / 工作坊 / 編舞')}</option>
             <option value="press">{t('Press / Interview', '媒體 / 訪談')}</option>
           </select>
 

@@ -57,18 +57,18 @@ export const siteConfig: SiteConfig = {
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
   heroSubtitle: 'Ballet · Contemporary · Jazz · Lyrical · Hip Hop · Musical Theatre',
-  bio: `SF Ballet Trainee · ABT JKO School · Prix de Lausanne 2024 Prize Winner. Ballet, contemporary, jazz, and beyond.`,
+  bio: `San Francisco Ballet School Trainee with elite training, touring experience, and international performance credits across ballet, contemporary, and commercial work.`,
   aboutParagraphs: [
-    `Crystal Huang, 16, is having a remarkable journey in dance. In 2024, she became a Prize Winner at the prestigious Prix de Lausanne — one of only nine dancers worldwide awarded a scholarship — and won the Female Contemporary Dance Award at the same competition. That same year, she earned the Silver Medal in the Senior Division at YAGP Finals in New York and the Grand Prix at the South Africa International Ballet Competition. In 2025, she was honored with the T.O.P. Award as Asian American Outstanding Dancer.`,
-    `Crystal's training journey is as diverse as her achievements. She began at Yoko's Dance Academy in Fremont, trained extensively at The Rock Center for Dance in Las Vegas, and later studied under the Vaganova method at Bayer Ballet Academy. She spent the 2024-25 season at American Ballet Theatre's Jacqueline Kennedy Onassis School (Upper 3) under teachers including Stella Abrera and Yan Chen. As of September 2025, she has joined San Francisco Ballet School as a Trainee (Level 8), training with Pascal Molat, Grace Holmes, and Dana Genshaft.`,
-    `Beyond competition, Crystal has performed on global stages — from Sicily to Japan, Belgium to South Africa — and has toured extensively as NYCDA National Teen Outstanding Dancer and The Dance Awards Best Dancer. She has also choreographed solo and group works for dancers across the U.S., sharing her artistry and love for dance with the next generation. She believes dance is about making the audience feel something, and brings love, discipline, and artistry to every performance.`,
+    `Crystal Huang is a San Francisco Ballet School trainee whose recent work spans elite conservatory training, international gala appearances, and national touring experience. Her current dossier includes Prix de Lausanne 2024 Prize Winner #4 and Contemporary Dance Award Winner, YAGP NYC Finals Senior Women Silver Medal Winner, SAIBC Senior Women Grand Prix Winner, and the 2025 T.O.P. Asian American Outstanding Dancer honor.`,
+    `Her training path bridges classical rigor and wide stylistic range. She began at Yoko's Dance and Performing Arts Academy, trained extensively at The Rock Center for Dance and Nevada School of Ballet, refined her classical foundation at Bayer Ballet Academy, studied at the American Ballet Theatre Jacqueline Kennedy Onassis School, and now continues her development at San Francisco Ballet School under a distinguished faculty.`,
+    `Alongside competition and conservatory work, Crystal has toured nationally as an NYCDA Outstanding Dancer, The Dance Awards Best Dancer, and Radix Core Performer, while also appearing in performances and galas across New York, Italy, Belgium, Switzerland, South Africa, China, and Japan. Her professional profile also includes choreography, masterclasses, and teaching-based creative work for younger dancers across the United States.`,
   ],
   coverIdentity: 'San Francisco Ballet School Trainee',
   coverIdentityZh: '舊金山芭蕾舞學校培訓生',
   coverStatement:
-    'Emerging artist with elite training across ballet, contemporary, and commercial performance.',
+    'San Francisco Ballet School trainee with international performance, touring, and competition experience across ballet, contemporary, and commercial work.',
   coverStatementZh:
-    '橫跨古典芭蕾、當代與商業演出的新生代舞者，具備國際級訓練背景。',
+    '具備國際演出、巡演與競賽經歷的舊金山芭蕾舞學校培訓生，橫跨古典芭蕾、當代與商業演出。',
   identityStrip: [
     { label: 'San Francisco Ballet School Trainee', labelZh: '舊金山芭蕾舞學校培訓生' },
     { label: 'ABT JKO School', labelZh: 'ABT JKO 學校' },
