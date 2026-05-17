@@ -1,69 +1,78 @@
 import { siteConfig } from '../data/siteData';
-import { ChevronDown } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Hero() {
+  const { t } = useLanguage();
+
+  const archiveHrefMap: Record<string, string> = {
+    '#media': '#videos',
+    '#range': '#styles',
+  };
+
   return (
-    <section
-      id="home"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
-    >
-      {/* Background Image - using contain to show full photo */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src="/crystal-hero.jpg"
-          alt="Crystal Huang ballet performance"
-          className="w-full h-full object-contain"
-        />
-      </div>
+    <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
+      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(166,124,82,0.18),transparent_60%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.18))]" />
 
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/60 via-[#0a0a0f]/50 to-[#0a0a0f]" />
+      <div className="container-max relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)]">
+              {t(siteConfig.coverIdentity, siteConfig.coverIdentityZh)}
+            </p>
+            <h1 className="max-w-3xl text-6xl leading-none sm:text-7xl lg:text-8xl">
+              {siteConfig.name}
+            </h1>
+            <p className="max-w-2xl text-lg leading-8 text-[var(--text-muted)]">
+              {t(siteConfig.coverStatement, siteConfig.coverStatementZh)}
+            </p>
+          </div>
 
-      {/* Decorative elements */}
-      <div className="absolute top-1/4 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="flex flex-wrap gap-3 border-t border-[var(--line)] pt-5">
+            {siteConfig.identityStrip.slice(1).map((item) => (
+              <span
+                key={item.label}
+                className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]"
+              >
+                {t(item.label, item.labelZh)}
+              </span>
+            ))}
+          </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-        <p className="text-blue-300 tracking-[0.2em] uppercase text-sm sm:text-base mb-6 animate-fade-in-up font-medium">
-          {siteConfig.heroSubtitle}
-        </p>
+          <div className="grid gap-4 border-t border-[var(--line)] pt-6 sm:grid-cols-2">
+            {siteConfig.archiveEntryPoints.map((entryPoint) => (
+              <a
+                key={entryPoint.title}
+                href={archiveHrefMap[entryPoint.href] ?? entryPoint.href}
+                className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(24,23,20,0.72)] p-5 transition-colors hover:border-[rgba(243,238,228,0.24)] hover:bg-[rgba(24,23,20,0.92)]"
+              >
+                <p className="text-lg text-[var(--text)]">{t(entryPoint.title, entryPoint.titleZh)}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                  {t(entryPoint.description, entryPoint.descriptionZh)}
+                </p>
+              </a>
+            ))}
+          </div>
+        </div>
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
-          <span className="gradient-text">{siteConfig.name}</span>
-        </h1>
-
-        <p className="text-lg sm:text-xl text-gray-300/90 mb-4 italic font-light">
-          "{siteConfig.tagline}"
-        </p>
-
-        <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          {siteConfig.bio}
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="#about"
-            className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
-          >
-            Discover My Journey
-          </a>
-          <a
-            href="#contact"
-            className="px-8 py-3.5 rounded-full border border-white/20 text-white font-semibold hover:bg-white/10 transition-all duration-300"
-          >
-            Book a Class
-          </a>
+        <div className="relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)]">
+          <img
+            src="/crystal-hero.jpg"
+            alt="Crystal Huang cover portrait"
+            className="h-[34rem] w-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#11100d]/30 via-transparent to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-[linear-gradient(180deg,transparent,rgba(17,16,13,0.82))] px-6 py-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+              {t('Professional Focus', '專業重點')}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--text)]">
+              {t(siteConfig.heroSubtitle, '芭蕾・當代・爵士・抒情・嘻哈・音樂劇')}
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* Scroll indicator */}
-      <a
-        href="#about"
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-400 hover:text-white transition-colors animate-float"
-      >
-        <ChevronDown size={28} />
-      </a>
     </section>
   );
 }
