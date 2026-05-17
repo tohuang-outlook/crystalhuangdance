@@ -6,10 +6,10 @@ import { useLanguage } from '../context/LanguageContext';
 const captionsZh: Record<string, string> = {
   'Stage Performance': '舞台演出',
   'In the Studio': '練舞室',
-  'Contemporary Flow': '當代流動',
-  'Behind the Scenes': '幕後花絮',
-  'Team Rehearsal': '團體排練',
-  'Pre-Show Preparation': '演出前準備',
+  'Contemporary Still': '當代定格',
+  'Lyrical Line': '抒情線條',
+  'Jazz Study': '爵士練習',
+  'Classical Study': '古典習作',
 };
 
 export default function Gallery() {

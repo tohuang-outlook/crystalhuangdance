@@ -16,14 +16,16 @@ const videos: Video[] = [
   {
     id: 'e2Z9UXevvIg',
     title: 'Prix de Lausanne 2024 — Prize Winner Performance',
-    titleZh: '2024 洛桑國際芭蕾舞比賽 — 當代舞蹈特別獎演出',
-    description: 'Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world\'s most prestigious ballet competitions.',
-    descriptionZh: '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
+    titleZh: '2024 洛桑國際芭蕾舞比賽 — 得獎演出',
+    description:
+      "Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world's most prestigious ballet competitions.",
+    descriptionZh:
+      '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
     thumbnail: '/crystal-contemporary.jpg',
     featured: true,
   },
   {
-    id: 'Hd2hQd1PYG4',
+    id: 'ckEaotosfqs',
     title: 'The Dance Awards 2023 — Teen Best Dancer Winner',
     titleZh: '美國舞蹈大獎賽 2023 — 青少年最佳舞者',
     description: "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
@@ -52,7 +54,7 @@ const videos: Video[] = [
     titleZh: 'NYCDA 2023 — 全國青少年女子傑出舞者',
     description: 'Crystal wins the National Teen Female Outstanding Dancer title at NYCDA NYC Finals 2023.',
     descriptionZh: 'Crystal 在 2023 年 NYCDA 紐約總決賽奪得全國青少年女子傑出舞者冠軍。',
-    thumbnail: '/Crystal-NYVDA I love you.jpg',
+    thumbnail: '/Crystal-NYVDA_I_love_you.jpg',
   },
   {
     id: 'MQqWEWPIk_4',
@@ -68,7 +70,7 @@ const videos: Video[] = [
     titleZh: 'Radix 2021 — 全國青少年女子核心表演者',
     description: 'Crystal wins the National Junior Female Core Performer title at Radix Dance Convention 2021.',
     descriptionZh: 'Crystal 在 2021 年 Radix 舞蹈大會奪得全國青少年女子核心表演者冠軍。',
-    thumbnail: '/Crystal Radix Junior CP give it.jpg',
+    thumbnail: '/Crystal_Radix_Junior_CP_give_it.jpg',
   },
   {
     id: 'y9wIR8E-REQ',
@@ -76,187 +78,121 @@ const videos: Video[] = [
     titleZh: '美國舞蹈大獎賽 2019 — 迷你組最佳舞者',
     description: 'Crystal wins the Mini Female Best Dancer title at The Dance Awards Las Vegas Nationals 2019, at just 10 years old.',
     descriptionZh: 'Crystal 僅10歲便在 2019 年拉斯維加斯美國舞蹈大獎賽全國賽奪得迷你組最佳舞者冠軍。',
-    thumbnail: '/Crystal TDA Mini BD Flat Red.jpg',
+    thumbnail: '/Crystal_TDA_Mini_BD_Flat_Red.jpg',
   },
   {
-    id: 'VP_aWHWiLZ8&t=33s',
+    id: 'VP_aWHWiLZ8',
     title: 'Radix 2019 — National Mini Female Core Performer',
     titleZh: 'Radix 2019 — 全國迷你組核心表演者',
     description: 'Crystal wins the National Mini Female Core Performer title at Radix Dance Convention 2019.',
     descriptionZh: 'Crystal 在 2019 年 Radix 舞蹈大會奪得全國迷你組核心表演者冠軍。',
-    thumbnail: '/Crystal Radix mini CP Flat Red.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'KAR 2019 — Junior Solo National Champion & Miss Junior Dance America',
-    titleZh: 'KAR 2019 — 青少年獨舞全國冠軍暨青少年舞蹈美國小姐',
-    description: 'Crystal wins 1st Overall and Miss Junior Dance America at KAR Anaheim Finals 2019.',
-    descriptionZh: 'Crystal 在 2019 年 KAR 阿納海姆總決賽奪得第一名暨青少年舞蹈美國小姐頭銜。',
-    thumbnail: '/crystal-ballet.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'Showstopper 2019 — Junior Competitive National Champion',
-    titleZh: 'Showstopper 2019 — 青少年競技全國冠軍',
-    description: 'Crystal wins the Junior Competitive National Champion title at Showstopper Anaheim Finals 2019.',
-    descriptionZh: 'Crystal 在 2019 年 Showstopper 阿納海姆總決賽奪得青少年競技全國冠軍。',
-    thumbnail: '/crystal-lyrical.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'StarPower 2019 — Junior Grand Champion & Title Winner',
-    titleZh: 'StarPower 2019 — 青少年大冠軍暨冠軍頭銜',
-    description: 'Crystal wins Junior Competitive Grand Champion and Title Winner at StarPower Anaheim Finals 2019.',
-    descriptionZh: 'Crystal 在 2019 年 StarPower 阿納海姆總決賽奪得青少年競技大冠軍暨冠軍頭銜。',
-    thumbnail: '/crystal-jazz.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'KAR 2018 — Junior Solo 1st Overall & Miss Junior KAR',
-    titleZh: 'KAR 2018 — 青少年獨舞總冠軍暨 Miss Junior KAR',
-    description: 'Crystal wins Junior Solo 1st Overall and Miss Junior KAR at KAR Nationals Anaheim 2018.',
-    descriptionZh: 'Crystal 在 2018 年 KAR 阿納海姆全國賽奪得青少年獨舞總冠軍暨 Miss Junior KAR。',
-    thumbnail: '/crystal-hero.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'Showbiz 2018 — Junior Solo Grand Champion & Miss Showbiz',
-    titleZh: 'Showbiz 2018 — 青少年獨舞大冠軍暨 Miss Showbiz',
-    description: 'Crystal wins Junior Solo Grand Champion and Miss Showbiz at Showbiz Nationals Anaheim 2018.',
-    descriptionZh: 'Crystal 在 2018 年 Showbiz 阿納海姆全國賽奪得青少年獨舞大冠軍暨 Miss Showbiz。',
-    thumbnail: '/crystal-contemporary.jpg',
-  },
-  {
-    id: '0Hw23baOUWs',
-    title: 'Showstopper 2018 — Junior Solo 1st Overall',
-    titleZh: 'Showstopper 2018 — 青少年獨舞總冠軍',
-    description: 'Crystal wins Junior Solo 1st Overall at Showstopper Nationals Anaheim 2018.',
-    descriptionZh: 'Crystal 在 2018 年 Showstopper 阿納海姆全國賽奪得青少年獨舞總冠軍。',
-    thumbnail: '/crystal-ballet.jpg',
+    thumbnail: '/Crystal_Radix_mini_CP_Flat_Red.jpg',
   },
 ];
 
 export default function Videos() {
   const { t } = useLanguage();
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const featuredVideo = videos.find((video) => video.featured) ?? videos[0];
+  const supportingVideos = videos.filter((video) => video.id !== featuredVideo.id);
 
   return (
-    <section id="videos" className="section-padding relative">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
-
-      <div className="container-max relative z-10">
-        <div className="text-center mb-16">
-          <p className="text-blue-300 tracking-[0.2em] uppercase text-sm mb-4 font-medium">
-            {t('Watch', '觀看影片')}
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            {t('Performance', '演出')} <span className="gradient-text">{t('Videos', '影片')}</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+    <section id="videos" className="section-padding section-divider">
+      <div className="container-max space-y-12">
+        <div className="max-w-3xl space-y-4">
+          <p className="eyebrow">{t('Featured Performance Reels', '精選演出影片')}</p>
+          <h2 className="text-4xl sm:text-5xl">{t('Featured Performance Reels', '精選演出影片')}</h2>
+          <p className="max-w-2xl text-base leading-8 text-[var(--text-muted)]">
             {t(
-              'Watch Crystal perform on international stages — from Prix de Lausanne to YAGP Finals.',
-              '觀看 Crystal 在國際舞台上的精彩演出——從洛桑比賽到 YAGP 總決賽。'
+              'A curated set of performance documents selected for artistic review, auditions, and collaboration.',
+              '為藝術審閱、試演與合作整理的精選演出紀錄。'
             )}
           </p>
         </div>
 
-        {/* Featured video — large */}
-        {videos[0] && (
-          <div className="mb-8">
-            <div
-              className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-video max-w-4xl mx-auto glow-border"
-              onClick={() => setActiveVideo(videos[0].id)}
-            >
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <button
+            type="button"
+            className="group relative overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+            onClick={() => setActiveVideo(featuredVideo.id)}
+          >
+            <div className="absolute left-6 top-6 z-10 rounded-full border border-[var(--line)] bg-[rgba(17,16,13,0.72)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              {t('Featured Reel', '精選主片')}
+            </div>
+            <div className="relative aspect-video overflow-hidden">
               <img
-                src={videos[0].thumbnail}
-                alt={videos[0].title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                src={featuredVideo.thumbnail}
+                alt={featuredVideo.title}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-              {/* Play button */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
-                  <Play size={32} className="text-white ml-1 fill-white" />
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-[rgba(17,16,13,0.52)] text-white transition-transform duration-300 group-hover:scale-105">
+                  <Play size={30} className="ml-1 fill-white" />
                 </div>
               </div>
-
-              {/* Featured badge */}
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold">
-                  {t('Featured', '精選')}
-                </span>
-              </div>
-
-              {/* Title overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <h3 className="text-white text-xl font-semibold mb-2">
-                  {t(videos[0].title, videos[0].titleZh)}
-                </h3>
-                <p className="text-gray-300 text-sm line-clamp-2">
-                  {t(videos[0].description, videos[0].descriptionZh)}
-                </p>
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,16,13,0.88)] via-transparent to-transparent" />
             </div>
-          </div>
-        )}
+            <div className="space-y-3 p-6">
+              <h3 className="text-2xl text-[var(--text)]">
+                {t(featuredVideo.title, featuredVideo.titleZh)}
+              </h3>
+              <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+                {t(featuredVideo.description, featuredVideo.descriptionZh)}
+              </p>
+            </div>
+          </button>
 
-        {/* Other videos — grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {videos.slice(1).map((video) => (
-            <div
+          <div className="space-y-4">
+            {supportingVideos.map((video) => (
+              <button
               key={video.id}
-              className="group relative rounded-xl overflow-hidden cursor-pointer bg-white/[0.03] border border-white/5 hover:border-blue-500/30 transition-all duration-300"
+              type="button"
+              className="group flex w-full gap-4 border border-[var(--line)] bg-[var(--surface)] p-4 text-left transition-colors hover:bg-[var(--surface-soft)]"
               onClick={() => setActiveVideo(video.id)}
             >
-              <div className="relative aspect-video overflow-hidden">
+              <div className="relative h-28 w-40 shrink-0 overflow-hidden">
                 <img
                   src={video.thumbnail}
                   alt={video.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                    <Play size={20} className="text-white ml-0.5 fill-white" />
-                  </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                  <Play size={18} className="ml-0.5 fill-white text-white" />
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-white font-semibold mb-1 text-sm line-clamp-1">
+              <div className="space-y-2">
+                <h3 className="text-lg leading-tight text-[var(--text)]">
                   {t(video.title, video.titleZh)}
                 </h3>
-                <p className="text-gray-400 text-xs line-clamp-2">
+                <p className="text-sm leading-6 text-[var(--text-muted)]">
                   {t(video.description, video.descriptionZh)}
                 </p>
               </div>
-            </div>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* YouTube channel link */}
-        <div className="text-center mt-10">
+        <div>
           <a
             href="https://www.youtube.com/@crystalhuangdance"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/20 text-white font-semibold hover:bg-white/10 transition-all duration-300"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-5 py-3 text-sm uppercase tracking-[0.16em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
           >
-            <Play size={16} className="fill-white" />
-            {t('View All Videos on YouTube', '在 YouTube 觀看所有影片')}
+            <Play size={14} className="fill-current" />
+            {t('View Full YouTube Archive', '查看完整 YouTube 檔案')}
           </a>
         </div>
       </div>
 
-      {/* Video lightbox / embed modal */}
       {activeVideo && (
         <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
           onClick={() => setActiveVideo(null)}
         >
           <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors z-10 p-2"
+            className="absolute right-4 top-4 z-10 p-2 text-white/80 transition-colors hover:text-white"
             onClick={() => setActiveVideo(null)}
             aria-label="Close"
           >
@@ -264,13 +200,13 @@ export default function Videos() {
           </button>
 
           <div
-            className="w-full max-w-5xl aspect-video rounded-xl overflow-hidden shadow-2xl"
+            className="aspect-video w-full max-w-5xl overflow-hidden rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <iframe
               src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1&rel=0`}
               title="Crystal Huang performance"
-              className="w-full h-full"
+              className="h-full w-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

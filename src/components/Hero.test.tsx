@@ -10,7 +10,7 @@ describe('Hero cover frame', () => {
       </LanguageProvider>
     );
 
-    expect(screen.getByText(/San Francisco Ballet School Trainee/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/San Francisco Ballet School Trainee/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/ABT JKO School/i)).toBeInTheDocument();
     expect(screen.getByText(/Prix de Lausanne Prize Winner/i)).toBeInTheDocument();
   });
