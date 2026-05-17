@@ -358,8 +358,8 @@ export const galleryImages: GalleryImage[] = [
     caption: 'Stage Performance',
   },
   {
-    src: 'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    alt: 'Dance studio practice',
+    src: '/crystal-studio.jpg',
+    alt: 'Crystal Huang in studio portrait',
     caption: 'In the Studio',
   },
   {
