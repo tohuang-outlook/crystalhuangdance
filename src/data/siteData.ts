@@ -91,7 +91,7 @@ export const siteConfig: SiteConfig = {
       titleZh: '訓練',
       description: 'Elite institutions, teachers, and formative programs.',
       descriptionZh: '菁英學校、師資與重要養成計畫。',
-      href: '#profile',
+      href: '#archive',
     },
     {
       title: 'Awards',

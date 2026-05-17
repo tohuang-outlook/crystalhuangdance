@@ -44,8 +44,8 @@ describe('App dossier layout', () => {
   it('renders a formal archive navigation and professional footer copy', () => {
     render(<App />);
 
-    expect(screen.getAllByRole('link', { name: /Profile/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /Archive/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Profile/i })[0]).toHaveAttribute('href', '#profile');
+    expect(screen.getAllByRole('link', { name: /Archive/i })[0]).toHaveAttribute('href', '#archive');
     expect(screen.getByText(/curated artist archive/i)).toBeInTheDocument();
   });
 
