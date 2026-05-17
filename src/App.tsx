@@ -12,15 +12,17 @@ import Footer from './components/Footer';
 export default function App() {
   return (
     <LanguageProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-transparent">
         <Navbar />
-        <Hero />
-        <About />
-        <DanceStyles />
-        <Achievements />
-        <Videos />
-        <Gallery />
-        <Contact />
+        <main>
+          <Hero />
+          <Achievements />
+          <About />
+          <DanceStyles />
+          <Videos />
+          <Gallery />
+          <Contact />
+        </main>
         <Footer />
       </div>
     </LanguageProvider>

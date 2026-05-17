@@ -32,4 +32,12 @@ describe('App dossier layout', () => {
       expect(screen.getByText(entryPoint.title, { exact: true })).toBeInTheDocument();
     }
   });
+
+  it('renders a formal archive navigation and professional footer copy', () => {
+    render(<App />);
+
+    expect(screen.getAllByRole('link', { name: /Profile/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /Archive/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/curated artist archive/i)).toBeInTheDocument();
+  });
 });
