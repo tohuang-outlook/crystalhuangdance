@@ -8,10 +8,10 @@ export default function Navbar() {
   const { lang, setLang, t } = useLanguage();
 
   const navLinks = [
-    { label: t('Profile', '簡介'), href: '#profile' },
-    { label: t('Archive', '檔案'), href: '#archive' },
+    { label: t('Profile', '簡介'), href: '#about' },
+    { label: t('Archive', '檔案'), href: '#about' },
     { label: t('Distinctions', '榮譽'), href: '#distinctions' },
-    { label: t('Media', '影像'), href: '#media' },
+    { label: t('Media', '影像'), href: '#videos' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 
@@ -41,7 +41,7 @@ export default function Navbar() {
           <div className="hidden items-center gap-6 md:flex">
             {navLinks.map((link) => (
               <a
-                key={link.href}
+                key={`${link.href}-${link.label}`}
                 href={link.href}
                 className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
               >
@@ -80,12 +80,12 @@ export default function Navbar() {
       {isOpen && (
         <div className="border-t border-[var(--line)] bg-[rgba(17,16,13,0.96)] md:hidden">
           <div className="container-max space-y-2 px-4 py-4 sm:px-6">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="block rounded-lg px-3 py-3 text-sm text-[var(--text-muted)] transition-colors hover:bg-[rgba(243,238,228,0.04)] hover:text-[var(--text)]"
-                onClick={() => setIsOpen(false)}
+          {navLinks.map((link) => (
+            <a
+              key={`${link.href}-${link.label}`}
+              href={link.href}
+              className="block rounded-lg px-3 py-3 text-sm text-[var(--text-muted)] transition-colors hover:bg-[rgba(243,238,228,0.04)] hover:text-[var(--text)]"
+              onClick={() => setIsOpen(false)}
               >
                 {link.label}
               </a>
