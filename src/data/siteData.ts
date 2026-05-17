@@ -23,16 +23,6 @@ export interface CredentialTag {
   labelZh: string;
 }
 
-export interface DistinctionFeature {
-  year: string;
-  title: string;
-  titleZh: string;
-  body: string;
-  bodyZh: string;
-}
-
-type DistinctionFeatureDetail = Omit<DistinctionFeature, 'year' | 'title'>;
-
 export interface ArchiveEntryPoint {
   title: string;
   titleZh: string;
@@ -185,150 +175,129 @@ export const danceStyles: DanceStyle[] = [
 export const achievements: Achievement[] = [
   {
     year: '2025',
-    title: 'T.O.P. Award — Asian American Outstanding Dancer',
+    title: 'T.O.P. Awards — 2025 Asian American Outstanding Dancer',
     description:
-      'Recognized as Asian American Outstanding Dancer of the Year.',
+      'Honored as the 2025 Asian American Outstanding Dancer.',
     highlight: true,
   },
   {
     year: '2024',
-    title: 'Prix de Lausanne Prize Winner',
+    title: 'SAIBC International Finals — Senior Women Grand Prix Winner',
     description:
-      'One of nine worldwide — awarded scholarship to ABT JKO School.',
+      'Top honor in the senior women division at the South Africa International Ballet Competition.',
     highlight: true,
   },
   {
     year: '2024',
-    title: 'Prix de Lausanne — Contemporary Dance Award',
+    title: 'YAGP NYC Finals — Senior Women Silver Medal Winner',
     description:
-      'Special award for contemporary performance at Prix de Lausanne 2024.',
+      'Silver Medal winner in the senior women division at YAGP New York City Finals.',
     highlight: true,
   },
   {
     year: '2024',
-    title: 'SAIBC International Finals — Senior Grand Prix Winner',
+    title: 'Prix de Lausanne — Prize Winner #4 & Contemporary Dance Award Winner',
     description:
-      'Top honor at the South Africa International Ballet Competition.',
+      'Recognized as Prize Winner #4 and recipient of the Contemporary Dance Award at Prix de Lausanne.',
     highlight: true,
   },
   {
     year: '2024',
-    title: 'YAGP NYC Finals — Senior Silver Medalist',
+    title: 'YoungArts — Winner of Distinction in Ballet',
     description:
-      '2nd Place in Senior Division at Youth America Grand Prix Finals, New York.',
-    highlight: true,
-  },
-  {
-    year: '2024',
-    title: 'YoungArts Winner of Distinction — Ballet',
-    description:
-      'National recognition in ballet from the National YoungArts Foundation.',
+      'National recognition from YoungArts for distinction in ballet.',
   },
   {
     year: '2023',
-    title: 'NYCDA National Teen Female Outstanding Dancer Winner',
+    title: 'NYCDA Nationals — Teen Female Outstanding Dancer Winner',
     description:
-      'National title at New York City Dance Alliance Finals & toured as titleholder.',
+      'National titleholder at NYCDA Finals with subsequent touring appearances.',
   },
   {
     year: '2023',
-    title: 'The Dance Awards — Teen Female Best Dancer Winner',
+    title: 'The Dance Awards Las Vegas Nationals — Teen Female Best Dancer Winner',
     description:
-      'National title in Las Vegas & toured as Best Dancer nationwide.',
+      'Teen Female Best Dancer title at the Las Vegas nationals and nationwide touring appearances.',
   },
   {
     year: '2023',
-    title: 'YAGP Tampa Finals — Junior Bronze Medalist',
+    title: 'YAGP Tampa Finals — Junior Bronze Medal Winner',
     description:
-      'Bronze medal in Junior Division at Youth America Grand Prix Tampa.',
+      'Bronze Medal winner at YAGP Tampa Finals in the junior division.',
   },
   {
     year: '2022',
-    title: 'YAGP Tampa Finals — Junior Bronze Medalist',
+    title: 'YAGP Tampa Finals — Junior Bronze Medal Winner',
     description:
-      'Bronze medal in Junior Division at Youth America Grand Prix Tampa.',
+      'Bronze Medal winner at YAGP Tampa Finals in the junior division.',
   },
   {
     year: '2021',
-    title: 'The Dance Awards — Junior Female Best Dancer Winner',
+    title: 'The Dance Awards Las Vegas Nationals — Junior Female Best Dancer Winner',
     description:
-      'National junior title & toured as titleholder for the 2021-22 season.',
+      'Junior Female Best Dancer titleholder with touring appearances through the 2021–22 season.',
   },
   {
     year: '2021',
-    title: 'Radix National Junior Female Core Performer Winner',
+    title: 'Radix Nationals — Junior Female Core Performer Winner',
     description:
-      'National junior title at Radix Dance Convention.',
+      'National junior titleholder at Radix Dance Convention.',
   },
   {
     year: '2019',
-    title: 'The Dance Awards — Mini Female Best Dancer Winner',
+    title: 'The Dance Awards Las Vegas Nationals — Mini Female Best Dancer Winner',
     description:
-      'First national Best Dancer title at age 10.',
+      'Won the mini female Best Dancer title in Las Vegas at age 10.',
   },
   {
     year: '2019',
-    title: 'Radix National Mini Female Core Performer Winner',
+    title: 'Radix Nationals — Mini Female Core Performer Winner',
     description:
-      'National mini title at Radix Dance Convention.',
+      'National mini titleholder at Radix Dance Convention.',
   },
   {
     year: '2019',
-    title: 'KAR Nationals — Junior Intermediate Solo National Champion',
+    title: 'KAR Anaheim Finals — Junior Intermediate Solo National Champion & Miss Junior Dance America',
     description:
-      '1st Overall & Miss Junior Dance America at KAR Anaheim Finals.',
+      'Captured the national champion title and Miss Junior Dance America at KAR Anaheim Finals.',
   },
   {
     year: '2019',
-    title: 'Showstopper & StarPower Nationals',
+    title: 'Showstopper Anaheim Finals — Junior Competitive National Champion',
     description:
-      'Junior Competitive National Champion (Showstopper) & Grand Champion/Title Winner (StarPower) at Anaheim Finals.',
+      'Junior Competitive National Champion at the Anaheim finals.',
+  },
+  {
+    year: '2019',
+    title: 'StarPower Anaheim Finals — Junior Competitive Grand Champion & Title Winner',
+    description:
+      'Junior Competitive Grand Champion and title winner at the Anaheim finals.',
+  },
+  {
+    year: '2018',
+    title: 'KAR Nationals Anaheim — Junior Solo 1st Overall & Miss Junior KAR',
+    description:
+      'Junior solo 1st Overall and Miss Junior KAR at KAR Nationals in Anaheim.',
+  },
+  {
+    year: '2018',
+    title: 'Showbiz Nationals Anaheim — Junior Solo Grand Champion & Miss Showbiz',
+    description:
+      'Junior solo Grand Champion and Miss Showbiz at Showbiz Nationals Anaheim.',
+  },
+  {
+    year: '2018',
+    title: 'Showstopper Nationals Anaheim — Junior Solo 1st Overall',
+    description:
+      'Junior solo 1st Overall at Showstopper Nationals Anaheim.',
+  },
+  {
+    year: '2017',
+    title: 'StarPower Talent Nationals Las Vegas — Mini Solo Grand Champion & Miss Petite StarPower',
+    description:
+      'Mini solo Grand Champion and Miss Petite StarPower in Las Vegas.',
   },
 ];
-
-const featuredDistinctionTitles = [
-  'T.O.P. Award — Asian American Outstanding Dancer',
-  'Prix de Lausanne Prize Winner',
-  'Prix de Lausanne — Contemporary Dance Award',
-] as const;
-
-type FeaturedDistinctionTitle = (typeof featuredDistinctionTitles)[number];
-
-const distinctionFeatureDetails: Record<FeaturedDistinctionTitle, DistinctionFeatureDetail> = {
-  'T.O.P. Award — Asian American Outstanding Dancer': {
-    titleZh: 'T.O.P. 獎 — 亞裔美國傑出舞者',
-    body: 'Recognized for artistry, discipline, and impact across major training and performance settings.',
-    bodyZh: '表彰其在重要訓練與演出場域中的藝術性、紀律與影響力。',
-  },
-  'Prix de Lausanne Prize Winner': {
-    titleZh: '洛桑國際芭蕾舞比賽得獎者',
-    body: 'One of nine dancers worldwide recognized with a scholarship at the 2024 competition.',
-    bodyZh: '2024 年賽事中全球九位獲得獎學金資格的舞者之一。',
-  },
-  'Prix de Lausanne — Contemporary Dance Award': {
-    titleZh: '洛桑比賽 — 當代舞蹈特別獎',
-    body: 'A distinction that underscores her fluency beyond classical vocabulary.',
-    bodyZh: '突顯其在古典語彙之外的當代表現能力。',
-  },
-};
-
-const achievementByTitle = new Map(
-  achievements.map((achievement) => [achievement.title, achievement] as const)
-);
-
-export const distinctionFeatures: DistinctionFeature[] = featuredDistinctionTitles.map((title) => {
-  const achievement = achievementByTitle.get(title);
-
-  if (!achievement) {
-    throw new Error(`Missing achievement for distinction feature: ${title}`);
-  }
-
-  return {
-    year: achievement.year,
-    title: achievement.title,
-    ...distinctionFeatureDetails[title],
-  };
-});
 
 export const trainingTimeline = [
   {
