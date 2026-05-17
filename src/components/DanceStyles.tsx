@@ -19,6 +19,23 @@ const descriptionsZh: Record<string, string> = {
   Tap: '節奏感十足的踢踏舞。師從 Danny Wallace、Jason Janas、Sarah Reich 和 Anthony Morigerato。',
 };
 
+const fullBodyStyles = new Set(['Jazz', 'Lyrical']);
+
+const imageShellClasses: Record<string, string> = {
+  Jazz: 'bg-[#111317]',
+  Lyrical: 'bg-[#0e1014]',
+};
+
+const imageFrameClasses: Record<string, string> = {
+  Jazz: 'aspect-[1290/1484]',
+  Lyrical: 'aspect-[1080/1344]',
+};
+
+const imageClasses: Record<string, string> = {
+  Jazz: 'h-full w-full object-cover object-center',
+  Lyrical: 'h-full w-full object-cover object-center',
+};
+
 export default function DanceStyles() {
   const { t } = useLanguage();
 
@@ -46,7 +63,27 @@ export default function DanceStyles() {
                 key={style.name}
                 className="overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
               >
-                <img src={style.image} alt={style.name} className="h-64 w-full object-cover" />
+                <div
+                  className={`border-b border-[var(--line)] ${
+                    imageShellClasses[style.name] ?? 'bg-transparent'
+                  }`}
+                >
+                  {fullBodyStyles.has(style.name) ? (
+                    <div className={imageFrameClasses[style.name] ?? 'aspect-[4/5]'}>
+                      <img
+                        src={style.image}
+                        alt={style.name}
+                        className={imageClasses[style.name] ?? 'h-full w-full object-cover object-center'}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={style.image}
+                      alt={style.name}
+                      className="h-64 w-full object-cover object-center"
+                    />
+                  )}
+                </div>
                 <div className="space-y-3 p-5">
                   <h3 className="text-2xl">{style.name}</h3>
                   <p className="text-sm leading-7 text-[var(--text-muted)]">
