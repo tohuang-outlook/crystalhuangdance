@@ -84,7 +84,7 @@ export const siteConfig: SiteConfig = {
   aboutParagraphs: [
     `Crystal Huang is a San Francisco Ballet School trainee whose recent work spans elite conservatory training, international gala appearances, and national touring experience. Her current dossier includes Prix de Lausanne 2024 Prize Winner #4 and Contemporary Dance Award Winner, YAGP NYC Finals Senior Women Silver Medal Winner, SAIBC Senior Women Grand Prix Winner, and the 2025 T.O.P. Asian American Outstanding Dancer honor.`,
     `Her training path bridges classical rigor and wide stylistic range. She began at Yoko's Dance and Performing Arts Academy, trained extensively at The Rock Center for Dance and Nevada School of Ballet, refined her classical foundation at Bayer Ballet Academy, studied at the American Ballet Theatre Jacqueline Kennedy Onassis School, and now continues her development at San Francisco Ballet School under a distinguished faculty.`,
-    `Alongside competition and conservatory work, Crystal has toured nationally as an NYCDA Outstanding Dancer, The Dance Awards Best Dancer, and Radix Core Performer, while also appearing in performances and galas across New York, Italy, Belgium, Switzerland, South Africa, China, and Japan. Her professional profile also includes choreography, masterclasses, and teaching-based creative work for younger dancers across the United States.`,
+    `Alongside competition and conservatory work, Crystal has toured nationally as an NYCDA Outstanding Dancer, The Dance Awards Best Dancer, and Radix Core Performer, while also appearing in performances and galas across New York, Italy, Belgium, Switzerland, South Africa, China, and Japan. Her professional profile also includes choreography, master class teaching, and creative work for younger dancers across the United States.`,
   ],
   coverIdentity: 'San Francisco Ballet School Trainee',
   coverIdentityZh: '舊金山芭蕾舞學校培訓生',
@@ -385,8 +385,8 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'April 2026',
     dateZh: '2026 年 4 月',
-    title: 'Ballet Company at UC Berkeley',
-    titleZh: '加州大學柏克萊分校芭蕾舞團',
+    title: 'Ballet Master Class at UC Berkeley Ballet Company',
+    titleZh: '加州大學柏克萊芭蕾舞團芭蕾大師課',
     location: 'Berkeley, CA',
     locationZh: '加州柏克萊',
   },
@@ -401,7 +401,7 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'Aug. 2025',
     dateZh: '2025 年 8 月',
-    title: 'Ballet Masterclasses at ZDP Academy',
+    title: 'Ballet Master Class at ZDP Academy',
     titleZh: 'ZDP Academy 芭蕾大師課',
     location: 'Boston, MA',
     locationZh: '麻州波士頓',
@@ -409,7 +409,7 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'July 2025',
     dateZh: '2025 年 7 月',
-    title: 'Contemporary Masterclasses at The Rock Center',
+    title: 'Contemporary Master Class at The Rock Center',
     titleZh: 'The Rock Center 當代大師課',
     location: 'Henderson, NV',
     locationZh: '內華達州亨德森',
@@ -417,7 +417,7 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'July 2025',
     dateZh: '2025 年 7 月',
-    title: "Contemporary Masterclasses at Li's Ballet",
+    title: "Contemporary Master Class at Li's Ballet",
     titleZh: "Li's Ballet 當代大師課",
     location: 'Temple City, CA',
     locationZh: '加州天普市',
@@ -425,7 +425,7 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'June 2025',
     dateZh: '2025 年 6 月',
-    title: 'Jazz Masterclasses at OAEC Academy',
+    title: 'Jazz Master Class at OAEC Academy',
     titleZh: 'OAEC Academy 爵士大師課',
     location: 'Houston, TX',
     locationZh: '德州休士頓',
@@ -433,7 +433,7 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
   {
     date: 'June 2024',
     dateZh: '2024 年 6 月',
-    title: 'Contemporary Masterclasses at OAEC Academy',
+    title: 'Contemporary Master Class at OAEC Academy',
     titleZh: 'OAEC Academy 當代大師課',
     location: 'Houston, TX',
     locationZh: '德州休士頓',
@@ -442,13 +442,14 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
 
 export const masterClassMoments: ArchiveMediaItem[] = [
   {
-    title: 'Ballet Company at UC Berkeley',
-    titleZh: '加州大學柏克萊分校芭蕾舞團',
+    title: 'Ballet Master Class at UC Berkeley Ballet Company',
+    titleZh: '加州大學柏克萊芭蕾舞團芭蕾大師課',
     subtitle: 'Berkeley, CA · April 2026',
     subtitleZh: '加州柏克萊 · 2026 年 4 月',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-masterclass-uc-berkeley.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-uc-berkeley.mp4',
   },
   {
     title: 'Ballet Master Class at YAGP',
@@ -460,7 +461,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
   {
-    title: 'Ballet Masterclasses at ZDP Academy',
+    title: 'Ballet Master Class at ZDP Academy',
     titleZh: 'ZDP Academy 芭蕾大師課',
     subtitle: 'Boston, MA · Aug. 2025',
     subtitleZh: '麻州波士頓 · 2025 年 8 月',
@@ -469,7 +470,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
   {
-    title: 'Contemporary Masterclasses at The Rock Center',
+    title: 'Contemporary Master Class at The Rock Center',
     titleZh: 'The Rock Center 當代大師課',
     subtitle: 'Henderson, NV · July 2025',
     subtitleZh: '內華達州亨德森 · 2025 年 7 月',
@@ -478,7 +479,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
   {
-    title: "Contemporary Masterclasses at Li's Ballet",
+    title: "Contemporary Master Class at Li's Ballet",
     titleZh: "Li's Ballet 當代大師課",
     subtitle: 'Temple City, CA · July 2025',
     subtitleZh: '加州天普市 · 2025 年 7 月',
@@ -487,7 +488,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
   {
-    title: 'Jazz Masterclasses at OAEC Academy',
+    title: 'Jazz Master Class at OAEC Academy',
     titleZh: 'OAEC Academy 爵士大師課',
     subtitle: 'Houston, TX · June 2025',
     subtitleZh: '德州休士頓 · 2025 年 6 月',
@@ -496,7 +497,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
   {
-    title: 'Contemporary Masterclasses at OAEC Academy',
+    title: 'Contemporary Master Class at OAEC Academy',
     titleZh: 'OAEC Academy 當代大師課',
     subtitle: 'Houston, TX · June 2024',
     subtitleZh: '德州休士頓 · 2024 年 6 月',

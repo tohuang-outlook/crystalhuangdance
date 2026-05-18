@@ -258,11 +258,20 @@ export default function Gallery() {
               className="w-full max-w-5xl overflow-hidden rounded-lg border border-[rgba(250,247,242,0.16)] bg-[var(--surface)] shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="border-b border-[var(--line)] px-5 py-4">
-                <p className="eyebrow">{t(selectedItem.subtitle, selectedItem.subtitleZh)}</p>
-                <h4 className="text-2xl text-[var(--text)]">
-                  {t(selectedItem.title, selectedItem.titleZh)}
-                </h4>
+              <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-4">
+                <div>
+                  <p className="eyebrow">{t(selectedItem.subtitle, selectedItem.subtitleZh)}</p>
+                  <h4 className="text-2xl text-[var(--text)]">
+                    {t(selectedItem.title, selectedItem.titleZh)}
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)] transition-colors duration-300 hover:text-[var(--text)]"
+                  onClick={() => setSelectedMediaState(null)}
+                >
+                  {t('Close', '關閉')}
+                </button>
               </div>
               <video
                 className="aspect-video w-full bg-black"
