@@ -59,12 +59,15 @@ export default function DanceStyles() {
     'Contemporary',
     'Lyrical',
     'Musical Theatre',
+    'Contemporary Fusion',
   ]);
   const activeVideoSource =
     activeVideoStyle === 'Ballet'
       ? '/crystal-ballet.mp4'
       : activeVideoStyle === 'Contemporary'
         ? '/crystal-contemporary.mp4'
+        : activeVideoStyle === 'Contemporary Fusion'
+          ? '/crystal-contemporary-fusion.mp4'
         : activeVideoStyle === 'Lyrical'
           ? '/crystal-lyrical.mp4'
           : activeVideoStyle === 'Musical Theatre'
