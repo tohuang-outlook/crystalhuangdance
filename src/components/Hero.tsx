@@ -5,7 +5,7 @@ export default function Hero() {
   const { t } = useLanguage();
 
   const archiveHrefMap: Record<string, string> = {
-    '#media': '#videos',
+    '#media': '#styles',
     '#range': '#styles',
   };
 

@@ -11,7 +11,7 @@ export default function Navbar() {
     { label: t('Profile', '簡介'), href: '#profile' },
     { label: t('Archive', '檔案'), href: '#archive' },
     { label: t('Distinctions', '榮譽'), href: '#distinctions' },
-    { label: t('Media', '影像'), href: '#videos' },
+    { label: t('Media', '影像'), href: '#styles' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 
