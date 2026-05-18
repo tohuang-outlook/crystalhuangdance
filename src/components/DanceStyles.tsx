@@ -33,6 +33,13 @@ const imageScaleClasses: Record<string, string> = {
   Lyrical: 'scale-[1.02]',
 };
 
+const videoLabelOverrides: Record<string, { en: string; zh: string }> = {
+  'Contemporary Fusion': {
+    en: 'Click to play video',
+    zh: '點擊播放影片',
+  },
+};
+
 export default function DanceStyles() {
   const { t } = useLanguage();
   const [activeVideoStyle, setActiveVideoStyle] = useState<string | null>(null);
@@ -143,7 +150,10 @@ export default function DanceStyles() {
                 <h3 className="text-2xl">{style.name}</h3>
                 {interactiveStyles.has(style.name) ? (
                   <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
-                    {t('Click to play video', '點擊播放影片')}
+                    {t(
+                      videoLabelOverrides[style.name]?.en ?? 'Click to play video',
+                      videoLabelOverrides[style.name]?.zh ?? '點擊播放影片'
+                    )}
                   </p>
                 ) : null}
                 <p className="text-sm leading-7 text-[var(--text-muted)]">
