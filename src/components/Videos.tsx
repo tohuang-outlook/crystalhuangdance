@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -93,8 +93,48 @@ const videos: Video[] = [
 export default function Videos() {
   const { t } = useLanguage();
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const featuredVideo = videos.find((video) => video.featured) ?? videos[0];
   const supportingVideos = videos.filter((video) => video.id !== featuredVideo.id);
+  const activeVideoData = videos.find((video) => video.id === activeVideo) ?? null;
+
+  useEffect(() => {
+    if (!activeVideo) return;
+
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveVideo(null);
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), iframe'
+        );
+
+        if (!focusableElements?.length) {
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVideo]);
 
   return (
     <section id="videos" className="section-padding section-divider">
@@ -186,15 +226,20 @@ export default function Videos() {
         </div>
       </div>
 
-      {activeVideo && (
+      {activeVideo && activeVideoData ? (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)] p-4"
           onClick={() => setActiveVideo(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t(activeVideoData.title, activeVideoData.titleZh)}
         >
           <button
+            ref={closeButtonRef}
             className="absolute right-4 top-4 z-10 p-2 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={() => setActiveVideo(null)}
-            aria-label="Close"
+            aria-label={t('Close', '關閉')}
           >
             <X size={32} />
           </button>
@@ -205,14 +250,14 @@ export default function Videos() {
           >
             <iframe
               src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1&rel=0`}
-              title="Crystal Huang performance"
+              title={t(activeVideoData.title, activeVideoData.titleZh)}
               className="h-full w-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
