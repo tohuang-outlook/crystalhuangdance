@@ -28,7 +28,7 @@ const imageShellClasses: Record<string, string> = {
 
 const imageFrameClasses: Record<string, string> = {
   Jazz: 'aspect-[1290/1484]',
-  Lyrical: 'aspect-[1080/1344]',
+  Lyrical: 'aspect-[1080/1280]',
 };
 
 const imageClasses: Record<string, string> = {
