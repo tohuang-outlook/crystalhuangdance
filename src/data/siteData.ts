@@ -450,6 +450,60 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
   },
+  {
+    title: 'Ballet Master Class at YAGP',
+    titleZh: 'YAGP 芭蕾大師課',
+    subtitle: 'San Francisco, CA · March 2026',
+    subtitleZh: '加州舊金山 · 2026 年 3 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+  {
+    title: 'Ballet Masterclasses at ZDP Academy',
+    titleZh: 'ZDP Academy 芭蕾大師課',
+    subtitle: 'Boston, MA · Aug. 2025',
+    subtitleZh: '麻州波士頓 · 2025 年 8 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+  {
+    title: 'Contemporary Masterclasses at The Rock Center',
+    titleZh: 'The Rock Center 當代大師課',
+    subtitle: 'Henderson, NV · July 2025',
+    subtitleZh: '內華達州亨德森 · 2025 年 7 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+  {
+    title: "Contemporary Masterclasses at Li's Ballet",
+    titleZh: "Li's Ballet 當代大師課",
+    subtitle: 'Temple City, CA · July 2025',
+    subtitleZh: '加州天普市 · 2025 年 7 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+  {
+    title: 'Jazz Masterclasses at OAEC Academy',
+    titleZh: 'OAEC Academy 爵士大師課',
+    subtitle: 'Houston, TX · June 2025',
+    subtitleZh: '德州休士頓 · 2025 年 6 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+  {
+    title: 'Contemporary Masterclasses at OAEC Academy',
+    titleZh: 'OAEC Academy 當代大師課',
+    subtitle: 'Houston, TX · June 2024',
+    subtitleZh: '德州休士頓 · 2024 年 6 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
 ];
 
 export const groupChoreographyEntries: GroupChoreographyEntry[] = [
@@ -468,5 +522,26 @@ export const groupChoreographyEntries: GroupChoreographyEntry[] = [
     organizationZh: "Yoko's Dance",
     work: 'Yearning Heart',
     workZh: 'Yearning Heart',
+  },
+];
+
+export const groupChoreographyMoments: ArchiveMediaItem[] = [
+  {
+    title: 'ABT School — Synergy',
+    titleZh: 'ABT School — Synergy',
+    subtitle: '2024/25 Group Choreography',
+    subtitleZh: '2024/25 群體編舞作品',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a group choreography setting',
+    imageAltZh: 'Crystal Huang 在群體編舞作品中的影像',
+  },
+  {
+    title: "Yoko's Dance — Yearning Heart",
+    titleZh: "Yoko's Dance — Yearning Heart",
+    subtitle: '2024/25 Group Choreography',
+    subtitleZh: '2024/25 群體編舞作品',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a group choreography setting',
+    imageAltZh: 'Crystal Huang 在群體編舞作品中的影像',
   },
 ];

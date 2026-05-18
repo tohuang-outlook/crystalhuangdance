@@ -2,26 +2,33 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   groupChoreographyEntries,
+  groupChoreographyMoments,
   masterClassMoments,
   masterClassTimeline,
 } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Gallery() {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedMediaState, setSelectedMediaState] = useState<{
+    collection: 'master' | 'group';
+    index: number;
+  } | null>(null);
   const { t } = useLanguage();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const selectedItem = selectedIndex !== null ? masterClassMoments[selectedIndex] : null;
+  const selectedItems =
+    selectedMediaState?.collection === 'group' ? groupChoreographyMoments : masterClassMoments;
+  const selectedItem =
+    selectedMediaState !== null ? selectedItems[selectedMediaState.index] : null;
 
   useEffect(() => {
-    if (selectedIndex === null) return;
+    if (selectedMediaState === null) return;
 
     closeButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setSelectedIndex(null);
+        setSelectedMediaState(null);
         return;
       }
 
@@ -49,17 +56,23 @@ export default function Gallery() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex]);
+  }, [selectedMediaState]);
 
   const goNext = () => {
-    if (selectedIndex !== null) {
-      setSelectedIndex((selectedIndex + 1) % masterClassMoments.length);
+    if (selectedMediaState !== null) {
+      setSelectedMediaState({
+        collection: selectedMediaState.collection,
+        index: (selectedMediaState.index + 1) % selectedItems.length,
+      });
     }
   };
 
   const goPrev = () => {
-    if (selectedIndex !== null) {
-      setSelectedIndex((selectedIndex - 1 + masterClassMoments.length) % masterClassMoments.length);
+    if (selectedMediaState !== null) {
+      setSelectedMediaState({
+        collection: selectedMediaState.collection,
+        index: (selectedMediaState.index - 1 + selectedItems.length) % selectedItems.length,
+      });
     }
   };
 
@@ -125,7 +138,7 @@ export default function Gallery() {
                 key={`${item.title}-${item.subtitle}`}
                 type="button"
                 className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
-                onClick={() => setSelectedIndex(index)}
+                onClick={() => setSelectedMediaState({ collection: 'master', index })}
               >
                 <img
                   src={item.image}
@@ -169,6 +182,37 @@ export default function Gallery() {
               </div>
             ))}
           </div>
+
+          <div className="space-y-4 pt-2">
+            <p className="eyebrow">{t('Featured Group Works', '精選群舞作品')}</p>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {groupChoreographyMoments.map((item, index) => (
+                <button
+                  key={`${item.title}-${item.subtitle}`}
+                  type="button"
+                  className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+                  onClick={() => setSelectedMediaState({ collection: 'group', index })}
+                >
+                  <img
+                    src={item.image}
+                    alt={t(item.imageAlt, item.imageAltZh)}
+                    className="h-64 w-full object-cover"
+                  />
+                  <div className="space-y-2 p-5">
+                    <p className="text-2xl text-[var(--text)]">{t(item.title, item.titleZh)}</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
+                      {t(item.subtitle, item.subtitleZh)}
+                    </p>
+                    {item.video ? (
+                      <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
+                        {t('Click to play video', '點擊播放影片')}
+                      </p>
+                    ) : null}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -176,7 +220,7 @@ export default function Gallery() {
         <div
           ref={dialogRef}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)]"
-          onClick={() => setSelectedIndex(null)}
+          onClick={() => setSelectedMediaState(null)}
           role="dialog"
           aria-modal="true"
           aria-label={t(selectedItem.title, selectedItem.titleZh)}
@@ -184,7 +228,7 @@ export default function Gallery() {
           <button
             ref={closeButtonRef}
             className="absolute right-4 top-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
-            onClick={() => setSelectedIndex(null)}
+            onClick={() => setSelectedMediaState(null)}
             aria-label={t('Close', '關閉')}
           >
             <X size={32} />
