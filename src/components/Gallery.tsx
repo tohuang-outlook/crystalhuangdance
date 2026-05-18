@@ -1,100 +1,130 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { galleryImages } from '../data/siteData';
+import {
+  groupChoreographyEntries,
+  masterClassMoments,
+  masterClassTimeline,
+} from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
-
-const captionsZh: Record<string, string> = {
-  'Stage Performance': '舞台演出',
-  'In the Studio': '練舞室',
-  'Contemporary Still': '當代定格',
-  'Lyrical Line': '抒情線條',
-  'Jazz Study': '爵士練習',
-  'Classical Study': '古典習作',
-};
 
 export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { t } = useLanguage();
-  const curatedImages = galleryImages.slice(0, 4);
+  const selectedItem = selectedIndex !== null ? masterClassMoments[selectedIndex] : null;
 
   const goNext = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex((selectedIndex + 1) % curatedImages.length);
+      setSelectedIndex((selectedIndex + 1) % masterClassMoments.length);
     }
   };
 
   const goPrev = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex((selectedIndex - 1 + curatedImages.length) % curatedImages.length);
+      setSelectedIndex((selectedIndex - 1 + masterClassMoments.length) % masterClassMoments.length);
     }
   };
 
   return (
     <section id="gallery" className="section-padding section-divider">
-      <div className="container-max space-y-12">
+      <div className="container-max space-y-14">
         <div className="max-w-3xl space-y-4">
-          <p className="eyebrow">
-            {t('Master Class and Choreographer', '大師課與編舞指導')}
-          </p>
+          <p className="eyebrow">{t('Master Class and Choreographer', '大師課與編舞指導')}</p>
           <h2 className="text-4xl sm:text-5xl">
             {t('Master Class and Choreographer', '大師課與編舞指導')}
           </h2>
           <p className="max-w-2xl text-base leading-8 text-[var(--text-muted)]">
             {t(
-              'A focused visual archive of master classes, choreographic mentorship, and formative artist development.',
-              '聚焦於大師課、編舞指導與藝術養成歷程的精選影像檔案。'
+              'A focused archive of master classes, choreographic mentorship, and formative artist development.',
+              '聚焦於大師課、編舞指導與藝術養成歷程的精選檔案。'
             )}
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-          <button
-            type="button"
-            className="group relative overflow-hidden border border-[var(--line)]"
-            onClick={() => setSelectedIndex(0)}
-          >
-            <img
-              src={curatedImages[0].src}
-              alt={curatedImages[0].alt}
-              className="h-full min-h-[32rem] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-6 text-left">
-              <p className="text-xs uppercase tracking-[0.22em] text-[rgba(250,247,242,0.82)]">
-                {t('Primary Still', '主影像')}
-              </p>
-              <p className="mt-2 text-lg text-[var(--bg)]">
-                {t(curatedImages[0].caption, captionsZh[curatedImages[0].caption] ?? curatedImages[0].caption)}
-              </p>
-            </div>
-          </button>
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="eyebrow">{t('Archive Timeline', '完整檔案時間線')}</p>
+            <h3 className="text-3xl">{t('Archive Timeline', '完整檔案時間線')}</h3>
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1">
-            {curatedImages.slice(1).map((image, index) => (
+          <div className="grid gap-4 border-t border-[var(--line)] pt-6">
+            {masterClassTimeline.map((entry) => (
+              <div
+                key={`${entry.date}-${entry.title}`}
+                className="grid gap-3 border-b border-[var(--line)] pb-5 md:grid-cols-[12rem_1fr]"
+              >
+                <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {t(entry.date, entry.dateZh)}
+                </p>
+                <div className="space-y-1">
+                  <p className="text-2xl text-[var(--text)]">{t(entry.title, entry.titleZh)}</p>
+                  <p className="text-sm leading-6 text-[var(--text-muted)]">
+                    {t(entry.location, entry.locationZh)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="eyebrow">
+              {t('Selected Master Class Moments', '精選大師課片段')}
+            </p>
+            <h3 className="text-3xl">
+              {t('Selected Master Class Moments', '精選大師課片段')}
+            </h3>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {masterClassMoments.map((item, index) => (
               <button
-                key={image.src}
+                key={`${item.title}-${item.subtitle}`}
                 type="button"
-                className="group relative overflow-hidden border border-[var(--line)] text-left"
-                onClick={() => setSelectedIndex(index + 1)}
+                className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+                onClick={() => setSelectedIndex(index)}
               >
                 <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="h-60 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  src={item.image}
+                  alt={t(item.imageAlt, item.imageAltZh)}
+                  className="h-64 w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.72)] via-transparent to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-4">
-                  <p className="text-sm text-[var(--bg)]">
-                    {t(image.caption, captionsZh[image.caption] ?? image.caption)}
+                <div className="space-y-2 p-5">
+                  <p className="text-2xl text-[var(--text)]">{t(item.title, item.titleZh)}</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
+                    {t(item.subtitle, item.subtitleZh)}
                   </p>
                 </div>
               </button>
             ))}
           </div>
         </div>
+
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="eyebrow">{t('Groups Choreography', '群體編舞作品')}</p>
+            <h3 className="text-3xl">{t('Groups Choreography', '群體編舞作品')}</h3>
+          </div>
+
+          <div className="space-y-4 border-t border-[var(--line)] pt-6">
+            {groupChoreographyEntries.map((entry) => (
+              <div
+                key={`${entry.season}-${entry.organization}-${entry.work}`}
+                className="grid gap-3 border-b border-[var(--line)] pb-5 md:grid-cols-[10rem_1fr]"
+              >
+                <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {t(entry.season, entry.seasonZh)}
+                </p>
+                <p className="text-lg leading-7 text-[var(--text)]">
+                  {t(entry.organization, entry.organizationZh)} — {t(entry.work, entry.workZh)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {selectedIndex !== null && (
+      {selectedItem ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)]"
           onClick={() => setSelectedIndex(null)}
@@ -108,8 +138,8 @@ export default function Gallery() {
           </button>
           <button
             className="absolute left-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(event) => {
+              event.stopPropagation();
               goPrev();
             }}
             aria-label="Previous"
@@ -118,8 +148,8 @@ export default function Gallery() {
           </button>
           <button
             className="absolute right-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(event) => {
+              event.stopPropagation();
               goNext();
             }}
             aria-label="Next"
@@ -127,13 +157,13 @@ export default function Gallery() {
             <ChevronRight size={40} />
           </button>
           <img
-            src={curatedImages[selectedIndex].src}
-            alt={curatedImages[selectedIndex].alt}
+            src={selectedItem.image}
+            alt={t(selectedItem.imageAlt, selectedItem.imageAltZh)}
             className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           />
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
