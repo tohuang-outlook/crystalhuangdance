@@ -17,30 +17,23 @@ const descriptionsZh: Record<string, string> = {
   'Contemporary Fusion':
     '當代與其他動作風格的融合。曾受 Tessandra Chavez、Chaz Buzan 和 Jason Parsons 指導。',
   Tap: '節奏感十足的踢踏舞。師從 Danny Wallace、Jason Janas、Sarah Reich 和 Anthony Morigerato。',
+  Ballroom:
+    '雙人舞配合、音樂語感與 ballroom 技法，曾受 Ashly Costa、Erica Marr、Lacey Schwimmer、Jenna Johnson、Val Chmerkovskiy、Britt Cherry 與 Britt Stewart 指導。',
 };
 
-const fullBodyStyles = new Set(['Jazz', 'Lyrical']);
+const framedStyles = new Set<string>();
 
-const imageShellClasses: Record<string, string> = {
-  Jazz: 'bg-[rgba(183,200,220,0.52)]',
-  Lyrical: 'bg-[rgba(176,194,216,0.5)]',
+const imagePositionClasses: Record<string, string> = {
+  Jazz: 'object-[center_18%]',
+  Lyrical: 'object-[center_28%]',
 };
 
-const imageFrameClasses: Record<string, string> = {
-  Jazz: 'aspect-[1290/1484]',
-  Lyrical: 'aspect-[1080/1280]',
-};
-
-const imageClasses: Record<string, string> = {
-  Jazz: 'h-full w-full object-cover object-center',
-  Lyrical: 'h-full w-full object-cover object-center',
+const imageScaleClasses: Record<string, string> = {
+  Lyrical: 'scale-[1.02]',
 };
 
 export default function DanceStyles() {
   const { t } = useLanguage();
-
-  const featuredStyles = danceStyles.filter((style) => style.image);
-  const extendedStyles = danceStyles.filter((style) => !style.image);
 
   return (
     <section id="styles" className="section-padding section-divider">
@@ -56,60 +49,35 @@ export default function DanceStyles() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="grid gap-6 sm:grid-cols-2">
-            {featuredStyles.map((style) => (
-              <article
-                key={style.name}
-                className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
-              >
-                <div
-                  className={`border-b border-[var(--line)] ${
-                    imageShellClasses[style.name] ?? 'bg-transparent'
-                  }`}
-                >
-                  {fullBodyStyles.has(style.name) ? (
-                    <div className={imageFrameClasses[style.name] ?? 'aspect-[4/5]'}>
-                      <img
-                        src={style.image}
-                        alt={style.name}
-                        className={imageClasses[style.name] ?? 'h-full w-full object-cover object-center'}
-                      />
-                    </div>
-                  ) : (
-                    <img
-                      src={style.image}
-                      alt={style.name}
-                      className="h-64 w-full object-cover object-center"
-                    />
-                  )}
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {danceStyles.map((style) => (
+            <article
+              key={style.name}
+              className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
+            >
+              {framedStyles.has(style.name) ? (
+                <div className="h-64 border-b border-[var(--line)] bg-[rgba(176,194,216,0.32)] p-3">
+                  <img
+                    src={style.image}
+                    alt={style.name}
+                    className="h-full w-full object-contain object-center"
+                  />
                 </div>
-                <div className="space-y-3 p-5">
-                  <h3 className="text-2xl">{style.name}</h3>
-                  <p className="text-sm leading-7 text-[var(--text-muted)]">
-                    {t(style.description, descriptionsZh[style.name] ?? style.description)}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="hover-float-card border border-[var(--line)] bg-[var(--surface)] p-6">
-            <p className="eyebrow mb-4">{t('Extended Vocabulary', '延伸語彙')}</p>
-            <div className="space-y-5">
-              {extendedStyles.map((style) => (
-                <article
-                  key={style.name}
-                  className="rounded-[1rem] border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
-                >
-                  <h3 className="text-xl">{style.name}</h3>
-                  <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">
-                    {t(style.description, descriptionsZh[style.name] ?? style.description)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
+              ) : (
+                <img
+                  src={style.image}
+                  alt={style.name}
+                  className={`h-64 w-full object-cover ${imagePositionClasses[style.name] ?? 'object-center'} ${imageScaleClasses[style.name] ?? ''}`}
+                />
+              )}
+              <div className="space-y-3 p-5">
+                <h3 className="text-2xl">{style.name}</h3>
+                <p className="text-sm leading-7 text-[var(--text-muted)]">
+                  {t(style.description, descriptionsZh[style.name] ?? style.description)}
+                </p>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>

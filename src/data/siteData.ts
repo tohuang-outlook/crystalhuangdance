@@ -147,28 +147,35 @@ export const danceStyles: DanceStyle[] = [
     description:
       'Urban grooves, sharp isolations, and powerful stage presence. Trained with Tricia Miranda, Randi Kemper, Hefa Tuita, and Tabitha & Napoleon D\'umo.',
     icon: '🔥',
-    image: '',
+    image: '/crystal-hero.jpg',
   },
   {
     name: 'Musical Theatre',
     description:
       'Theatrical performance combining dance, acting, and stagecraft. Performed in Radio City Christmas Spectacular as Clara & Ellie, and trained under Al Blackstone and Eddie Strachan.',
     icon: '🎭',
-    image: '',
+    image: '/crystal-hero.jpg',
   },
   {
     name: 'Contemporary Fusion',
     description:
       'A blend of contemporary with other movement styles. Mentored by Tessandra Chavez, Chaz Buzan, and Jason Parsons.',
     icon: '🌀',
-    image: '',
+    image: '/crystal-hero.jpg',
   },
   {
     name: 'Tap',
     description:
       'Rhythmic footwork and musicality. Trained under Danny Wallace, Jason Janas, Sarah Reich, and Anthony Morigerato.',
     icon: '👞',
-    image: '',
+    image: '/crystal-hero.jpg',
+  },
+  {
+    name: 'Ballroom',
+    description:
+      'Partnering, musical phrasing, and ballroom technique shaped through training with Ashly Costa, Erica Marr, Lacey Schwimmer, Jenna Johnson, Val Chmerkovskiy, Britt Cherry, and Britt Stewart.',
+    icon: '🪩',
+    image: '/crystal-hero.jpg',
   },
 ];
 
