@@ -466,9 +466,10 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     titleZh: 'ZDP Academy 芭蕾大師課',
     subtitle: 'Boston, MA · Aug. 2025',
     subtitleZh: '麻州波士頓 · 2025 年 8 月',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-masterclass-zdp.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-zdp.mp4',
   },
   {
     title: 'Contemporary Master Class at The Rock Center',
