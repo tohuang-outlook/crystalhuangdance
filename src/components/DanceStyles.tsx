@@ -50,10 +50,21 @@ export default function DanceStyles() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeVideoStyle]);
 
-  const interactiveStyles = new Set(['Tap', 'Ballroom', 'Hip Hop', 'Jazz']);
+  const interactiveStyles = new Set([
+    'Tap',
+    'Ballroom',
+    'Hip Hop',
+    'Jazz',
+    'Ballet',
+    'Contemporary',
+  ]);
   const activeVideoSource =
-    activeVideoStyle === 'Tap'
-      ? '/crystal-tap.mp4'
+    activeVideoStyle === 'Ballet'
+      ? '/crystal-ballet.mp4'
+      : activeVideoStyle === 'Contemporary'
+        ? '/crystal-contemporary.mp4'
+      : activeVideoStyle === 'Tap'
+        ? '/crystal-tap.mp4'
       : activeVideoStyle === 'Ballroom'
         ? '/crystal-ballroom.mp4'
         : activeVideoStyle === 'Hip Hop'
