@@ -12,6 +12,7 @@ export default function Navbar() {
     { label: t('Archive', '檔案'), href: '#archive' },
     { label: t('Distinctions', '榮譽'), href: '#distinctions' },
     { label: t('Media', '影像'), href: '#styles' },
+    { label: t('Master Class', '大師課'), href: '#gallery' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 

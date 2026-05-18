@@ -33,12 +33,16 @@ export default function Gallery() {
     <section id="gallery" className="section-padding section-divider">
       <div className="container-max space-y-12">
         <div className="max-w-3xl space-y-4">
-          <p className="eyebrow">{t('Curated Stills', '精選影像')}</p>
-          <h2 className="text-4xl sm:text-5xl">{t('Curated Stills', '精選影像')}</h2>
+          <p className="eyebrow">
+            {t('Master Class and Choreographer', '大師課與編舞指導')}
+          </p>
+          <h2 className="text-4xl sm:text-5xl">
+            {t('Master Class and Choreographer', '大師課與編舞指導')}
+          </h2>
           <p className="max-w-2xl text-base leading-8 text-[var(--text-muted)]">
             {t(
-              'A concise edit of still images chosen for atmosphere, stage presence, and archival clarity.',
-              '為舞台氣質、存在感與檔案清晰度所挑選的精簡影像編輯。'
+              'A focused visual archive of master classes, choreographic mentorship, and formative artist development.',
+              '聚焦於大師課、編舞指導與藝術養成歷程的精選影像檔案。'
             )}
           </p>
         </div>

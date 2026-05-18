@@ -14,7 +14,9 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('heading', { name: /Training Archive/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Artistic Range/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Featured Performance Reels/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Curated Stills/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Master Class and Choreographer/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Professional Inquiries/i })).toBeInTheDocument();
   });
 
@@ -29,7 +31,7 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('heading', { name: '訓練檔案' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '藝術範圍' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '精選演出影片' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '精選影像' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '大師課與編舞指導' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
   });
 
@@ -56,7 +58,7 @@ describe('App dossier layout', () => {
     await user.click(screen.getByRole('button', { name: /toggle language/i }));
 
     expect(screen.getAllByText('舞作範圍', { exact: true }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: '精選影像' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '大師課與編舞指導' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
   });
 });
