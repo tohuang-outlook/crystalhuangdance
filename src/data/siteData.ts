@@ -12,12 +12,6 @@ export interface Achievement {
   highlight?: boolean;
 }
 
-export interface GalleryImage {
-  src: string;
-  alt: string;
-  caption: string;
-}
-
 export interface ArchiveTimelineEntry {
   date: string;
   dateZh: string;
@@ -384,39 +378,6 @@ export const trainingTimeline = [
     school: 'Yoko\'s Dance and Performing Arts Academy',
     teachers:
       'Megan Ellis, Erin Le Moyne, Ashley Anderson, Danny Wallace',
-  },
-];
-
-export const galleryImages: GalleryImage[] = [
-  {
-    src: '/crystal-hero.jpg',
-    alt: 'Crystal Huang ballet performance',
-    caption: 'Stage Performance',
-  },
-  {
-    src: '/crystal-studio.jpg',
-    alt: 'Crystal Huang in studio portrait',
-    caption: 'In the Studio',
-  },
-  {
-    src: '/crystal-contemporary.jpg',
-    alt: 'Crystal Huang contemporary performance still',
-    caption: 'Contemporary Still',
-  },
-  {
-    src: '/crystal-lyrical.jpg',
-    alt: 'Crystal Huang lyrical performance still',
-    caption: 'Lyrical Line',
-  },
-  {
-    src: '/crystal-jazz.jpg',
-    alt: 'Crystal Huang jazz rehearsal still',
-    caption: 'Jazz Study',
-  },
-  {
-    src: '/crystal-ballet.jpg',
-    alt: 'Crystal Huang ballet studio still',
-    caption: 'Classical Study',
   },
 ];
 
