@@ -456,9 +456,10 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     titleZh: 'YAGP 芭蕾大師課',
     subtitle: 'San Francisco, CA · March 2026',
     subtitleZh: '加州舊金山 · 2026 年 3 月',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-masterclass-yagp.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-yagp.mp4',
   },
   {
     title: 'Ballet Master Class at ZDP Academy',

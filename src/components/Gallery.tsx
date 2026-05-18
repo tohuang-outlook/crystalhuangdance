@@ -8,6 +8,10 @@ import {
 } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
+const archiveImagePositionClasses: Record<string, string> = {
+  'Ballet Master Class at YAGP': 'object-[center_58%]',
+};
+
 export default function Gallery() {
   const [selectedMediaState, setSelectedMediaState] = useState<{
     collection: 'master' | 'group';
@@ -137,16 +141,18 @@ export default function Gallery() {
               <button
                 key={`${item.title}-${item.subtitle}`}
                 type="button"
-                className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+                className="hover-float-card flex h-full flex-col overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
                 onClick={() => setSelectedMediaState({ collection: 'master', index })}
               >
                 <img
                   src={item.image}
                   alt={t(item.imageAlt, item.imageAltZh)}
-                  className="h-64 w-full object-cover"
+                  className={`h-64 w-full object-cover ${archiveImagePositionClasses[item.title] ?? 'object-center'}`}
                 />
-                <div className="space-y-2 p-5">
-                  <p className="text-2xl text-[var(--text)]">{t(item.title, item.titleZh)}</p>
+                <div className="flex flex-1 flex-col space-y-2 p-5">
+                  <p className="min-h-[5.5rem] text-2xl leading-tight text-[var(--text)]">
+                    {t(item.title, item.titleZh)}
+                  </p>
                   <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
                     {t(item.subtitle, item.subtitleZh)}
                   </p>
@@ -190,16 +196,18 @@ export default function Gallery() {
                 <button
                   key={`${item.title}-${item.subtitle}`}
                   type="button"
-                  className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+                  className="hover-float-card flex h-full flex-col overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
                   onClick={() => setSelectedMediaState({ collection: 'group', index })}
                 >
                   <img
                     src={item.image}
                     alt={t(item.imageAlt, item.imageAltZh)}
-                    className="h-64 w-full object-cover"
+                    className={`h-64 w-full object-cover ${archiveImagePositionClasses[item.title] ?? 'object-center'}`}
                   />
-                  <div className="space-y-2 p-5">
-                    <p className="text-2xl text-[var(--text)]">{t(item.title, item.titleZh)}</p>
+                  <div className="flex flex-1 flex-col space-y-2 p-5">
+                    <p className="min-h-[5.5rem] text-2xl leading-tight text-[var(--text)]">
+                      {t(item.title, item.titleZh)}
+                    </p>
                     <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
                       {t(item.subtitle, item.subtitleZh)}
                     </p>
