@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { danceStyles } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -34,10 +35,27 @@ const imageScaleClasses: Record<string, string> = {
 
 export default function DanceStyles() {
   const { t } = useLanguage();
+  const [activeVideoStyle, setActiveVideoStyle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeVideoStyle) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveVideoStyle(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVideoStyle]);
+
+  const isTapVideoOpen = activeVideoStyle === 'Tap';
 
   return (
-    <section id="styles" className="section-padding section-divider">
-      <div className="container-max space-y-12">
+    <>
+      <section id="styles" className="section-padding section-divider">
+        <div className="container-max space-y-12">
         <div className="max-w-3xl space-y-4">
           <p className="eyebrow">{t('Artistic Range', '藝術範圍')}</p>
           <h2 className="text-4xl sm:text-5xl">{t('Artistic Range', '藝術範圍')}</h2>
@@ -53,7 +71,22 @@ export default function DanceStyles() {
           {danceStyles.map((style) => (
             <article
               key={style.name}
-              className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
+              className={`overflow-hidden border border-[var(--line)] bg-[var(--surface)] ${
+                style.name === 'Tap' ? 'hover-float-card cursor-pointer' : 'hover-float-card'
+              }`}
+              onClick={style.name === 'Tap' ? () => setActiveVideoStyle('Tap') : undefined}
+              onKeyDown={
+                style.name === 'Tap'
+                  ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setActiveVideoStyle('Tap');
+                      }
+                    }
+                  : undefined
+              }
+              role={style.name === 'Tap' ? 'button' : undefined}
+              tabIndex={style.name === 'Tap' ? 0 : undefined}
             >
               {framedStyles.has(style.name) ? (
                 <div className="h-64 border-b border-[var(--line)] bg-[rgba(176,194,216,0.32)] p-3">
@@ -72,6 +105,11 @@ export default function DanceStyles() {
               )}
               <div className="space-y-3 p-5">
                 <h3 className="text-2xl">{style.name}</h3>
+                {style.name === 'Tap' ? (
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
+                    {t('Click to play video', '點擊播放影片')}
+                  </p>
+                ) : null}
                 <p className="text-sm leading-7 text-[var(--text-muted)]">
                   {t(style.description, descriptionsZh[style.name] ?? style.description)}
                 </p>
@@ -79,7 +117,41 @@ export default function DanceStyles() {
             </article>
           ))}
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+
+      {isTapVideoOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,18,16,0.82)] p-4"
+          onClick={() => setActiveVideoStyle(null)}
+        >
+          <div
+            className="w-full max-w-4xl overflow-hidden border border-[rgba(250,247,242,0.2)] bg-[var(--surface)] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+              <div>
+                <p className="eyebrow">{t('Tap Feature', '踢踏舞片段')}</p>
+                <h3 className="text-2xl">{t('Tap Video', '踢踏舞影片')}</h3>
+              </div>
+              <button
+                type="button"
+                className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)] transition-colors duration-300 hover:text-[var(--text)]"
+                onClick={() => setActiveVideoStyle(null)}
+              >
+                {t('Close', '關閉')}
+              </button>
+            </div>
+            <video
+              className="aspect-video w-full bg-black"
+              src="/crystal-tap.mp4"
+              controls
+              autoPlay
+              playsInline
+            />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
