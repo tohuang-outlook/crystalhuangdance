@@ -33,7 +33,7 @@ export default function Hero() {
             {siteConfig.identityStrip.slice(1).map((item) => (
               <span
                 key={item.label}
-                className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]"
+                className="hover-float-soft rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.42)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]"
               >
                 {t(item.label, item.labelZh)}
               </span>
@@ -45,7 +45,7 @@ export default function Hero() {
               <a
                 key={entryPoint.title}
                 href={archiveHrefMap[entryPoint.href] ?? entryPoint.href}
-                className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(184,196,210,0.58)] p-5 transition-colors hover:border-[rgba(36,24,18,0.22)] hover:bg-[rgba(197,208,221,0.78)]"
+                className="hover-float-card rounded-[1.5rem] border border-[var(--line)] bg-[rgba(184,196,210,0.58)] p-5 transition-colors hover:border-[rgba(36,24,18,0.22)] hover:bg-[rgba(197,208,221,0.78)]"
               >
                 <p className="text-lg text-[var(--text)]">{t(entryPoint.title, entryPoint.titleZh)}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
@@ -56,7 +56,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)]">
+        <div className="hover-float-card relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)]">
           <img
             src="/crystal-hero.jpg"
             alt="Crystal Huang cover portrait"

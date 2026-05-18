@@ -75,6 +75,24 @@
   .glow-border {
     box-shadow: 0 24px 60px rgba(255, 154, 86, 0.16);
   }
+
+  .hover-float-soft {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-float-soft:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 18px 42px rgba(68, 102, 136, 0.18);
+  }
+
+  .hover-float-card {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-float-card:hover {
+    transform: translateY(-8px) scale(1.015);
+    box-shadow: 0 22px 50px rgba(68, 102, 136, 0.2);
+  }
 }
 
 @layer utilities {

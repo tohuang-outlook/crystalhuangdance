@@ -61,7 +61,7 @@ export default function DanceStyles() {
             {featuredStyles.map((style) => (
               <article
                 key={style.name}
-                className="overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
+                className="hover-float-card overflow-hidden border border-[var(--line)] bg-[var(--surface)]"
               >
                 <div
                   className={`border-b border-[var(--line)] ${
@@ -94,13 +94,13 @@ export default function DanceStyles() {
             ))}
           </div>
 
-          <div className="border border-[var(--line)] bg-[var(--surface)] p-6">
+          <div className="hover-float-card border border-[var(--line)] bg-[var(--surface)] p-6">
             <p className="eyebrow mb-4">{t('Extended Vocabulary', '延伸語彙')}</p>
             <div className="space-y-5">
               {extendedStyles.map((style) => (
                 <article
                   key={style.name}
-                  className="border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
+                  className="hover-float-soft rounded-[1rem] border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
                 >
                   <h3 className="text-xl">{style.name}</h3>
                   <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">
