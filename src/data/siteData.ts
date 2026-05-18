@@ -154,7 +154,7 @@ export const danceStyles: DanceStyle[] = [
     description:
       'Theatrical performance combining dance, acting, and stagecraft. Performed in Radio City Christmas Spectacular as Clara & Ellie, and trained under Al Blackstone and Eddie Strachan.',
     icon: '🎭',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-musical.jpg',
   },
   {
     name: 'Contemporary Fusion',
