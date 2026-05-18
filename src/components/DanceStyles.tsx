@@ -22,8 +22,8 @@ const descriptionsZh: Record<string, string> = {
 const fullBodyStyles = new Set(['Jazz', 'Lyrical']);
 
 const imageShellClasses: Record<string, string> = {
-  Jazz: 'bg-[#111317]',
-  Lyrical: 'bg-[#0e1014]',
+  Jazz: 'bg-[rgba(183,200,220,0.52)]',
+  Lyrical: 'bg-[rgba(176,194,216,0.5)]',
 };
 
 const imageFrameClasses: Record<string, string> = {
@@ -100,7 +100,7 @@ export default function DanceStyles() {
               {extendedStyles.map((style) => (
                 <article
                   key={style.name}
-                  className="hover-float-soft rounded-[1rem] border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
+                  className="rounded-[1rem] border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
                 >
                   <h3 className="text-xl">{style.name}</h3>
                   <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">
