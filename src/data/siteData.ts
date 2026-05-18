@@ -175,7 +175,7 @@ export const danceStyles: DanceStyle[] = [
     description:
       'Partnering, musical phrasing, and ballroom technique shaped through training with Ashly Costa, Erica Marr, Lacey Schwimmer, Jenna Johnson, Val Chmerkovskiy, Britt Cherry, and Britt Stewart.',
     icon: '🪩',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-ballroom.jpg',
   },
 ];
 
