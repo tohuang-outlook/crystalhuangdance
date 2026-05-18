@@ -147,7 +147,7 @@ export const danceStyles: DanceStyle[] = [
     description:
       'Urban grooves, sharp isolations, and powerful stage presence. Trained with Tricia Miranda, Randi Kemper, Hefa Tuita, and Tabitha & Napoleon D\'umo.',
     icon: '🔥',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-hiphop.jpg',
   },
   {
     name: 'Musical Theatre',

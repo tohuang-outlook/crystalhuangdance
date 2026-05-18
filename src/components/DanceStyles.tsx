@@ -50,7 +50,15 @@ export default function DanceStyles() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeVideoStyle]);
 
-  const isTapVideoOpen = activeVideoStyle === 'Tap';
+  const interactiveStyles = new Set(['Tap', 'Ballroom', 'Hip Hop']);
+  const activeVideoSource =
+    activeVideoStyle === 'Tap'
+      ? '/crystal-tap.mp4'
+      : activeVideoStyle === 'Ballroom'
+        ? '/crystal-ballroom.mp4'
+        : activeVideoStyle === 'Hip Hop'
+          ? '/crystal-hiphop.mp4'
+        : null;
 
   return (
     <>
@@ -72,21 +80,27 @@ export default function DanceStyles() {
             <article
               key={style.name}
               className={`overflow-hidden border border-[var(--line)] bg-[var(--surface)] ${
-                style.name === 'Tap' ? 'hover-float-card cursor-pointer' : 'hover-float-card'
+                interactiveStyles.has(style.name)
+                  ? 'hover-float-card cursor-pointer'
+                  : 'hover-float-card'
               }`}
-              onClick={style.name === 'Tap' ? () => setActiveVideoStyle('Tap') : undefined}
+              onClick={
+                interactiveStyles.has(style.name)
+                  ? () => setActiveVideoStyle(style.name)
+                  : undefined
+              }
               onKeyDown={
-                style.name === 'Tap'
+                interactiveStyles.has(style.name)
                   ? (event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
-                        setActiveVideoStyle('Tap');
+                        setActiveVideoStyle(style.name);
                       }
                     }
                   : undefined
               }
-              role={style.name === 'Tap' ? 'button' : undefined}
-              tabIndex={style.name === 'Tap' ? 0 : undefined}
+              role={interactiveStyles.has(style.name) ? 'button' : undefined}
+              tabIndex={interactiveStyles.has(style.name) ? 0 : undefined}
             >
               {framedStyles.has(style.name) ? (
                 <div className="h-64 border-b border-[var(--line)] bg-[rgba(176,194,216,0.32)] p-3">
@@ -105,7 +119,7 @@ export default function DanceStyles() {
               )}
               <div className="space-y-3 p-5">
                 <h3 className="text-2xl">{style.name}</h3>
-                {style.name === 'Tap' ? (
+                {interactiveStyles.has(style.name) ? (
                   <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
                     {t('Click to play video', '點擊播放影片')}
                   </p>
@@ -120,7 +134,7 @@ export default function DanceStyles() {
         </div>
       </section>
 
-      {isTapVideoOpen ? (
+      {activeVideoSource ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(20,18,16,0.82)] p-4"
           onClick={() => setActiveVideoStyle(null)}
@@ -131,8 +145,12 @@ export default function DanceStyles() {
           >
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
               <div>
-                <p className="eyebrow">{t('Tap Feature', '踢踏舞片段')}</p>
-                <h3 className="text-2xl">{t('Tap Video', '踢踏舞影片')}</h3>
+                <p className="eyebrow">
+                  {t(`${activeVideoStyle} Feature`, `${activeVideoStyle} 片段`)}
+                </p>
+                <h3 className="text-2xl">
+                  {t(`${activeVideoStyle} Video`, `${activeVideoStyle} 影片`)}
+                </h3>
               </div>
               <button
                 type="button"
@@ -144,7 +162,7 @@ export default function DanceStyles() {
             </div>
             <video
               className="aspect-video w-full bg-black"
-              src="/crystal-tap.mp4"
+              src={activeVideoSource}
               controls
               autoPlay
               playsInline
