@@ -18,6 +18,35 @@ export interface GalleryImage {
   caption: string;
 }
 
+export interface ArchiveTimelineEntry {
+  date: string;
+  dateZh: string;
+  title: string;
+  titleZh: string;
+  location: string;
+  locationZh: string;
+}
+
+export interface ArchiveMediaItem {
+  title: string;
+  titleZh: string;
+  subtitle: string;
+  subtitleZh: string;
+  image: string;
+  imageAlt: string;
+  imageAltZh: string;
+  video?: string;
+}
+
+export interface GroupChoreographyEntry {
+  season: string;
+  seasonZh: string;
+  organization: string;
+  organizationZh: string;
+  work: string;
+  workZh: string;
+}
+
 export interface CredentialTag {
   label: string;
   labelZh: string;
@@ -388,5 +417,95 @@ export const galleryImages: GalleryImage[] = [
     src: '/crystal-ballet.jpg',
     alt: 'Crystal Huang ballet studio still',
     caption: 'Classical Study',
+  },
+];
+
+export const masterClassTimeline: ArchiveTimelineEntry[] = [
+  {
+    date: 'April 2026',
+    dateZh: '2026 年 4 月',
+    title: 'Ballet Company at UC Berkeley',
+    titleZh: '加州大學柏克萊分校芭蕾舞團',
+    location: 'Berkeley, CA',
+    locationZh: '加州柏克萊',
+  },
+  {
+    date: 'March 2026',
+    dateZh: '2026 年 3 月',
+    title: 'Ballet Master Class at YAGP',
+    titleZh: 'YAGP 芭蕾大師課',
+    location: 'San Francisco, CA',
+    locationZh: '加州舊金山',
+  },
+  {
+    date: 'Aug. 2025',
+    dateZh: '2025 年 8 月',
+    title: 'Ballet Masterclasses at ZDP Academy',
+    titleZh: 'ZDP Academy 芭蕾大師課',
+    location: 'Boston, MA',
+    locationZh: '麻州波士頓',
+  },
+  {
+    date: 'July 2025',
+    dateZh: '2025 年 7 月',
+    title: 'Contemporary Masterclasses at The Rock Center',
+    titleZh: 'The Rock Center 當代大師課',
+    location: 'Henderson, NV',
+    locationZh: '內華達州亨德森',
+  },
+  {
+    date: 'July 2025',
+    dateZh: '2025 年 7 月',
+    title: "Contemporary Masterclasses at Li's Ballet",
+    titleZh: "Li's Ballet 當代大師課",
+    location: 'Temple City, CA',
+    locationZh: '加州天普市',
+  },
+  {
+    date: 'June 2025',
+    dateZh: '2025 年 6 月',
+    title: 'Jazz Masterclasses at OAEC Academy',
+    titleZh: 'OAEC Academy 爵士大師課',
+    location: 'Houston, TX',
+    locationZh: '德州休士頓',
+  },
+  {
+    date: 'June 2024',
+    dateZh: '2024 年 6 月',
+    title: 'Contemporary Masterclasses at OAEC Academy',
+    titleZh: 'OAEC Academy 當代大師課',
+    location: 'Houston, TX',
+    locationZh: '德州休士頓',
+  },
+];
+
+export const masterClassMoments: ArchiveMediaItem[] = [
+  {
+    title: 'Ballet Company at UC Berkeley',
+    titleZh: '加州大學柏克萊分校芭蕾舞團',
+    subtitle: 'Berkeley, CA · April 2026',
+    subtitleZh: '加州柏克萊 · 2026 年 4 月',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+  },
+];
+
+export const groupChoreographyEntries: GroupChoreographyEntry[] = [
+  {
+    season: '2024/25',
+    seasonZh: '2024/25',
+    organization: 'ABT School',
+    organizationZh: 'ABT School',
+    work: 'Synergy',
+    workZh: 'Synergy',
+  },
+  {
+    season: '2024/25',
+    seasonZh: '2024/25',
+    organization: "Yoko's Dance",
+    organizationZh: "Yoko's Dance",
+    work: 'Yearning Heart',
+    workZh: 'Yearning Heart',
   },
 ];
