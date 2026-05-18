@@ -50,7 +50,7 @@ export default function DanceStyles() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeVideoStyle]);
 
-  const interactiveStyles = new Set(['Tap', 'Ballroom', 'Hip Hop']);
+  const interactiveStyles = new Set(['Tap', 'Ballroom', 'Hip Hop', 'Jazz']);
   const activeVideoSource =
     activeVideoStyle === 'Tap'
       ? '/crystal-tap.mp4'
@@ -58,6 +58,8 @@ export default function DanceStyles() {
         ? '/crystal-ballroom.mp4'
         : activeVideoStyle === 'Hip Hop'
           ? '/crystal-hiphop.mp4'
+          : activeVideoStyle === 'Jazz'
+            ? '/crystal-jazz.mp4'
         : null;
 
   return (
