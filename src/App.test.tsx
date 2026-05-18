@@ -1,15 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import App from './App';
 import { siteConfig } from './data/siteData';
 
 describe('App dossier layout', () => {
   it('renders the dossier-first sections in English by default', () => {
     render(<App />);
+    const masterClassArchive = screen.getByRole('region', {
+      name: /Master Class and Choreographer/i,
+    });
 
     expect(
       screen.getByRole('heading', { name: /Crystal Huang/i, level: 1 })
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { name: /Archive Timeline/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /Artist Profile/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Training Archive/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Artistic Range/i })).toBeInTheDocument();
@@ -22,8 +24,11 @@ describe('App dossier layout', () => {
       screen.getByRole('heading', { name: /Selected Master Class Moments/i })
     ).toBeInTheDocument();
     expect(screen.getByText(/A focused archive of master classes/i)).toBeInTheDocument();
-    expect(screen.getByText(/ABT School/i)).toBeInTheDocument();
-    expect(screen.getByText(/Yearning Heart/i)).toBeInTheDocument();
+    expect(
+      within(masterClassArchive).getByRole('heading', { name: /Archive Timeline/i })
+    ).toBeInTheDocument();
+    expect(within(masterClassArchive).getByText(/ABT School/i)).toBeInTheDocument();
+    expect(within(masterClassArchive).getByText(/Yearning Heart/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Professional Inquiries/i })).toBeInTheDocument();
   });
 
@@ -32,8 +37,10 @@ describe('App dossier layout', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /toggle language/i }));
+    const masterClassArchive = screen.getByRole('region', {
+      name: '大師課與編舞指導',
+    });
 
-    expect(screen.getAllByRole('heading', { name: '完整檔案時間線' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '藝術家簡介' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '訓練檔案' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '藝術範圍' })).toBeInTheDocument();
@@ -41,6 +48,7 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('heading', { name: '大師課與編舞指導' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '群體編舞作品' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '精選大師課片段' })).toBeInTheDocument();
+    expect(within(masterClassArchive).getByRole('heading', { name: '完整檔案時間線' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
   });
 

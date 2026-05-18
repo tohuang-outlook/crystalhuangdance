@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   groupChoreographyEntries,
@@ -10,7 +10,46 @@ import { useLanguage } from '../context/LanguageContext';
 export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { t } = useLanguage();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const selectedItem = selectedIndex !== null ? masterClassMoments[selectedIndex] : null;
+
+  useEffect(() => {
+    if (selectedIndex === null) return;
+
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedIndex(null);
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), video[controls]'
+        );
+
+        if (!focusableElements?.length) {
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex]);
 
   const goNext = () => {
     if (selectedIndex !== null) {
@@ -25,11 +64,15 @@ export default function Gallery() {
   };
 
   return (
-    <section id="gallery" className="section-padding section-divider">
+    <section
+      id="gallery"
+      aria-labelledby="master-class-archive-heading"
+      className="section-padding section-divider"
+    >
       <div className="container-max space-y-14">
         <div className="max-w-3xl space-y-4">
           <p className="eyebrow">{t('Master Class and Choreographer', '大師課與編舞指導')}</p>
-          <h2 className="text-4xl sm:text-5xl">
+          <h2 id="master-class-archive-heading" className="text-4xl sm:text-5xl">
             {t('Master Class and Choreographer', '大師課與編舞指導')}
           </h2>
           <p className="max-w-2xl text-base leading-8 text-[var(--text-muted)]">
@@ -94,6 +137,11 @@ export default function Gallery() {
                   <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
                     {t(item.subtitle, item.subtitleZh)}
                   </p>
+                  {item.video ? (
+                    <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
+                      {t('Click to play video', '點擊播放影片')}
+                    </p>
+                  ) : null}
                 </div>
               </button>
             ))}
@@ -126,13 +174,18 @@ export default function Gallery() {
 
       {selectedItem ? (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(74,55,40,0.88)]"
           onClick={() => setSelectedIndex(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t(selectedItem.title, selectedItem.titleZh)}
         >
           <button
+            ref={closeButtonRef}
             className="absolute right-4 top-4 z-10 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
             onClick={() => setSelectedIndex(null)}
-            aria-label="Close"
+            aria-label={t('Close', '關閉')}
           >
             <X size={32} />
           </button>
@@ -142,7 +195,7 @@ export default function Gallery() {
               event.stopPropagation();
               goPrev();
             }}
-            aria-label="Previous"
+            aria-label={t('Previous', '上一張')}
           >
             <ChevronLeft size={40} />
           </button>
@@ -152,16 +205,37 @@ export default function Gallery() {
               event.stopPropagation();
               goNext();
             }}
-            aria-label="Next"
+            aria-label={t('Next', '下一張')}
           >
             <ChevronRight size={40} />
           </button>
-          <img
-            src={selectedItem.image}
-            alt={t(selectedItem.imageAlt, selectedItem.imageAltZh)}
-            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
-            onClick={(event) => event.stopPropagation()}
-          />
+          {selectedItem.video ? (
+            <div
+              className="w-full max-w-5xl overflow-hidden rounded-lg border border-[rgba(250,247,242,0.16)] bg-[var(--surface)] shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="border-b border-[var(--line)] px-5 py-4">
+                <p className="eyebrow">{t(selectedItem.subtitle, selectedItem.subtitleZh)}</p>
+                <h4 className="text-2xl text-[var(--text)]">
+                  {t(selectedItem.title, selectedItem.titleZh)}
+                </h4>
+              </div>
+              <video
+                className="aspect-video w-full bg-black"
+                src={selectedItem.video}
+                controls
+                autoPlay
+                playsInline
+              />
+            </div>
+          ) : (
+            <img
+              src={selectedItem.image}
+              alt={t(selectedItem.imageAlt, selectedItem.imageAltZh)}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
+              onClick={(event) => event.stopPropagation()}
+            />
+          )}
         </div>
       ) : null}
     </section>

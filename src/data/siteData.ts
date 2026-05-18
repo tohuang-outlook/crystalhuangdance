@@ -129,9 +129,9 @@ export const siteConfig: SiteConfig = {
     {
       title: 'Media',
       titleZh: '影像',
-      description: 'Performance reels and curated stills.',
-      descriptionZh: '精選演出影片與影像。',
-      href: '#media',
+      description: 'Performance reels and artistic range media.',
+      descriptionZh: '精選演出影片與舞作媒體內容。',
+      href: '#styles',
     },
   ],
   email: 'crystalhuangdance@yahoo.com',
