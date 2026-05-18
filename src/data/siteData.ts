@@ -161,14 +161,14 @@ export const danceStyles: DanceStyle[] = [
     description:
       'A blend of contemporary with other movement styles. Mentored by Tessandra Chavez, Chaz Buzan, and Jason Parsons.',
     icon: '🌀',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-contemporary-fusion.jpg',
   },
   {
     name: 'Tap',
     description:
       'Rhythmic footwork and musicality. Trained under Danny Wallace, Jason Janas, Sarah Reich, and Anthony Morigerato.',
     icon: '👞',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-tap.jpg',
   },
   {
     name: 'Ballroom',
