@@ -497,6 +497,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     image: '/crystal-masterclass-rock-center.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-rock-center.mp4',
   },
   {
     title: "Contemporary Master Class at Li's Ballet",
