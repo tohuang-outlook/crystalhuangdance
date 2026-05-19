@@ -20,6 +20,7 @@ export default function Gallery() {
   const { t } = useLanguage();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectedItems =
     selectedMediaState?.collection === 'group' ? groupChoreographyMoments : masterClassMoments;
   const selectedItem =
@@ -61,6 +62,13 @@ export default function Gallery() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedMediaState]);
+
+  useEffect(() => {
+    if (!selectedItem?.video || !videoRef.current) return;
+
+    videoRef.current.volume =
+      selectedItem.title === 'Ballet Master Class at ZDP Academy' ? 0.3 : 1;
+  }, [selectedItem]);
 
   const goNext = () => {
     if (selectedMediaState !== null) {
@@ -282,6 +290,7 @@ export default function Gallery() {
                 </button>
               </div>
               <video
+                ref={videoRef}
                 className="aspect-video w-full bg-black"
                 src={selectedItem.video}
                 controls
