@@ -407,6 +407,14 @@ export const masterClassTimeline: ArchiveTimelineEntry[] = [
     locationZh: '麻州波士頓',
   },
   {
+    date: 'Aug. 2025',
+    dateZh: '2025 年 8 月',
+    title: 'Jazz Master Class at T.O.P Award',
+    titleZh: 'T.O.P Award 爵士大師課',
+    location: 'T.O.P Award',
+    locationZh: 'T.O.P Award',
+  },
+  {
     date: 'July 2025',
     dateZh: '2025 年 7 月',
     title: 'Contemporary Master Class at The Rock Center',
@@ -470,6 +478,16 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
     video: '/crystal-masterclass-zdp.mp4',
+  },
+  {
+    title: 'Jazz Master Class at T.O.P Award',
+    titleZh: 'T.O.P Award 爵士大師課',
+    subtitle: 'T.O.P Award · Aug. 2025',
+    subtitleZh: 'T.O.P Award · 2025 年 8 月',
+    image: '/crystal-masterclass-top.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-top.mp4',
   },
   {
     title: 'Contemporary Master Class at The Rock Center',
