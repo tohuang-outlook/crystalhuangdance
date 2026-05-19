@@ -522,9 +522,10 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     titleZh: 'OAEC Academy 當代大師課',
     subtitle: 'Houston, TX · June 2024',
     subtitleZh: '德州休士頓 · 2024 年 6 月',
-    image: '/crystal-hero.jpg',
+    image: '/crystal-masterclass-oaec-contemporary.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-oaec-contemporary.mp4',
   },
 ];
 
