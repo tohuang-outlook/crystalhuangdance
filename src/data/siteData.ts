@@ -507,6 +507,7 @@ export const masterClassMoments: ArchiveMediaItem[] = [
     image: '/crystal-masterclass-lis-ballet.jpg',
     imageAlt: 'Crystal Huang in a master class or choreographic setting',
     imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    video: '/crystal-masterclass-lis-ballet.mp4',
   },
   {
     title: 'Jazz Master Class at OAEC Academy',
