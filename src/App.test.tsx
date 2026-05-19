@@ -27,8 +27,8 @@ describe('App dossier layout', () => {
     expect(
       within(masterClassArchive).getByRole('heading', { name: /Archive Timeline/i })
     ).toBeInTheDocument();
-    expect(within(masterClassArchive).getByText(/ABT School/i)).toBeInTheDocument();
-    expect(within(masterClassArchive).getByText(/Yearning Heart/i)).toBeInTheDocument();
+    expect(within(masterClassArchive).getAllByText(/ABT School/i).length).toBeGreaterThan(0);
+    expect(within(masterClassArchive).getAllByText(/Yearning Heart/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /Professional Inquiries/i })).toBeInTheDocument();
   });
 

@@ -36,8 +36,10 @@ const videos: Video[] = [
     metaLabelZh: '美國舞蹈大獎賽 · 2023',
     title: 'The Dance Awards 2023 — Teen Best Dancer Winner',
     titleZh: '美國舞蹈大獎賽 2023 — 青少年最佳舞者',
-    description: "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
-    descriptionZh: '「Grasping Intentions」——讓 Crystal 奪得 2023 年美國舞蹈大獎賽青少年女子最佳舞者的獨舞。',
+    description:
+      "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
+    descriptionZh:
+      '「Grasping Intentions」——讓 Crystal 奪得 2023 年美國舞蹈大獎賽青少年女子最佳舞者的獨舞。',
     thumbnail: '/Grasping_intentions.jpg',
   },
   {
@@ -46,8 +48,10 @@ const videos: Video[] = [
     metaLabelZh: 'YAGP 總決賽 · 2023',
     title: 'YAGP 2023 Finals — Junior Women Medalist',
     titleZh: 'YAGP 2023 總決賽 — 少年女子組獎牌得主',
-    description: 'Crystal Huang, age 14, performs variation from La Esmeralda at the YAGP 2023 Finals, where she won the Medal in the Junior Women\'s Age Division.',
-    descriptionZh: 'Crystal 14歲時在 YAGP 2023 總決賽演出《艾斯梅拉達》變奏，榮獲少年女子組獎牌。',
+    description:
+      "Crystal Huang, age 14, performs variation from La Esmeralda at the YAGP 2023 Finals, where she won the Medal in the Junior Women's Age Division.",
+    descriptionZh:
+      'Crystal 14歲時在 YAGP 2023 總決賽演出《艾斯梅拉達》變奏，榮獲少年女子組獎牌。',
     thumbnail: '/crystal-ballet.jpg',
   },
   {
@@ -96,7 +100,8 @@ const videos: Video[] = [
     metaLabelZh: '美國舞蹈大獎賽 · 2019',
     title: 'The Dance Awards 2019 — Mini Female Best Dancer',
     titleZh: '美國舞蹈大獎賽 2019 — 迷你組最佳舞者',
-    description: 'Crystal wins the Mini Female Best Dancer title at The Dance Awards Las Vegas Nationals 2019, at just 10 years old.',
+    description:
+      'Crystal wins the Mini Female Best Dancer title at The Dance Awards Las Vegas Nationals 2019, at just 10 years old.',
     descriptionZh: 'Crystal 僅10歲便在 2019 年拉斯維加斯美國舞蹈大獎賽全國賽奪得迷你組最佳舞者冠軍。',
     thumbnail: '/Crystal_TDA_Mini_BD_Flat_Red.jpg',
   },
@@ -207,29 +212,29 @@ export default function Videos() {
           <div className="space-y-4">
             {supportingVideos.map((video) => (
               <button
-              key={video.id}
-              type="button"
-              className="group flex w-full gap-4 border border-[var(--line)] bg-[var(--surface)] p-4 text-left transition-colors hover:bg-[var(--surface-soft)]"
-              onClick={() => setActiveVideo(video.id)}
-            >
-              <div className="relative h-28 w-40 shrink-0 overflow-hidden">
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(74,55,40,0.24)]">
-                  <Play size={18} className="ml-0.5 fill-[var(--bg)] text-[var(--bg)]" />
+                key={video.id}
+                type="button"
+                className="group flex w-full gap-4 border border-[var(--line)] bg-[var(--surface)] p-4 text-left transition-colors hover:bg-[var(--surface-soft)]"
+                onClick={() => setActiveVideo(video.id)}
+              >
+                <div className="relative h-28 w-40 shrink-0 overflow-hidden">
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-[rgba(74,55,40,0.24)]">
+                    <Play size={18} className="ml-0.5 fill-[var(--bg)] text-[var(--bg)]" />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg leading-tight text-[var(--text)]">
-                  {t(video.title, video.titleZh)}
-                </h3>
-                <p className="text-sm leading-6 text-[var(--text-muted)]">
-                  {t(video.description, video.descriptionZh)}
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg leading-tight text-[var(--text)]">
+                    {t(video.title, video.titleZh)}
+                  </h3>
+                  <p className="text-sm leading-6 text-[var(--text-muted)]">
+                    {t(video.description, video.descriptionZh)}
+                  </p>
+                </div>
               </button>
             ))}
           </div>
