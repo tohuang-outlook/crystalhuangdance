@@ -531,6 +531,14 @@ export const masterClassMoments: ArchiveMediaItem[] = [
 
 export const groupChoreographyEntries: GroupChoreographyEntry[] = [
   {
+    season: '2025/26',
+    seasonZh: '2025/26',
+    organization: 'SFB School',
+    organizationZh: 'SFB School',
+    work: 'TBD',
+    workZh: 'TBD',
+  },
+  {
     season: '2024/25',
     seasonZh: '2024/25',
     organization: 'ABT School',
@@ -549,6 +557,15 @@ export const groupChoreographyEntries: GroupChoreographyEntry[] = [
 ];
 
 export const groupChoreographyMoments: ArchiveMediaItem[] = [
+  {
+    title: 'SFB School — TBD',
+    titleZh: 'SFB School — TBD',
+    subtitle: '2025/26 Group Choreography',
+    subtitleZh: '2025/26 群體編舞作品',
+    image: '/crystal-hero.jpg',
+    imageAlt: 'Crystal Huang in a group choreography setting',
+    imageAltZh: 'Crystal Huang 在群體編舞作品中的影像',
+  },
   {
     title: 'ABT School — Synergy',
     titleZh: 'ABT School — Synergy',

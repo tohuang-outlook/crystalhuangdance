@@ -199,7 +199,7 @@ export default function Gallery() {
 
           <div className="space-y-4 pt-2">
             <p className="eyebrow">{t('Featured Group Works', '精選群舞作品')}</p>
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               {groupChoreographyMoments.map((item, index) => (
                 <button
                   key={`${item.title}-${item.subtitle}`}
