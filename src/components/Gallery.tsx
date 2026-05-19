@@ -10,6 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 const archiveImagePositionClasses: Record<string, string> = {
   'Ballet Master Class at YAGP': 'object-[center_58%]',
+  'SFB School — TBD': 'object-top',
 };
 
 export default function Gallery() {
