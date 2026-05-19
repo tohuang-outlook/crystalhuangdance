@@ -14,7 +14,7 @@ export default function Hero() {
       <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(255,107,107,0.16),transparent_60%)]" />
       <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
 
-      <div className="container-max relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+      <div className="container-max relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
         <div className="space-y-8">
           <div className="space-y-4">
             <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
@@ -60,8 +60,20 @@ export default function Hero() {
           <img
             src="/crystal-hero.jpg"
             alt="Crystal Huang cover portrait"
-            className="h-[34rem] w-full object-cover object-center"
+            className="h-[34rem] w-full object-cover object-center lg:h-[38rem] lg:hidden"
           />
+          <video
+            className="hidden h-[38rem] w-full object-cover object-center lg:block"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/crystal-hero.jpg"
+            aria-label="Crystal Huang hero performance video"
+          >
+            <source src="/crystal-hero-side.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.22)] via-transparent to-transparent" />
           <div className="absolute inset-x-0 bottom-0 border-t border-[rgba(250,247,242,0.35)] bg-[linear-gradient(180deg,transparent,rgba(250,247,242,0.78))] px-6 py-5">
             <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
