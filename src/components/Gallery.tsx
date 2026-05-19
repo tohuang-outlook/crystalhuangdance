@@ -161,7 +161,7 @@ export default function Gallery() {
                   <p className="min-h-[5.5rem] text-2xl leading-tight text-[var(--text)]">
                     {t(item.title, item.titleZh)}
                   </p>
-                  <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
+                  <p className="text-xs uppercase tracking-[0.22em] text-[var(--text)]">
                     {t(item.subtitle, item.subtitleZh)}
                   </p>
                   {item.video ? (
@@ -216,7 +216,7 @@ export default function Gallery() {
                     <p className="min-h-[5.5rem] text-2xl leading-tight text-[var(--text)]">
                       {t(item.title, item.titleZh)}
                     </p>
-                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--text)]">
                       {t(item.subtitle, item.subtitleZh)}
                     </p>
                     {item.video ? (
