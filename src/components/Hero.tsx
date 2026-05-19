@@ -12,7 +12,7 @@ export default function Hero() {
   return (
     <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
       <video
-        className="absolute inset-0 h-full w-full object-cover object-center lg:hidden"
+        className="absolute inset-0 h-full w-full object-cover object-center"
         autoPlay
         muted
         loop
@@ -23,11 +23,11 @@ export default function Hero() {
       >
         <source src="/crystal-hero-side.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,248,255,0.76)_0%,rgba(235,242,251,0.64)_34%,rgba(214,228,244,0.54)_100%)] lg:hidden" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,248,255,0.78)_0%,rgba(236,242,250,0.66)_34%,rgba(214,228,244,0.56)_100%)]" />
       <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(255,107,107,0.16),transparent_60%)]" />
       <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
 
-      <div className="container-max relative z-10 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+      <div className="container-max relative z-10">
         <div className="space-y-8">
           <div className="space-y-4">
             <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
@@ -68,34 +68,16 @@ export default function Hero() {
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="hover-float-card relative hidden overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] lg:block">
-          <img
-            src="/crystal-hero.jpg"
-            alt="Crystal Huang cover portrait"
-            className="h-[38rem] w-full object-cover object-center"
-          />
-          <video
-            className="absolute inset-0 h-[38rem] w-full object-cover object-center"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster="/crystal-hero.jpg"
-            aria-label="Crystal Huang hero performance video"
-          >
-            <source src="/crystal-hero-side.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.22)] via-transparent to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 border-t border-[rgba(250,247,242,0.35)] bg-[linear-gradient(180deg,transparent,rgba(250,247,242,0.78))] px-6 py-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-              {t('Professional Focus', '專業重點')}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text)]">
-              {t(siteConfig.heroSubtitle, '芭蕾・當代・爵士・抒情・嘻哈・音樂劇')}
-            </p>
-          </div>
+      <div className="container-max relative z-10 mt-8 sm:mt-10">
+        <div className="border-t border-[rgba(250,247,242,0.35)] bg-[linear-gradient(180deg,transparent,rgba(250,247,242,0.78))] px-6 py-5">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+            {t('Professional Focus', '專業重點')}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[var(--text)]">
+            {t(siteConfig.heroSubtitle, '芭蕾・當代・爵士・抒情・嘻哈・音樂劇')}
+          </p>
         </div>
       </div>
     </section>
