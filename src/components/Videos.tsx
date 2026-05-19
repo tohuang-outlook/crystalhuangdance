@@ -4,6 +4,9 @@ import { useLanguage } from '../context/LanguageContext';
 
 interface Video {
   id: string;
+  videoSrc?: string;
+  metaLabel: string;
+  metaLabelZh: string;
   title: string;
   titleZh: string;
   description: string;
@@ -15,6 +18,9 @@ interface Video {
 const videos: Video[] = [
   {
     id: 'e2Z9UXevvIg',
+    videoSrc: '/crystal-prix-de-lausanne.mp4',
+    metaLabel: 'Prix de Lausanne · 2024',
+    metaLabelZh: '洛桑國際芭蕾舞比賽 · 2024',
     title: 'Prix de Lausanne 2024 — Prize Winner Performance',
     titleZh: '2024 洛桑國際芭蕾舞比賽 — 得獎演出',
     description:
@@ -26,6 +32,8 @@ const videos: Video[] = [
   },
   {
     id: 'ckEaotosfqs',
+    metaLabel: 'The Dance Awards · 2023',
+    metaLabelZh: '美國舞蹈大獎賽 · 2023',
     title: 'The Dance Awards 2023 — Teen Best Dancer Winner',
     titleZh: '美國舞蹈大獎賽 2023 — 青少年最佳舞者',
     description: "'Grasping Intentions' — the solo that won Crystal the Teen Female Best Dancer title at The Dance Awards Las Vegas 2023.",
@@ -34,6 +42,8 @@ const videos: Video[] = [
   },
   {
     id: 'LCSPksYxP6U',
+    metaLabel: 'YAGP Finals · 2023',
+    metaLabelZh: 'YAGP 總決賽 · 2023',
     title: 'YAGP 2023 Finals — Junior Women Medalist',
     titleZh: 'YAGP 2023 總決賽 — 少年女子組獎牌得主',
     description: 'Crystal Huang, age 14, performs variation from La Esmeralda at the YAGP 2023 Finals, where she won the Medal in the Junior Women\'s Age Division.',
@@ -42,6 +52,8 @@ const videos: Video[] = [
   },
   {
     id: 'iEl9gdOaqr8',
+    metaLabel: 'YoungArts · 2024',
+    metaLabelZh: 'YoungArts · 2024',
     title: 'YoungArts 2024 — Winner of Distinction in Ballet',
     titleZh: '2024 YoungArts — 芭蕾傑出得獎者',
     description: 'National recognition in ballet from the National YoungArts Foundation 2024.',
@@ -50,6 +62,8 @@ const videos: Video[] = [
   },
   {
     id: 'TyUOTqG2eoY',
+    metaLabel: 'NYCDA Finals · 2023',
+    metaLabelZh: 'NYCDA 總決賽 · 2023',
     title: 'NYCDA 2023 — National Teen Female Outstanding Dancer',
     titleZh: 'NYCDA 2023 — 全國青少年女子傑出舞者',
     description: 'Crystal wins the National Teen Female Outstanding Dancer title at NYCDA NYC Finals 2023.',
@@ -58,6 +72,8 @@ const videos: Video[] = [
   },
   {
     id: 'MQqWEWPIk_4',
+    metaLabel: 'The Dance Awards · 2021',
+    metaLabelZh: '美國舞蹈大獎賽 · 2021',
     title: 'The Dance Awards 2021 — Junior Female Best Dancer',
     titleZh: '美國舞蹈大獎賽 2021 — 少年女子最佳舞者',
     description: 'Crystal wins the Junior Female Best Dancer title at The Dance Awards Las Vegas Nationals 2021.',
@@ -66,6 +82,8 @@ const videos: Video[] = [
   },
   {
     id: 'NAx5malU5Jc',
+    metaLabel: 'Radix · 2021',
+    metaLabelZh: 'Radix · 2021',
     title: 'Radix 2021 — National Junior Female Core Performer',
     titleZh: 'Radix 2021 — 全國青少年女子核心表演者',
     description: 'Crystal wins the National Junior Female Core Performer title at Radix Dance Convention 2021.',
@@ -74,6 +92,8 @@ const videos: Video[] = [
   },
   {
     id: 'y9wIR8E-REQ',
+    metaLabel: 'The Dance Awards · 2019',
+    metaLabelZh: '美國舞蹈大獎賽 · 2019',
     title: 'The Dance Awards 2019 — Mini Female Best Dancer',
     titleZh: '美國舞蹈大獎賽 2019 — 迷你組最佳舞者',
     description: 'Crystal wins the Mini Female Best Dancer title at The Dance Awards Las Vegas Nationals 2019, at just 10 years old.',
@@ -82,6 +102,8 @@ const videos: Video[] = [
   },
   {
     id: 'VP_aWHWiLZ8',
+    metaLabel: 'Radix · 2019',
+    metaLabelZh: 'Radix · 2019',
     title: 'Radix 2019 — National Mini Female Core Performer',
     titleZh: 'Radix 2019 — 全國迷你組核心表演者',
     description: 'Crystal wins the National Mini Female Core Performer title at Radix Dance Convention 2019.',
@@ -112,7 +134,7 @@ export default function Videos() {
 
       if (event.key === 'Tab') {
         const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), iframe'
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), iframe, video[controls]'
         );
 
         if (!focusableElements?.length) {
@@ -235,26 +257,49 @@ export default function Videos() {
           aria-modal="true"
           aria-label={t(activeVideoData.title, activeVideoData.titleZh)}
         >
-          <button
-            ref={closeButtonRef}
-            className="absolute right-4 top-4 z-10 p-2 text-[rgba(250,247,242,0.82)] transition-colors hover:text-[var(--bg)]"
-            onClick={() => setActiveVideo(null)}
-            aria-label={t('Close', '關閉')}
-          >
-            <X size={32} />
-          </button>
-
           <div
-            className="aspect-video w-full max-w-5xl overflow-hidden rounded-xl shadow-2xl"
+            className="w-full max-w-5xl overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <iframe
-              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1&rel=0`}
-              title={t(activeVideoData.title, activeVideoData.titleZh)}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            <div className="flex items-start justify-between gap-6 border-b border-[var(--line)] bg-[var(--surface)] px-5 py-4 sm:px-6">
+              <div className="min-w-0 space-y-1">
+                <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                  {t(activeVideoData.metaLabel, activeVideoData.metaLabelZh)}
+                </p>
+                <h3 className="text-2xl leading-tight text-[var(--text)]">
+                  {t(activeVideoData.title, activeVideoData.titleZh)}
+                </h3>
+              </div>
+              <button
+                ref={closeButtonRef}
+                className="shrink-0 text-sm uppercase tracking-[0.18em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                onClick={() => setActiveVideo(null)}
+                aria-label={t('Close', '關閉')}
+              >
+                {t('Close', '關閉')}
+              </button>
+            </div>
+
+            <div className="aspect-video w-full overflow-hidden bg-black">
+              {activeVideoData.videoSrc ? (
+                <video
+                  src={activeVideoData.videoSrc}
+                  title={t(activeVideoData.title, activeVideoData.titleZh)}
+                  className="h-full w-full bg-black"
+                  controls
+                  autoPlay
+                  playsInline
+                />
+              ) : (
+                <iframe
+                  src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1&rel=0`}
+                  title={t(activeVideoData.title, activeVideoData.titleZh)}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
+            </div>
           </div>
         </div>
       ) : null}
