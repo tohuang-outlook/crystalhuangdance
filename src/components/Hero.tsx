@@ -11,6 +11,19 @@ export default function Hero() {
 
   return (
     <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
+      <video
+        className="absolute inset-0 h-full w-full object-cover object-center lg:hidden"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="/crystal-hero.jpg"
+        aria-label="Crystal Huang hero background video"
+      >
+        <source src="/crystal-hero-side.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,248,255,0.76)_0%,rgba(235,242,251,0.64)_34%,rgba(214,228,244,0.54)_100%)] lg:hidden" />
       <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(255,107,107,0.16),transparent_60%)]" />
       <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
 
@@ -56,14 +69,14 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="hover-float-card relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)]">
+        <div className="hover-float-card relative hidden overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] lg:block">
           <img
             src="/crystal-hero.jpg"
             alt="Crystal Huang cover portrait"
-            className="h-[34rem] w-full object-cover object-center lg:h-[38rem] lg:hidden"
+            className="h-[38rem] w-full object-cover object-center"
           />
           <video
-            className="hidden h-[38rem] w-full object-cover object-center lg:block"
+            className="absolute inset-0 h-[38rem] w-full object-cover object-center"
             autoPlay
             muted
             loop
