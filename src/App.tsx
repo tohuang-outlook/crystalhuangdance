@@ -1,6 +1,7 @@
 import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import PressHighlight from './components/PressHighlight';
 import About from './components/About';
 import DanceStyles from './components/DanceStyles';
 import Achievements from './components/Achievements';
@@ -16,6 +17,7 @@ export default function App() {
         <Navbar />
         <main>
           <Hero />
+          <PressHighlight />
           <Achievements />
           <About />
           <DanceStyles />
