@@ -21,8 +21,8 @@ const videos: Video[] = [
     videoSrc: '/crystal-prix-de-lausanne.mp4',
     metaLabel: 'Prix de Lausanne · 2024',
     metaLabelZh: '洛桑國際芭蕾舞比賽 · 2024',
-    title: 'Prix de Lausanne 2024 — Prize Winner Performance',
-    titleZh: '2024 洛桑國際芭蕾舞比賽 — 得獎演出',
+    title: 'Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner',
+    titleZh: '2024 洛桑國際芭蕾舞比賽當代舞特別獎與得獎者',
     description:
       "Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world's most prestigious ballet competitions.",
     descriptionZh:
