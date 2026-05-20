@@ -42,17 +42,6 @@ export default function Hero() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-[var(--line)] pt-5">
-            {siteConfig.identityStrip.slice(1).map((item) => (
-              <span
-                key={item.label}
-                className="hover-float-soft rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.42)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]"
-              >
-                {t(item.label, item.labelZh)}
-              </span>
-            ))}
-          </div>
-
           <div className="grid gap-4 border-t border-[var(--line)] pt-6 sm:grid-cols-2">
             {siteConfig.archiveEntryPoints.map((entryPoint) => (
               <a
