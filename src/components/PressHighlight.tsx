@@ -34,6 +34,17 @@ const pressHighlights = [
       'The T.O.P. Awards 藝術家頁面將 Crystal 納入其焦點陣容，突顯她作為年輕表演者所獲得的肯定與持續發展。',
     href: 'https://www.thetopawards.com/artists/crystal-huang',
   },
+  {
+    source: 'Pointe Magazine',
+    sourceZh: 'Pointe Magazine',
+    title: 'Daily Routine Feature',
+    titleZh: '日常訓練特輯',
+    description:
+      "Pointe Magazine spotlights Crystal Huang's daily routine, offering a closer look at the structure, discipline, and training rhythm behind her development as a young ballet artist.",
+    descriptionZh:
+      'Pointe Magazine 聚焦 Crystal Huang 的日常訓練節奏，呈現她作為年輕芭蕾舞者在生活、紀律與養成上的細節。',
+    href: 'https://pointemagazine.com/crystal-huang-daily-routine/#gsc.tab=0',
+  },
 ];
 
 export default function PressHighlight() {
@@ -56,7 +67,7 @@ export default function PressHighlight() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
           {pressHighlights.map((item) => (
             <article
               key={item.href}
