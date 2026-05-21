@@ -71,7 +71,7 @@ export default function PressHighlight() {
           {pressHighlights.map((item) => (
             <article
               key={item.href}
-              className="rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8"
+              className="hover-float-card rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8"
             >
               <p className="eyebrow">{t(item.source, item.sourceZh)}</p>
               <h3 className="mt-3 text-3xl leading-tight">{t(item.title, item.titleZh)}</h3>
