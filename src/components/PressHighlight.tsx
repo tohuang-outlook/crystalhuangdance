@@ -49,6 +49,7 @@ const pressHighlights = [
 
 export default function PressHighlight() {
   const { t } = useLanguage();
+  const [featuredHighlight, ...supportingHighlights] = pressHighlights;
 
   return (
     <section id="press" className="section-padding section-divider relative">
@@ -67,27 +68,57 @@ export default function PressHighlight() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
-          {pressHighlights.map((item) => (
-            <article
-              key={item.href}
-              className="hover-float-card rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8"
+        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <article className="hover-float-card rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8 sm:py-8">
+            <p className="eyebrow">{t('Featured Article', '焦點文章')}</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+              {t(featuredHighlight.source, featuredHighlight.sourceZh)}
+            </p>
+            <h3 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
+              {t(featuredHighlight.title, featuredHighlight.titleZh)}
+            </h3>
+            <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
+              {t(featuredHighlight.description, featuredHighlight.descriptionZh)}
+            </p>
+            <a
+              href={featuredHighlight.href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-8 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-5 py-3 text-sm uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
             >
-              <p className="eyebrow">{t(item.source, item.sourceZh)}</p>
-              <h3 className="mt-3 text-3xl leading-tight">{t(item.title, item.titleZh)}</h3>
-              <p className="mt-5 text-base leading-8 text-[var(--text-muted)]">
-                {t(item.description, item.descriptionZh)}
-              </p>
-              <a
-                href={item.href}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-5 py-3 text-sm uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
+              {t('Read the feature', '閱讀專訪')}
+            </a>
+            <div className="mt-8 aspect-[3/2] overflow-hidden rounded-[1.5rem] border border-[var(--line)]">
+              <img
+                src="/crystal-press-prix.jpg"
+                alt="Crystal Huang at Prix de Lausanne"
+                className="h-full w-full object-cover object-center"
+              />
+            </div>
+          </article>
+
+          <div className="grid gap-5">
+            {supportingHighlights.map((item) => (
+              <article
+                key={item.href}
+                className="hover-float-card rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-6"
               >
-                {t('Read the feature', '閱讀專訪')}
-              </a>
-            </article>
-          ))}
+                <p className="eyebrow">{t(item.source, item.sourceZh)}</p>
+                <h3 className="mt-3 text-2xl leading-tight">{t(item.title, item.titleZh)}</h3>
+                <p className="mt-4 text-sm leading-7 text-[var(--text-muted)]">
+                  {t(item.description, item.descriptionZh)}
+                </p>
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
+                >
+                  {t('Read the feature', '閱讀專訪')}
+                </a>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>
