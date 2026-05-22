@@ -28,7 +28,7 @@ export default function Hero() {
       <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
 
       <div className="container-max relative z-10">
-        <div className="space-y-8">
+        <div className="max-w-4xl space-y-8 rounded-[2rem] bg-[linear-gradient(135deg,rgba(247,250,255,0.9),rgba(236,242,250,0.72))] px-5 py-6 shadow-[0_18px_40px_rgba(80,105,134,0.10)] backdrop-blur-[8px] sm:px-8 sm:py-8 lg:bg-[linear-gradient(135deg,rgba(247,250,255,0.86),rgba(236,242,250,0.60))]">
           <div className="space-y-4">
             <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)]">
