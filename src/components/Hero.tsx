@@ -23,12 +23,13 @@ export default function Hero() {
       >
         <source src="/crystal-hero-side.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,248,255,0.78)_0%,rgba(236,242,250,0.66)_34%,rgba(214,228,244,0.56)_100%)]" />
-      <div className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(255,107,107,0.16),transparent_60%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.16))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,249,255,0.72)_0%,rgba(234,241,249,0.60)_36%,rgba(214,228,244,0.54)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(246,249,255,0.62)_0%,rgba(246,249,255,0.50)_28%,rgba(246,249,255,0.18)_56%,rgba(246,249,255,0.08)_100%)]" />
+      <div className="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(255,138,122,0.12),transparent_62%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(180deg,transparent,rgba(247,250,255,0.18))]" />
 
       <div className="container-max relative z-10">
-        <div className="max-w-4xl space-y-8 rounded-[2rem] bg-[linear-gradient(135deg,rgba(247,250,255,0.9),rgba(236,242,250,0.72))] px-5 py-6 shadow-[0_18px_40px_rgba(80,105,134,0.10)] backdrop-blur-[8px] sm:px-8 sm:py-8 lg:bg-[linear-gradient(135deg,rgba(247,250,255,0.86),rgba(236,242,250,0.60))]">
+        <div className="max-w-4xl space-y-8 rounded-[2rem] border border-[rgba(250,247,242,0.52)] bg-[linear-gradient(135deg,rgba(248,251,255,0.84),rgba(240,245,251,0.64))] px-5 py-6 shadow-[0_24px_56px_rgba(78,99,124,0.10)] backdrop-blur-[12px] sm:px-8 sm:py-8 lg:bg-[linear-gradient(135deg,rgba(248,251,255,0.78),rgba(239,244,250,0.52))]">
           <div className="space-y-4">
             <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)]">
@@ -37,7 +38,7 @@ export default function Hero() {
             <h1 className="max-w-3xl text-6xl leading-none sm:text-7xl lg:text-8xl">
               {siteConfig.name}
             </h1>
-            <p className="max-w-2xl text-lg leading-8 text-[var(--text-muted)]">
+            <p className="max-w-2xl text-lg leading-8 text-[rgba(74,55,40,0.82)]">
               {t(siteConfig.coverStatement, siteConfig.coverStatementZh)}
             </p>
           </div>
@@ -47,7 +48,7 @@ export default function Hero() {
               <a
                 key={entryPoint.title}
                 href={archiveHrefMap[entryPoint.href] ?? entryPoint.href}
-                className="hover-float-card rounded-[1.5rem] border border-[var(--line)] bg-[rgba(184,196,210,0.58)] p-5 transition-colors hover:border-[rgba(36,24,18,0.22)] hover:bg-[rgba(197,208,221,0.78)]"
+                className="hover-float-card rounded-[1.5rem] border border-[rgba(120,138,160,0.22)] bg-[rgba(247,250,255,0.52)] p-5 transition-colors hover:border-[rgba(36,24,18,0.22)] hover:bg-[rgba(247,250,255,0.68)]"
               >
                 <p className="text-lg text-[var(--text)]">{t(entryPoint.title, entryPoint.titleZh)}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
@@ -60,7 +61,7 @@ export default function Hero() {
       </div>
 
       <div className="container-max relative z-10 mt-8 sm:mt-10">
-        <div className="border-t border-[rgba(250,247,242,0.35)] bg-[linear-gradient(180deg,transparent,rgba(250,247,242,0.78))] px-6 py-5">
+        <div className="max-w-4xl border-t border-[rgba(250,247,242,0.34)] bg-[linear-gradient(180deg,rgba(250,247,242,0.08),rgba(250,247,242,0.76))] px-6 py-5 backdrop-blur-[3px]">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             {t('Professional Focus', '專業重點')}
           </p>
