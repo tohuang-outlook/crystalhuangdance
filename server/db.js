@@ -30,6 +30,7 @@ export function createDatabase(filename) {
   db.pragma('foreign_keys = ON');
   db.exec(schemaSql);
 
+  ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
   ensureColumn(db, 'users', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'videos', 'original_filename', 'TEXT');
   ensureColumn(db, 'videos', 'duration_seconds', 'INTEGER');
@@ -38,14 +39,21 @@ export function createDatabase(filename) {
 
   const statements = {
     createUser: db.prepare(
-      `INSERT INTO users (email, password_hash)
-       VALUES (@email, @passwordHash)
-       RETURNING id, email`
+      `INSERT INTO users (email, password_hash, role)
+       VALUES (@email, @passwordHash, @role)
+       RETURNING id, email, role`
     ),
     findUserByEmail: db.prepare(
-      'SELECT id, email, password_hash AS passwordHash FROM users WHERE email = ?'
+      'SELECT id, email, role, password_hash AS passwordHash FROM users WHERE email = ?'
     ),
-    findUserById: db.prepare('SELECT id, email FROM users WHERE id = ?'),
+    findUserById: db.prepare('SELECT id, email, role FROM users WHERE id = ?'),
+    setUserRoleByEmail: db.prepare(
+      `UPDATE users
+       SET role = @role,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE email = @email
+       RETURNING id, email, role`
+    ),
     createVideo: db.prepare(
       `INSERT INTO videos (
           user_id,
@@ -99,12 +107,96 @@ export function createDatabase(filename) {
        WHERE user_id = ?
        ORDER BY datetime(created_at) DESC, id DESC`
     ),
+    listUsersWithUploadCounts: db.prepare(
+      `SELECT
+          users.id,
+          users.email,
+          users.role,
+          users.created_at AS createdAt,
+          users.updated_at AS updatedAt,
+          COUNT(videos.id) AS uploadCount
+       FROM users
+       LEFT JOIN videos ON videos.user_id = users.id
+       GROUP BY users.id
+       ORDER BY datetime(users.created_at) DESC, users.id DESC`
+    ),
+    listAllVideosWithUploader: db.prepare(
+      `SELECT
+          videos.id,
+          videos.user_id AS userId,
+          videos.title,
+          videos.source_type AS sourceType,
+          videos.source_url AS sourceUrl,
+          videos.file_path AS filePath,
+          videos.original_filename AS originalFilename,
+          videos.duration_seconds AS durationSeconds,
+          videos.file_size_bytes AS fileSizeBytes,
+          videos.status,
+          videos.created_at AS createdAt,
+          videos.updated_at AS updatedAt,
+          users.id AS uploaderId,
+          users.email AS uploaderEmail,
+          users.role AS uploaderRole
+       FROM videos
+       INNER JOIN users ON users.id = videos.user_id
+       ORDER BY datetime(videos.created_at) DESC, videos.id DESC`
+    ),
+    deleteVideoById: db.prepare(
+      `DELETE FROM videos
+       WHERE id = ?
+       RETURNING
+         id,
+         user_id AS userId,
+         title,
+         source_type AS sourceType,
+         source_url AS sourceUrl,
+         file_path AS filePath,
+         original_filename AS originalFilename,
+         duration_seconds AS durationSeconds,
+         file_size_bytes AS fileSizeBytes,
+         status,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    deleteVideosByUserId: db.prepare(
+      `DELETE FROM videos
+       WHERE user_id = ?
+       RETURNING
+         id,
+         user_id AS userId,
+         title,
+         source_type AS sourceType,
+         source_url AS sourceUrl,
+         file_path AS filePath,
+         original_filename AS originalFilename,
+         duration_seconds AS durationSeconds,
+         file_size_bytes AS fileSizeBytes,
+         status,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    deleteUserById: db.prepare(
+      `DELETE FROM users
+       WHERE id = ?
+       RETURNING id, email, role`
+    ),
   };
+
+  const deleteUserWithVideos = db.transaction((userId) => {
+    const videos = statements.deleteVideosByUserId.all(userId);
+    const user = statements.deleteUserById.get(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return { user, videos };
+  });
 
   return {
     raw: db,
-    createUser({ email, passwordHash }) {
-      return statements.createUser.get({ email, passwordHash });
+    createUser({ email, passwordHash, role = 'user' }) {
+      return statements.createUser.get({ email, passwordHash, role });
     },
     findUserByEmail(email) {
       return statements.findUserByEmail.get(email) ?? null;
@@ -112,11 +204,29 @@ export function createDatabase(filename) {
     findUserById(id) {
       return statements.findUserById.get(id) ?? null;
     },
+    setUserRoleByEmail(email, role) {
+      return statements.setUserRoleByEmail.get({ email, role }) ?? null;
+    },
     createVideo(video) {
       return statements.createVideo.get(video);
     },
     listVideosByUser(userId) {
       return statements.listVideosByUser.all(userId);
+    },
+    listUsersWithUploadCounts() {
+      return statements.listUsersWithUploadCounts.all().map((user) => ({
+        ...user,
+        uploadCount: Number(user.uploadCount),
+      }));
+    },
+    listAllVideosWithUploader() {
+      return statements.listAllVideosWithUploader.all();
+    },
+    deleteVideoById(videoId) {
+      return statements.deleteVideoById.get(videoId) ?? null;
+    },
+    deleteUserWithVideos(userId) {
+      return deleteUserWithVideos(userId);
     },
     close() {
       db.close();

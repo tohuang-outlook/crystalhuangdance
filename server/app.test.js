@@ -21,6 +21,36 @@ function createTestConfig() {
   };
 }
 
+async function registerUser(agent, email) {
+  const response = await agent.post('/api/auth/register').send({
+    email,
+    password: 'password123',
+  });
+
+  expect(response.status).toBe(201);
+  return response.body.user;
+}
+
+async function loginUser(agent, email) {
+  const response = await agent.post('/api/auth/login').send({
+    email,
+    password: 'password123',
+  });
+
+  expect(response.status).toBe(200);
+  return response.body.user;
+}
+
+function promoteUserToAdmin(db, email) {
+  db.setUserRoleByEmail(email, 'admin');
+}
+
+function writeProcessedVideoFile(config, filename, contents = 'video-bytes') {
+  const filePath = path.join(config.processedVideosDirectory, filename);
+  fs.writeFileSync(filePath, contents);
+  return `${config.publicVideosBasePath}/${filename}`;
+}
+
 describe('auth and video backend foundation', () => {
   let app;
   let db;
@@ -46,6 +76,7 @@ describe('auth and video backend foundation', () => {
     expect(registerResponse.body.user).toEqual({
       id: 1,
       email: 'crystal@example.com',
+      role: 'user',
     });
 
     const meResponse = await agent.get('/api/auth/me');
@@ -55,7 +86,25 @@ describe('auth and video backend foundation', () => {
       user: {
         id: 1,
         email: 'crystal@example.com',
+        role: 'user',
       },
+    });
+
+    const sessionResponse = await agent.get('/api/auth/session');
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body).toEqual({
+      authenticated: true,
+      user: {
+        id: 1,
+        email: 'crystal@example.com',
+        role: 'user',
+      },
+    });
+
+    expect(db.findUserByEmail('crystal@example.com')).toMatchObject({
+      id: 1,
+      email: 'crystal@example.com',
+      role: 'user',
     });
 
     const logoutResponse = await agent.post('/api/auth/logout');
@@ -63,6 +112,19 @@ describe('auth and video backend foundation', () => {
 
     const postLogoutMe = await agent.get('/api/auth/me');
     expect(postLogoutMe.status).toBe(401);
+
+    const loginResponse = await agent.post('/api/auth/login').send({
+      email: 'crystal@example.com',
+      password: 'password123',
+    });
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.body).toEqual({
+      user: {
+        id: 1,
+        email: 'crystal@example.com',
+        role: 'user',
+      },
+    });
   });
 
   it('rejects duplicate registration and invalid login attempts', async () => {
@@ -131,5 +193,164 @@ describe('auth and video backend foundation', () => {
       { name: 'users' },
       { name: 'videos' },
     ]);
+  });
+
+  it('rejects admin routes for non-admin users', async () => {
+    const userAgent = request.agent(app);
+    await registerUser(userAgent, 'member@example.com');
+
+    const usersResponse = await userAgent.get('/api/admin/users');
+    expect(usersResponse.status).toBe(403);
+    expect(usersResponse.body.error).toMatch(/admin/i);
+
+    const videosResponse = await userAgent.get('/api/admin/videos');
+    expect(videosResponse.status).toBe(403);
+    expect(videosResponse.body.error).toMatch(/admin/i);
+  });
+
+  it('lists all users with upload counts and all videos with uploader info for admins', async () => {
+    const adminAgent = request.agent(app);
+    const adminUser = await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const memberAgent = request.agent(app);
+    const memberUser = await registerUser(memberAgent, 'member@example.com');
+
+    db.createVideo({
+      userId: adminUser.id,
+      title: 'Admin upload',
+      sourceType: 'youtube',
+      sourceUrl: 'https://youtu.be/adminclip1',
+      filePath: null,
+      originalFilename: null,
+      durationSeconds: null,
+      fileSizeBytes: null,
+      status: 'ready',
+    });
+    db.createVideo({
+      userId: memberUser.id,
+      title: 'Member upload',
+      sourceType: 'youtube',
+      sourceUrl: 'https://youtu.be/memberclip1',
+      filePath: null,
+      originalFilename: null,
+      durationSeconds: null,
+      fileSizeBytes: null,
+      status: 'ready',
+    });
+
+    const usersResponse = await adminAgent.get('/api/admin/users');
+    expect(usersResponse.status).toBe(200);
+    expect(usersResponse.body.users).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: adminUser.id,
+          email: 'admin@example.com',
+          role: 'admin',
+          uploadCount: 1,
+        }),
+        expect.objectContaining({
+          id: memberUser.id,
+          email: 'member@example.com',
+          role: 'user',
+          uploadCount: 1,
+        }),
+      ])
+    );
+
+    const videosResponse = await adminAgent.get('/api/admin/videos');
+    expect(videosResponse.status).toBe(200);
+    expect(videosResponse.body.videos).toEqual([
+      expect.objectContaining({
+        title: 'Member upload',
+        uploader: {
+          id: memberUser.id,
+          email: 'member@example.com',
+          role: 'user',
+        },
+      }),
+      expect.objectContaining({
+        title: 'Admin upload',
+        uploader: {
+          id: adminUser.id,
+          email: 'admin@example.com',
+          role: 'admin',
+        },
+      }),
+    ]);
+  });
+
+  it('deletes a single video and removes its processed file for admins', async () => {
+    const adminAgent = request.agent(app);
+    const adminUser = await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const storedFilePath = writeProcessedVideoFile(config, 'single-delete.mp4');
+    const video = db.createVideo({
+      userId: adminUser.id,
+      title: 'Delete me',
+      sourceType: 'upload',
+      sourceUrl: null,
+      filePath: storedFilePath,
+      originalFilename: 'single-delete.mov',
+      durationSeconds: 30,
+      fileSizeBytes: 1024,
+      status: 'ready',
+    });
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/videos/${video.id}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ deletedVideoId: video.id });
+    expect(db.listVideosByUser(adminUser.id)).toEqual([]);
+    expect(fs.existsSync(path.join(config.processedVideosDirectory, 'single-delete.mp4'))).toBe(false);
+  });
+
+  it('deletes a user, cascades their videos, and removes uploaded files for admins', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const memberAgent = request.agent(app);
+    const memberUser = await registerUser(memberAgent, 'member@example.com');
+
+    const firstFilePath = writeProcessedVideoFile(config, 'cascade-one.mp4', 'one');
+    const secondFilePath = writeProcessedVideoFile(config, 'cascade-two.mp4', 'two');
+
+    db.createVideo({
+      userId: memberUser.id,
+      title: 'Cascade upload one',
+      sourceType: 'upload',
+      sourceUrl: null,
+      filePath: firstFilePath,
+      originalFilename: 'cascade-one.mov',
+      durationSeconds: 20,
+      fileSizeBytes: 512,
+      status: 'ready',
+    });
+    db.createVideo({
+      userId: memberUser.id,
+      title: 'Cascade upload two',
+      sourceType: 'upload',
+      sourceUrl: null,
+      filePath: secondFilePath,
+      originalFilename: 'cascade-two.mov',
+      durationSeconds: 25,
+      fileSizeBytes: 1024,
+      status: 'ready',
+    });
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/users/${memberUser.id}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({
+      deletedUserId: memberUser.id,
+      deletedVideoCount: 2,
+    });
+    expect(db.findUserById(memberUser.id)).toBeNull();
+    expect(db.listVideosByUser(memberUser.id)).toEqual([]);
+    expect(fs.existsSync(path.join(config.processedVideosDirectory, 'cascade-one.mp4'))).toBe(false);
+    expect(fs.existsSync(path.join(config.processedVideosDirectory, 'cascade-two.mp4'))).toBe(false);
   });
 });

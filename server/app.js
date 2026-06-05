@@ -21,6 +21,7 @@ function toSafeUser(user) {
   return {
     id: user.id,
     email: user.email,
+    role: user.role,
   };
 }
 
@@ -43,6 +44,18 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function requireAdmin(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (req.session.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access is required.' });
+  }
+
+  next();
+}
+
 function serializeVideo(video) {
   return {
     id: video.id,
@@ -57,6 +70,60 @@ function serializeVideo(video) {
     createdAt: video.createdAt,
     updatedAt: video.updatedAt,
   };
+}
+
+function serializeAdminUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    uploadCount: user.uploadCount,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
+function serializeAdminVideo(video) {
+  return {
+    ...serializeVideo(video),
+    userId: video.userId,
+    uploader: {
+      id: video.uploaderId,
+      email: video.uploaderEmail,
+      role: video.uploaderRole,
+    },
+  };
+}
+
+function parseIdParam(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function resolveStoredVideoFilePath(filePath, config) {
+  if (typeof filePath !== 'string' || !filePath.startsWith(`${config.publicVideosBasePath}/`)) {
+    return null;
+  }
+
+  const relativePath = filePath.slice(config.publicVideosBasePath.length + 1);
+  const rootPath = path.resolve(config.processedVideosDirectory);
+  const absolutePath = path.resolve(config.processedVideosDirectory, relativePath);
+
+  if (absolutePath !== rootPath && !absolutePath.startsWith(`${rootPath}${path.sep}`)) {
+    return null;
+  }
+
+  return absolutePath;
+}
+
+async function removeStoredVideoFile(filePath, config) {
+  const absolutePath = resolveStoredVideoFilePath(filePath, config);
+
+  if (!absolutePath) {
+    return;
+  }
+
+  await fs.rm(absolutePath, { force: true });
 }
 
 function trimOptionalString(value) {
@@ -182,6 +249,57 @@ export function createApp({ db, sessionSecret, config }) {
   app.get('/api/videos', requireAuth, (req, res) => {
     const videos = db.listVideosByUser(req.session.user.id).map(serializeVideo);
     res.json({ videos });
+  });
+
+  app.get('/api/admin/users', requireAdmin, (_req, res) => {
+    const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
+    res.json({ users });
+  });
+
+  app.get('/api/admin/videos', requireAdmin, (_req, res) => {
+    const videos = db.listAllVideosWithUploader().map(serializeAdminVideo);
+    res.json({ videos });
+  });
+
+  app.delete('/api/admin/videos/:videoId', requireAdmin, async (req, res) => {
+    const videoId = parseIdParam(req.params.videoId);
+
+    if (!videoId) {
+      return res.status(400).json({ error: 'A valid video id is required.' });
+    }
+
+    const deletedVideo = db.deleteVideoById(videoId);
+
+    if (!deletedVideo) {
+      return res.status(404).json({ error: 'Video not found.' });
+    }
+
+    await removeStoredVideoFile(deletedVideo.filePath, config).catch(() => {});
+
+    return res.json({ deletedVideoId: deletedVideo.id });
+  });
+
+  app.delete('/api/admin/users/:userId', requireAdmin, async (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'A valid user id is required.' });
+    }
+
+    const deleted = db.deleteUserWithVideos(userId);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    await Promise.all(
+      deleted.videos.map((video) => removeStoredVideoFile(video.filePath, config).catch(() => {}))
+    );
+
+    return res.json({
+      deletedUserId: deleted.user.id,
+      deletedVideoCount: deleted.videos.length,
+    });
   });
 
   app.post('/api/videos/youtube', requireAuth, (req, res) => {
