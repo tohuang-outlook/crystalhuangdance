@@ -15,10 +15,17 @@ const app = createApp({
 });
 
 const server = app.listen(config.port, () => {
-  console.log(`Crystal auth server listening on http://127.0.0.1:${config.port}`);
+  console.log(`Crystal full-stack server listening on port ${config.port}`);
 });
 
 process.on('SIGINT', () => {
+  server.close(() => {
+    db.close();
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
   server.close(() => {
     db.close();
     process.exit(0);

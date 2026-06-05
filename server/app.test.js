@@ -14,6 +14,8 @@ function createTestConfig() {
     uploadTempDirectory: path.join(root, 'tmp'),
     processedVideosDirectory: path.join(root, 'videos'),
     publicVideosBasePath: '/uploads/videos',
+    frontendDistDirectory: path.join(root, 'dist'),
+    trustProxy: false,
     maxVideoDurationSeconds: 300,
     targetVideoSizeBytes: 19 * 1024 * 1024,
     maxAllowedVideoSizeBytes: 20 * 1024 * 1024,
@@ -31,6 +33,13 @@ describe('auth and video backend foundation', () => {
     config = createTestConfig();
     fs.mkdirSync(config.uploadTempDirectory, { recursive: true });
     fs.mkdirSync(config.processedVideosDirectory, { recursive: true });
+    fs.mkdirSync(config.frontendDistDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(config.frontendDistDirectory, 'index.html'),
+      '<!doctype html><html><body><div id="app">Crystal App</div></body></html>'
+    );
+    fs.mkdirSync(path.join(config.frontendDistDirectory, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(config.frontendDistDirectory, 'assets', 'marker.txt'), 'asset-ok');
     app = createApp({ db, sessionSecret: 'test-session-secret', config });
   });
 
@@ -131,5 +140,18 @@ describe('auth and video backend foundation', () => {
       { name: 'users' },
       { name: 'videos' },
     ]);
+  });
+
+  it('serves static frontend assets and SPA routes from the configured dist directory', async () => {
+    const assetResponse = await request(app).get('/assets/marker.txt');
+    expect(assetResponse.status).toBe(200);
+    expect(assetResponse.text).toBe('asset-ok');
+
+    const loginRouteResponse = await request(app).get('/login');
+    expect(loginRouteResponse.status).toBe(200);
+    expect(loginRouteResponse.text).toContain('Crystal App');
+
+    const loginHeadResponse = await request(app).head('/login');
+    expect(loginHeadResponse.status).toBe(200);
   });
 });

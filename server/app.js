@@ -89,6 +89,10 @@ export function createApp({ db, sessionSecret, config }) {
   const app = express();
   const upload = createUploadMiddleware(config);
 
+  if (config.trustProxy) {
+    app.set('trust proxy', 1);
+  }
+
   app.use(express.json());
   app.use(
     session({
@@ -263,6 +267,23 @@ export function createApp({ db, sessionSecret, config }) {
         await fs.rm(file.path, { force: true }).catch(() => {});
       }
     });
+  });
+
+  app.use(express.static(config.frontendDistDirectory));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return next();
+    }
+
+    if (req.path.startsWith('/api/') || req.path === '/api') {
+      return next();
+    }
+
+    if (req.path.startsWith(config.publicVideosBasePath)) {
+      return next();
+    }
+
+    res.sendFile('index.html', { root: config.frontendDistDirectory });
   });
 
   return app;
