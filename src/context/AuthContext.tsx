@@ -17,6 +17,7 @@ import {
 
 interface AuthContextValue {
   error: string | null;
+  isAdmin: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: AuthCredentials) => Promise<void>;
@@ -97,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       error,
+      isAdmin: user?.role === 'admin',
       isAuthenticated: Boolean(user),
       isLoading,
       login,

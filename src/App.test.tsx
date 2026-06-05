@@ -104,4 +104,50 @@ describe('App dossier layout', () => {
       await screen.findByRole('heading', { name: /Sign in to manage uploads and video access/i })
     ).toBeInTheDocument();
   });
+
+  it('redirects non-admin users away from the admin console', async () => {
+    window.history.replaceState({}, '', '/admin');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ user: { id: 7, email: 'viewer@example.com', role: 'user' } }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: /Crystal Huang/i, level: 1 })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /User and video oversight/i })).not.toBeInTheDocument();
+  });
+
+  it('shows an admin navigation link when the authenticated user is an admin', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ user: { id: 1, email: 'admin@example.com', role: 'admin' } }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findAllByRole('link', { name: 'Admin' })).not.toHaveLength(0);
+  });
 });

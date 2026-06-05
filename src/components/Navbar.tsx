@@ -8,7 +8,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { lang, setLang, t } = useLanguage();
-  const { isAuthenticated, isLoading, logout, user } = useAuth();
+  const { isAdmin, isAuthenticated, isLoading, logout, user } = useAuth();
   const location = useLocation();
   const isHome = location.pathname === '/';
 
@@ -24,6 +24,7 @@ export default function Navbar() {
   const privateLinks = [
     { label: 'My Videos', to: '/my-videos' },
     { label: 'Upload', to: '/upload' },
+    ...(isAdmin ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
 
   useEffect(() => {
