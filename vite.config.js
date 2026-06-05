@@ -11,7 +11,10 @@ export default defineConfig({
     globals: true,
   },
   server: {
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      '/api': 'http://127.0.0.1:3001',
+    },
   },
   resolve: {
     alias: {

@@ -3,6 +3,24 @@ import App from './App';
 import { siteConfig } from './data/siteData';
 
 describe('App dossier layout', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+  });
+
   it('renders the dossier-first sections in English by default', () => {
     render(<App />);
     const masterClassArchive = screen.getByRole('region', {
@@ -76,5 +94,14 @@ describe('App dossier layout', () => {
 
     expect(screen.getAllByText('舞作範圍', { exact: true }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
+  });
+
+  it('redirects logged-out visitors from protected routes to login', async () => {
+    window.history.replaceState({}, '', '/upload');
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: /Sign in to manage uploads and video access/i })
+    ).toBeInTheDocument();
   });
 });
