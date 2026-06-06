@@ -77,6 +77,16 @@ export default function LoginPage() {
         </button>
       </form>
       <p className="mt-5 text-sm text-[var(--text-muted)]">
+        Forgot your password?{' '}
+        <Link
+          className="font-medium text-[var(--text)] underline underline-offset-4"
+          to="/forgot-password"
+        >
+          Request a reset link
+        </Link>
+        .
+      </p>
+      <p className="mt-5 text-sm text-[var(--text-muted)]">
         Need an account?{' '}
         <Link className="font-medium text-[var(--text)] underline underline-offset-4" to="/register">
           Register here

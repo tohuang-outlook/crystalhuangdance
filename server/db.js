@@ -36,6 +36,7 @@ export function createDatabase(filename) {
   ensureColumn(db, 'videos', 'duration_seconds', 'INTEGER');
   ensureColumn(db, 'videos', 'file_size_bytes', 'INTEGER');
   ensureColumn(db, 'videos', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
 
   const statements = {
     createUser: db.prepare(
@@ -52,6 +53,13 @@ export function createDatabase(filename) {
        SET role = @role,
            updated_at = CURRENT_TIMESTAMP
        WHERE email = @email
+       RETURNING id, email, role`
+    ),
+    updateUserPasswordHash: db.prepare(
+      `UPDATE users
+       SET password_hash = @passwordHash,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @userId
        RETURNING id, email, role`
     ),
     createVideo: db.prepare(
@@ -180,6 +188,35 @@ export function createDatabase(filename) {
        WHERE id = ?
        RETURNING id, email, role`
     ),
+    insertPasswordResetToken: db.prepare(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES (@userId, @tokenHash, @expiresAt)
+       RETURNING
+         id,
+         user_id AS userId,
+         token_hash AS tokenHash,
+         expires_at AS expiresAt,
+         created_at AS createdAt,
+         used_at AS usedAt`
+    ),
+    findPasswordResetTokenByHash: db.prepare(
+      `SELECT
+         id,
+         user_id AS userId,
+         token_hash AS tokenHash,
+         expires_at AS expiresAt,
+         created_at AS createdAt,
+         used_at AS usedAt
+       FROM password_reset_tokens
+       WHERE token_hash = ?`
+    ),
+    deletePasswordResetTokensByUserId: db.prepare(
+      'DELETE FROM password_reset_tokens WHERE user_id = ?'
+    ),
+    deletePasswordResetTokenById: db.prepare('DELETE FROM password_reset_tokens WHERE id = ?'),
+    deleteExpiredPasswordResetTokens: db.prepare(
+      'DELETE FROM password_reset_tokens WHERE expires_at <= ?'
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -191,6 +228,22 @@ export function createDatabase(filename) {
     }
 
     return { user, videos };
+  });
+
+  const replacePasswordResetToken = db.transaction(({ userId, tokenHash, expiresAt }) => {
+    statements.deletePasswordResetTokensByUserId.run(userId);
+    return statements.insertPasswordResetToken.get({ userId, tokenHash, expiresAt });
+  });
+
+  const resetUserPassword = db.transaction(({ userId, passwordHash }) => {
+    const user = statements.updateUserPasswordHash.get({ userId, passwordHash });
+
+    if (!user) {
+      return null;
+    }
+
+    statements.deletePasswordResetTokensByUserId.run(userId);
+    return user;
   });
 
   return {
@@ -206,6 +259,21 @@ export function createDatabase(filename) {
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
+    },
+    createPasswordResetToken(passwordResetToken) {
+      return replacePasswordResetToken(passwordResetToken);
+    },
+    findPasswordResetTokenByHash(tokenHash) {
+      return statements.findPasswordResetTokenByHash.get(tokenHash) ?? null;
+    },
+    deletePasswordResetTokenById(tokenId) {
+      statements.deletePasswordResetTokenById.run(tokenId);
+    },
+    deleteExpiredPasswordResetTokens(expiresAt) {
+      statements.deleteExpiredPasswordResetTokens.run(expiresAt);
+    },
+    resetUserPassword(resetRequest) {
+      return resetUserPassword(resetRequest);
     },
     createVideo(video) {
       return statements.createVideo.get(video);

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'crypto';
 import express from 'express';
 import session from 'express-session';
 import multer from 'multer';
@@ -8,6 +9,9 @@ import { processUploadedVideo } from './video-processing.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const minimumPasswordLength = 8;
+const forgotPasswordSuccessMessage =
+  'If an account exists for that email, a password reset link has been sent.';
+const invalidResetPasswordTokenMessage = 'This password reset link is invalid or expired.';
 const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{6,}/i;
 const allowedExtensions = new Set(['.mp4', '.mov', '.avi']);
 const allowedMimeTypes = new Set([
@@ -131,6 +135,20 @@ function trimOptionalString(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function hashResetToken(token) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function createPasswordResetToken() {
+  return randomBytes(32).toString('base64url');
+}
+
+function buildResetPasswordUrl(resetPasswordUrlBase, token) {
+  const url = new URL(resetPasswordUrlBase);
+  url.searchParams.set('token', token);
+  return url.toString();
+}
+
 function createUploadMiddleware(config) {
   return multer({
     dest: config.uploadTempDirectory,
@@ -152,7 +170,13 @@ function createUploadMiddleware(config) {
   });
 }
 
-export function createApp({ db, sessionSecret, config }) {
+export function createApp({
+  db,
+  sessionSecret,
+  config,
+  now = () => new Date(),
+  sendPasswordResetEmail = async () => {},
+}) {
   const app = express();
   const upload = createUploadMiddleware(config);
 
@@ -233,6 +257,81 @@ export function createApp({ db, sessionSecret, config }) {
     setSessionUser(req, user);
 
     return res.json({ user: toSafeUser(user) });
+  });
+
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+
+    if (emailPattern.test(email)) {
+      const user = db.findUserByEmail(email);
+
+      if (user) {
+        const issuedAt = now();
+        const expiresAt = new Date(
+          issuedAt.getTime() + config.passwordResetTokenTtlMinutes * 60 * 1000
+        ).toISOString();
+        const token = createPasswordResetToken();
+
+        db.deleteExpiredPasswordResetTokens(issuedAt.toISOString());
+        db.createPasswordResetToken({
+          userId: user.id,
+          tokenHash: hashResetToken(token),
+          expiresAt,
+        });
+
+        try {
+          await sendPasswordResetEmail({
+            email: user.email,
+            resetUrl: buildResetPasswordUrl(config.resetPasswordUrlBase, token),
+            expiresAt,
+            expiresInMinutes: config.passwordResetTokenTtlMinutes,
+          });
+        } catch (error) {
+          console.error('Unable to send password reset email.', error);
+        }
+      }
+    }
+
+    return res.json({ message: forgotPasswordSuccessMessage });
+  });
+
+  app.post('/api/auth/reset-password', async (req, res) => {
+    const token = String(req.body?.token ?? '').trim();
+    const password = String(req.body?.password ?? '');
+
+    if (!token) {
+      return res.status(400).json({ error: 'A reset token is required.' });
+    }
+
+    if (password.length < minimumPasswordLength) {
+      return res.status(400).json({
+        error: `Password must be at least ${minimumPasswordLength} characters.`,
+      });
+    }
+
+    const passwordResetToken = db.findPasswordResetTokenByHash(hashResetToken(token));
+
+    if (!passwordResetToken || passwordResetToken.usedAt) {
+      return res.status(400).json({ error: invalidResetPasswordTokenMessage });
+    }
+
+    if (new Date(passwordResetToken.expiresAt).getTime() <= now().getTime()) {
+      db.deletePasswordResetTokenById(passwordResetToken.id);
+      return res.status(410).json({ error: 'This password reset link has expired.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const updatedUser = db.resetUserPassword({
+      userId: passwordResetToken.userId,
+      passwordHash,
+    });
+
+    if (!updatedUser) {
+      db.deletePasswordResetTokenById(passwordResetToken.id);
+      return res.status(400).json({ error: invalidResetPasswordTokenMessage });
+    }
+
+    return res.json({ message: 'Your password has been reset successfully.' });
   });
 
   app.post('/api/auth/logout', (req, res) => {

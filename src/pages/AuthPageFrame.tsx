@@ -24,8 +24,8 @@ export default function AuthPageFrame({
               {intro}
             </p>
             <div className="mt-8 space-y-4 text-sm leading-6 text-[var(--text-muted)]">
-              <p>Frontend-only shell in place for account access, protected uploads, and session refresh.</p>
-              <p>These screens are ready to connect to live `/api/auth/*` responses once the backend contract is wired.</p>
+              <p>Account access, password recovery, protected uploads, and session refresh all use the shared auth flow.</p>
+              <p>Recovery requests keep confirmation messaging intentionally generic to protect account privacy.</p>
             </div>
           </div>
           <div className="rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_24px_60px_rgba(68,102,136,0.14)] sm:p-8">

@@ -2,6 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import App from './App';
 import { siteConfig } from './data/siteData';
 
+const forgotPasswordSuccessMessage =
+  'If an account exists for this email, a reset link has been sent.';
+
 describe('App dossier layout', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
@@ -149,5 +152,172 @@ describe('App dossier layout', () => {
     render(<App />);
 
     expect(await screen.findAllByRole('link', { name: 'Admin' })).not.toHaveLength(0);
+  });
+
+  it('navigates from login to forgot password', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/login');
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: /request a reset link/i }));
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /Reset your password without contacting support/i,
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('submits forgot password requests with generic success messaging', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/forgot-password');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/forgot-password')) {
+        expect(init?.method).toBe('POST');
+        expect(init?.body).toBe(JSON.stringify({ email: 'dancer@example.com' }));
+
+        return new Response(JSON.stringify({ message: 'Backend message should stay hidden' }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/email/i), 'dancer@example.com');
+    await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    expect(await screen.findByText(forgotPasswordSuccessMessage)).toBeInTheDocument();
+    expect(screen.queryByText(/Backend message should stay hidden/i)).not.toBeInTheDocument();
+  });
+
+  it('validates matching passwords before calling reset password', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/reset-password?token=token-123');
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/^confirm new password$/i), 'new-password-2');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(await screen.findByText(/Passwords must match/i)).toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.some(([input]) =>
+        (typeof input === 'string' ? input : input.toString()).endsWith('/api/auth/reset-password')
+      )
+    ).toBe(false);
+  });
+
+  it('submits a valid reset password token and shows the login handoff', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/reset-password?token=token-123');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/reset-password')) {
+        expect(init?.method).toBe('POST');
+        expect(init?.body).toBe(JSON.stringify({ password: 'new-password-1', token: 'token-123' }));
+
+        return new Response(JSON.stringify({ message: 'Password updated' }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/^confirm new password$/i), 'new-password-1');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(
+      await screen.findByText(/Your password has been updated. You can now sign in with your new password/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /go to sign in/i })).toHaveAttribute('href', '/login');
+  });
+
+  it('shows a clear recovery path when the reset token is invalid or expired', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/reset-password?token=expired-token');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/reset-password')) {
+        return new Response(
+          JSON.stringify({ message: 'This reset link is invalid or expired. Request a new password reset link and try again.' }),
+          {
+            status: 410,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/^confirm new password$/i), 'new-password-1');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(
+      await screen.findByText(/This reset link is invalid or expired. Request a new password reset link and try again/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /request a new link/i })).toHaveAttribute(
+      'href',
+      '/forgot-password'
+    );
   });
 });

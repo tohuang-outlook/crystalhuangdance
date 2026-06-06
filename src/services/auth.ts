@@ -19,6 +19,15 @@ export interface AuthCredentials {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  password: string;
+  token: string;
+}
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -71,4 +80,18 @@ export function registerUser(credentials: AuthCredentials) {
 
 export function logoutUser() {
   return request<void>('/api/auth/logout', { method: 'POST' });
+}
+
+export function requestPasswordReset(payload: ForgotPasswordRequest) {
+  return request<{ message?: string }>('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function resetPassword(payload: ResetPasswordRequest) {
+  return request<{ message?: string }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

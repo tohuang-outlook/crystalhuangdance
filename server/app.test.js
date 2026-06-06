@@ -2,6 +2,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { createHash } from 'crypto';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
@@ -16,6 +17,10 @@ function createTestConfig() {
     publicVideosBasePath: '/uploads/videos',
     frontendDistDirectory: path.join(root, 'dist'),
     trustProxy: false,
+    passwordResetTokenTtlMinutes: 15,
+    resetPasswordUrlBase: 'https://www.crystalhuangdance.org/reset-password',
+    emailFromAddress: 'noreply@crystalhuangdance.org',
+    resendApiKey: 'test-resend-api-key',
     maxVideoDurationSeconds: 300,
     targetVideoSizeBytes: 19 * 1024 * 1024,
     maxAllowedVideoSizeBytes: 20 * 1024 * 1024,
@@ -57,10 +62,14 @@ describe('auth and video backend foundation', () => {
   let app;
   let db;
   let config;
+  let sentResetEmails;
+  let currentTime;
 
   beforeEach(() => {
     db = createDatabase(':memory:');
     config = createTestConfig();
+    sentResetEmails = [];
+    currentTime = new Date('2026-06-06T19:00:00.000Z');
     fs.mkdirSync(config.uploadTempDirectory, { recursive: true });
     fs.mkdirSync(config.processedVideosDirectory, { recursive: true });
     fs.mkdirSync(config.frontendDistDirectory, { recursive: true });
@@ -70,7 +79,15 @@ describe('auth and video backend foundation', () => {
     );
     fs.mkdirSync(path.join(config.frontendDistDirectory, 'assets'), { recursive: true });
     fs.writeFileSync(path.join(config.frontendDistDirectory, 'assets', 'marker.txt'), 'asset-ok');
-    app = createApp({ db, sessionSecret: 'test-session-secret', config });
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
   });
 
   it('registers a user, restores the session, and logs out', async () => {
@@ -195,13 +212,114 @@ describe('auth and video backend foundation', () => {
 
   it('bootstraps users and videos tables', () => {
     const tables = db.raw
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'videos') ORDER BY name")
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('password_reset_tokens', 'users', 'videos') ORDER BY name"
+      )
       .all();
 
     expect(tables).toEqual([
+      { name: 'password_reset_tokens' },
       { name: 'users' },
       { name: 'videos' },
     ]);
+  });
+
+  it('returns a generic response for password reset requests while emailing known users', async () => {
+    const agent = request.agent(app);
+    await registerUser(agent, 'crystal@example.com');
+
+    const existingResponse = await request(app).post('/api/auth/forgot-password').send({
+      email: 'crystal@example.com',
+    });
+
+    expect(existingResponse.status).toBe(200);
+    expect(existingResponse.body).toEqual({
+      message: 'If an account exists for that email, a password reset link has been sent.',
+    });
+    expect(sentResetEmails).toHaveLength(1);
+
+    const sentUrl = new URL(sentResetEmails[0].resetUrl);
+    const token = sentUrl.searchParams.get('token');
+    expect(token).toBeTruthy();
+
+    const storedToken = db.findPasswordResetTokenByHash(
+      createHash('sha256').update(token).digest('hex')
+    );
+    expect(storedToken).toMatchObject({
+      userId: 1,
+      usedAt: null,
+    });
+    expect(new Date(storedToken.expiresAt).getTime()).toBe(
+      currentTime.getTime() + config.passwordResetTokenTtlMinutes * 60 * 1000
+    );
+
+    const unknownResponse = await request(app).post('/api/auth/forgot-password').send({
+      email: 'unknown@example.com',
+    });
+
+    expect(unknownResponse.status).toBe(200);
+    expect(unknownResponse.body).toEqual(existingResponse.body);
+    expect(sentResetEmails).toHaveLength(1);
+  });
+
+  it('resets a password with a valid token', async () => {
+    const agent = request.agent(app);
+    await registerUser(agent, 'crystal@example.com');
+
+    await request(app).post('/api/auth/forgot-password').send({
+      email: 'crystal@example.com',
+    });
+
+    const token = new URL(sentResetEmails[0].resetUrl).searchParams.get('token');
+
+    const resetResponse = await request(app).post('/api/auth/reset-password').send({
+      token,
+      password: 'newpassword123',
+    });
+
+    expect(resetResponse.status).toBe(200);
+    expect(resetResponse.body).toEqual({
+      message: 'Your password has been reset successfully.',
+    });
+
+    const oldPasswordLogin = await request(app).post('/api/auth/login').send({
+      email: 'crystal@example.com',
+      password: 'password123',
+    });
+    expect(oldPasswordLogin.status).toBe(401);
+
+    const newPasswordLogin = await request(app).post('/api/auth/login').send({
+      email: 'crystal@example.com',
+      password: 'newpassword123',
+    });
+    expect(newPasswordLogin.status).toBe(200);
+
+    const storedToken = db.findPasswordResetTokenByHash(
+      createHash('sha256').update(token).digest('hex')
+    );
+    expect(storedToken).toBeNull();
+  });
+
+  it('rejects expired password reset tokens', async () => {
+    const agent = request.agent(app);
+    await registerUser(agent, 'crystal@example.com');
+
+    await request(app).post('/api/auth/forgot-password').send({
+      email: 'crystal@example.com',
+    });
+
+    const token = new URL(sentResetEmails[0].resetUrl).searchParams.get('token');
+    currentTime = new Date(currentTime.getTime() + 16 * 60 * 1000);
+
+    const resetResponse = await request(app).post('/api/auth/reset-password').send({
+      token,
+      password: 'newpassword123',
+    });
+
+    expect(resetResponse.status).toBe(410);
+    expect(resetResponse.body).toEqual({
+      error: 'This password reset link has expired.',
+    });
   });
 
   it('rejects admin routes for non-admin users', async () => {
