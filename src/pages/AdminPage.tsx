@@ -52,6 +52,34 @@ export default function AdminPage() {
     [users, videos]
   );
 
+  const adminUsers = useMemo(
+    () => users.filter((user) => user.role === 'admin'),
+    [users]
+  );
+
+  const dancerUsers = useMemo(
+    () => users.filter((user) => user.role !== 'admin'),
+    [users]
+  );
+
+  const videosByUser = useMemo(() => {
+    const grouped = new Map<number, AdminVideoRecord[]>();
+
+    videos.forEach((video) => {
+      const current = grouped.get(video.uploader.id) ?? [];
+      current.push(video);
+      grouped.set(video.uploader.id, current);
+    });
+
+    grouped.forEach((entries) => {
+      entries.sort(
+        (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      );
+    });
+
+    return grouped;
+  }, [videos]);
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -127,6 +155,80 @@ export default function AdminPage() {
     }
   };
 
+  const renderVideoCard = (video: AdminVideoRecord, compact = false) => {
+    const isDeleting = activeDeleteKey === `video-${video.id}`;
+
+    return (
+      <article
+        key={video.id}
+        className="rounded-[1.35rem] border border-[var(--line)] bg-[rgba(255,255,255,0.78)] p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow text-[10px]">
+              {video.sourceType === 'youtube' ? 'YouTube Link' : 'Uploaded File'} ·{' '}
+              {formatDate(video.createdAt)}
+            </p>
+            <h3 className="mt-3 text-3xl text-[var(--text)]">{video.title}</h3>
+            {!compact ? (
+              <p className="mt-3 text-sm text-[var(--text-muted)]">
+                Uploaded by{' '}
+                <span className="font-medium text-[var(--text)]">{video.uploader.email}</span>
+              </p>
+            ) : null}
+          </div>
+          <button
+            className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isDeleting}
+            onClick={() => void handleDeleteVideo(video)}
+            type="button"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete video'}
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <span>Status: {video.status}</span>
+          <span>Duration: {formatDuration(video.durationSeconds)}</span>
+          <span>Size: {formatBytes(video.fileSizeBytes)}</span>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-black/5">
+          {video.sourceType === 'youtube' && video.sourceUrl ? (
+            <div className="p-5">
+              <p className="text-sm leading-6 text-[var(--text-muted)]">
+                External reel link saved to the private archive.
+              </p>
+              <a
+                className="mt-4 inline-flex rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)]"
+                href={video.sourceUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open YouTube
+              </a>
+            </div>
+          ) : video.filePath ? (
+            <video
+              className="block aspect-video w-full bg-black object-contain"
+              controls
+              preload="metadata"
+              src={video.filePath}
+            />
+          ) : (
+            <div className="p-5 text-sm text-[var(--text-muted)]">Processing asset...</div>
+          )}
+        </div>
+
+        {video.originalFilename ? (
+          <p className="mt-4 text-sm text-[var(--text-muted)]">
+            Original file: {video.originalFilename}
+          </p>
+        ) : null}
+      </article>
+    );
+  };
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-7xl">
@@ -174,26 +276,26 @@ export default function AdminPage() {
               <section aria-labelledby="admin-users-heading">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="eyebrow">All Users</p>
+                    <p className="eyebrow">Admin</p>
                     <h2
                       id="admin-users-heading"
                       className="mt-3 text-4xl text-[var(--text)]"
                     >
-                      Registered creators
+                      Administrator
                     </h2>
                   </div>
                   <p className="text-sm text-[var(--text-muted)]">
-                    {users.length} account{users.length === 1 ? '' : 's'}
+                    {adminUsers.length} account{adminUsers.length === 1 ? '' : 's'}
                   </p>
                 </div>
 
-                {users.length === 0 ? (
+                {adminUsers.length === 0 ? (
                   <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
-                    <p className="text-sm text-[var(--text-muted)]">No registered users yet.</p>
+                    <p className="text-sm text-[var(--text-muted)]">No administrator accounts yet.</p>
                   </div>
                 ) : (
                   <div className="mt-6 grid gap-5 lg:grid-cols-2">
-                    {users.map((user) => {
+                    {adminUsers.map((user) => {
                       const isDeleting = activeDeleteKey === `user-${user.id}`;
                       return (
                         <article
@@ -228,98 +330,81 @@ export default function AdminPage() {
                 )}
               </section>
 
-              <section aria-labelledby="admin-videos-heading">
+              <section aria-labelledby="admin-dancers-heading">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="eyebrow">All Videos</p>
+                    <p className="eyebrow">Dancer</p>
                     <h2
-                      id="admin-videos-heading"
+                      id="admin-dancers-heading"
                       className="mt-3 text-4xl text-[var(--text)]"
                     >
-                      Uploaded archives
+                      Registered dancers
                     </h2>
                   </div>
                   <p className="text-sm text-[var(--text-muted)]">
-                    {videos.length} item{videos.length === 1 ? '' : 's'}
+                    {dancerUsers.length} account{dancerUsers.length === 1 ? '' : 's'}
                   </p>
                 </div>
 
-                {videos.length === 0 ? (
+                {dancerUsers.length === 0 ? (
                   <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
-                    <p className="text-sm text-[var(--text-muted)]">No uploaded videos yet.</p>
+                    <p className="text-sm text-[var(--text-muted)]">No registered dancers yet.</p>
                   </div>
                 ) : (
-                  <div className="mt-6 grid gap-6 xl:grid-cols-2">
-                    {videos.map((video) => {
-                      const isDeleting = activeDeleteKey === `video-${video.id}`;
+                  <div className="mt-6 space-y-6">
+                    {dancerUsers.map((user) => {
+                      const userVideos = videosByUser.get(user.id) ?? [];
+                      const isDeleting = activeDeleteKey === `user-${user.id}`;
+
                       return (
                         <article
-                          key={video.id}
-                          className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)]"
+                          key={user.id}
+                          className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
                               <p className="eyebrow text-[10px]">
-                                {video.sourceType === 'youtube' ? 'YouTube Link' : 'Uploaded File'} · {formatDate(video.createdAt)}
+                                Registered user
                               </p>
-                              <h3 className="mt-3 text-3xl text-[var(--text)]">{video.title}</h3>
-                              <p className="mt-3 text-sm text-[var(--text-muted)]">
-                                Uploaded by{' '}
-                                <span className="font-medium text-[var(--text)]">
-                                  {video.uploader.email}
-                                </span>
-                              </p>
+                              <h3 className="mt-3 text-3xl text-[var(--text)]">{user.email}</h3>
                             </div>
                             <button
                               className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={isDeleting}
-                              onClick={() => void handleDeleteVideo(video)}
+                              onClick={() => void handleDeleteUser(user)}
                               type="button"
                             >
-                              {isDeleting ? 'Deleting...' : 'Delete video'}
+                              {isDeleting ? 'Deleting...' : 'Delete user'}
                             </button>
                           </div>
 
                           <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            <span>Status: {video.status}</span>
-                            <span>Duration: {formatDuration(video.durationSeconds)}</span>
-                            <span>Size: {formatBytes(video.fileSizeBytes)}</span>
+                            <span>Role: {user.role}</span>
+                            <span>Uploads: {user.uploadCount}</span>
+                            <span>Joined: {formatDate(user.createdAt)}</span>
                           </div>
 
-                          <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-black/5">
-                            {video.sourceType === 'youtube' && video.sourceUrl ? (
-                              <div className="p-5">
-                                <p className="text-sm leading-6 text-[var(--text-muted)]">
-                                  External reel link saved to the private archive.
-                                </p>
-                                <a
-                                  className="mt-4 inline-flex rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)]"
-                                  href={video.sourceUrl}
-                                  rel="noreferrer"
-                                  target="_blank"
-                                >
-                                  Open YouTube
-                                </a>
+                          <div className="mt-6 border-t border-[var(--line)] pt-6">
+                            <div className="flex items-end justify-between gap-4">
+                              <div>
+                                <p className="eyebrow text-[10px]">Uploaded videos</p>
+                                <h4 className="mt-3 text-2xl text-[var(--text)]">Private archive</h4>
                               </div>
-                            ) : video.filePath ? (
-                              <video
-                                className="block aspect-video w-full bg-black object-contain"
-                                controls
-                                preload="metadata"
-                                src={video.filePath}
-                              />
-                            ) : (
-                              <div className="p-5 text-sm text-[var(--text-muted)]">
-                                Processing asset...
-                              </div>
-                            )}
+                              <p className="text-sm text-[var(--text-muted)]">
+                                {userVideos.length} item{userVideos.length === 1 ? '' : 's'}
+                              </p>
+                            </div>
                           </div>
 
-                          {video.originalFilename ? (
-                            <p className="mt-4 text-sm text-[var(--text-muted)]">
-                              Original file: {video.originalFilename}
-                            </p>
-                          ) : null}
+                          {userVideos.length === 0 ? (
+                            <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                              No uploaded videos for this dancer yet.
+                            </div>
+                          ) : (
+                            <div className="mt-5 grid gap-5 xl:grid-cols-2">
+                              {userVideos.map((video) => renderVideoCard(video, true))}
+                            </div>
+                          )}
                         </article>
                       );
                     })}
