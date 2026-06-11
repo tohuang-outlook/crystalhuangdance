@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { lang, setLang, t } = useLanguage();
   const { isAdmin, isAuthenticated, isLoading, logout, user } = useAuth();
@@ -27,15 +28,29 @@ export default function Navbar() {
     ...(isAdmin ? [{ label: 'Admin', to: '/admin' }] : []),
   ];
 
+  const accountLabel = useMemo(() => {
+    if (!user?.email) {
+      return 'Account';
+    }
+
+    return user.email.split('@')[0].slice(0, 16);
+  }, [user?.email]);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    setIsOpen(false);
+    setIsAccountMenuOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     await logout();
     setIsOpen(false);
+    setIsAccountMenuOpen(false);
   };
 
   return (
@@ -67,23 +82,6 @@ export default function Navbar() {
                 </a>
               ))}
 
-            {isAuthenticated &&
-              privateLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) =>
-                    `text-xs uppercase tracking-[0.2em] transition-colors ${
-                      isActive
-                        ? 'text-[var(--text)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                    }`
-                  }
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-
             <button
               onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
               className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
@@ -97,17 +95,49 @@ export default function Navbar() {
                 Session...
               </span>
             ) : isAuthenticated ? (
-              <>
-                <span className="max-w-[12rem] truncate text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                  {user?.email}
-                </span>
+              <div className="relative">
                 <button
-                  className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
-                  onClick={handleLogout}
+                  type="button"
+                  aria-label="Toggle account menu"
+                  aria-expanded={isAccountMenuOpen}
+                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                  onClick={() => setIsAccountMenuOpen((open) => !open)}
                 >
-                  Sign out
+                  {accountLabel}
                 </button>
-              </>
+                {isAccountMenuOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-72 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(250,247,242,0.96)] p-4 shadow-[0_28px_60px_rgba(74,55,40,0.12)] backdrop-blur-md">
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                      Account
+                    </p>
+                    <p className="mt-2 truncate text-sm text-[var(--text)]">{user?.email}</p>
+                    <div className="mt-4 space-y-2 border-t border-[var(--line)] pt-4">
+                      {privateLinks.map((link) => (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          className={({ isActive }) =>
+                            `block rounded-xl px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
+                              isActive
+                                ? 'bg-white/70 text-[var(--text)]'
+                                : 'text-[var(--text-muted)] hover:bg-white/60 hover:text-[var(--text)]'
+                            }`
+                          }
+                          onClick={() => setIsAccountMenuOpen(false)}
+                        >
+                          {link.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                    <button
+                      className="mt-4 w-full rounded-full border border-[var(--line)] px-3 py-2 text-left text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                      onClick={handleLogout}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link

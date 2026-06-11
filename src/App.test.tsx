@@ -134,6 +134,9 @@ describe('App dossier layout', () => {
   });
 
   it('shows an admin navigation link when the authenticated user is an admin', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
 
@@ -150,6 +153,8 @@ describe('App dossier layout', () => {
     });
 
     render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /toggle account menu/i }));
 
     expect(await screen.findAllByRole('link', { name: 'Admin' })).not.toHaveLength(0);
   });
