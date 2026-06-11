@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  createAdminYoutubeVideo,
   deleteAdminUser,
   deleteAdminVideo,
   fetchAdminUsers,
   fetchAdminVideos,
   type AdminUserRecord,
   type AdminVideoRecord,
+  uploadAdminVideoFile,
 } from '../services/admin';
 
 function formatDate(value: string) {
@@ -36,12 +38,37 @@ function formatBytes(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+type AdminUploadMode = 'youtube' | 'upload';
+
+interface DancerUploadDraft {
+  mode: AdminUploadMode;
+  title: string;
+  youtubeUrl: string;
+  file: File | null;
+  isSubmitting: boolean;
+  error: string | null;
+  resetKey: number;
+}
+
+function createDefaultDraft(): DancerUploadDraft {
+  return {
+    mode: 'youtube',
+    title: '',
+    youtubeUrl: '',
+    file: null,
+    isSubmitting: false,
+    error: null,
+    resetKey: 0,
+  };
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [videos, setVideos] = useState<AdminVideoRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
+  const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
 
   const stats = useMemo(
     () => ({
@@ -80,28 +107,56 @@ export default function AdminPage() {
     return grouped;
   }, [videos]);
 
-  useEffect(() => {
-    const load = async () => {
+  const loadDashboard = async ({ keepLoadingState = false }: { keepLoadingState?: boolean } = {}) => {
+    if (keepLoadingState) {
       setIsLoading(true);
-      setError(null);
+    }
 
-      try {
-        const [usersResponse, videosResponse] = await Promise.all([
-          fetchAdminUsers(),
-          fetchAdminVideos(),
-        ]);
+    setError(null);
 
-        setUsers(usersResponse.users);
-        setVideos(videosResponse.videos);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
-      } finally {
+    try {
+      const [usersResponse, videosResponse] = await Promise.all([
+        fetchAdminUsers(),
+        fetchAdminVideos(),
+      ]);
+
+      setUsers(usersResponse.users);
+      setVideos(videosResponse.videos);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
+    } finally {
+      if (keepLoadingState) {
         setIsLoading(false);
       }
-    };
+    }
+  };
 
-    void load();
+  useEffect(() => {
+    void loadDashboard({ keepLoadingState: true });
   }, []);
+
+  const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
+
+  const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
+    setUploadDrafts((current) => ({
+      ...current,
+      [userId]: {
+        ...(current[userId] ?? createDefaultDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const resetDraft = (userId: number, mode?: AdminUploadMode) => {
+    const nextDraft = createDefaultDraft();
+    if (mode) {
+      nextDraft.mode = mode;
+    }
+    setUploadDrafts((current) => ({
+      ...current,
+      [userId]: nextDraft,
+    }));
+  };
 
   const handleDeleteVideo = async (video: AdminVideoRecord) => {
     if (
@@ -153,6 +208,65 @@ export default function AdminPage() {
     } finally {
       setActiveDeleteKey(null);
     }
+  };
+
+  const handleSubmitAssignedYoutube = async (user: AdminUserRecord) => {
+    const draft = getDraft(user.id);
+    updateDraft(user.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      await createAdminYoutubeVideo(user.id, {
+        title: draft.title.trim(),
+        youtubeUrl: draft.youtubeUrl.trim(),
+      });
+
+      await loadDashboard();
+      resetDraft(user.id, 'youtube');
+    } catch (err) {
+      updateDraft(user.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this YouTube link.',
+      });
+      return;
+    }
+
+    updateDraft(user.id, { isSubmitting: false });
+  };
+
+  const handleSubmitAssignedUpload = async (user: AdminUserRecord) => {
+    const draft = getDraft(user.id);
+    updateDraft(user.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      if (!draft.file) {
+        throw new Error('Please choose a video file to upload.');
+      }
+
+      await uploadAdminVideoFile(user.id, {
+        title: draft.title.trim(),
+        file: draft.file,
+      });
+
+      await loadDashboard();
+      setUploadDrafts((current) => ({
+        ...current,
+        [user.id]: {
+          ...createDefaultDraft(),
+          mode: 'upload',
+          resetKey: (current[user.id]?.resetKey ?? 0) + 1,
+        },
+      }));
+    } catch (err) {
+      updateDraft(user.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to upload this video.',
+      });
+      return;
+    }
+
+    updateDraft(user.id, { isSubmitting: false });
   };
 
   const renderVideoCard = (video: AdminVideoRecord, compact = false) => {
@@ -355,6 +469,8 @@ export default function AdminPage() {
                     {dancerUsers.map((user) => {
                       const userVideos = videosByUser.get(user.id) ?? [];
                       const isDeleting = activeDeleteKey === `user-${user.id}`;
+                      const draft = getDraft(user.id);
+                      const isAssigningYoutube = draft.mode === 'youtube';
 
                       return (
                         <article
@@ -382,6 +498,122 @@ export default function AdminPage() {
                             <span>Role: {user.role}</span>
                             <span>Uploads: {user.uploadCount}</span>
                             <span>Joined: {formatDate(user.createdAt)}</span>
+                          </div>
+
+                          <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                            <div className="flex flex-wrap items-end justify-between gap-4">
+                              <div>
+                                <p className="eyebrow text-[10px]">Admin upload</p>
+                                <h4 className="mt-3 text-2xl text-[var(--text)]">
+                                  Assign private archive media
+                                </h4>
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+                                  Upload a YouTube link or compressed video directly into this dancer&apos;s private archive. The dancer will see it the next time they sign in.
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {(['youtube', 'upload'] as const).map((mode) => {
+                                  const isActive = draft.mode === mode;
+                                  return (
+                                    <button
+                                      key={mode}
+                                      className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.18em] transition ${
+                                        isActive
+                                          ? 'border-[var(--text)] bg-[var(--text)] text-white'
+                                          : 'border-[var(--line)] text-[var(--text)] hover:border-[var(--text)]'
+                                      }`}
+                                      onClick={() =>
+                                        updateDraft(user.id, {
+                                          mode,
+                                          error: null,
+                                        })
+                                      }
+                                      type="button"
+                                    >
+                                      {mode === 'youtube' ? 'YouTube link' : 'Upload file'}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Video title</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(event) =>
+                                    updateDraft(user.id, {
+                                      title: event.target.value,
+                                    })
+                                  }
+                                  placeholder="Enter a private archive title"
+                                  type="text"
+                                  value={draft.title}
+                                />
+                              </label>
+
+                              {isAssigningYoutube ? (
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                  <span className="eyebrow text-[10px]">YouTube URL</span>
+                                  <input
+                                    className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                    onChange={(event) =>
+                                      updateDraft(user.id, {
+                                        youtubeUrl: event.target.value,
+                                      })
+                                    }
+                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    type="url"
+                                    value={draft.youtubeUrl}
+                                  />
+                                </label>
+                              ) : (
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                  <span className="eyebrow text-[10px]">Video file</span>
+                                  <input
+                                    key={draft.resetKey}
+                                    accept=".mp4,.mov,.avi,video/mp4,video/quicktime,video/x-msvideo,video/avi"
+                                    className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--text)] file:mr-4 file:rounded-full file:border-0 file:bg-[var(--text)] file:px-4 file:py-2 file:text-xs file:uppercase file:tracking-[0.18em] file:text-white"
+                                    onChange={(event) =>
+                                      updateDraft(user.id, {
+                                        file: event.target.files?.[0] ?? null,
+                                      })
+                                    }
+                                    type="file"
+                                  />
+                                </label>
+                              )}
+
+                              <div className="flex items-end">
+                                <button
+                                  className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={draft.isSubmitting}
+                                  onClick={() =>
+                                    void (
+                                      isAssigningYoutube
+                                        ? handleSubmitAssignedYoutube(user)
+                                        : handleSubmitAssignedUpload(user)
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {draft.isSubmitting
+                                    ? isAssigningYoutube
+                                      ? 'Saving...'
+                                      : 'Uploading...'
+                                    : isAssigningYoutube
+                                      ? 'Save link'
+                                      : 'Upload video'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {draft.error ? (
+                              <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                {draft.error}
+                              </p>
+                            ) : null}
                           </div>
 
                           <div className="mt-6 border-t border-[var(--line)] pt-6">

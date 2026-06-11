@@ -104,6 +104,10 @@ function parseIdParam(value) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+function findHydratedAdminVideo(db, videoId) {
+  return db.listAllVideosWithUploader().find((video) => video.id === videoId) ?? null;
+}
+
 function resolveStoredVideoFilePath(filePath, config) {
   if (typeof filePath !== 'string' || !filePath.startsWith(`${config.publicVideosBasePath}/`)) {
     return null;
@@ -402,6 +406,126 @@ export function createApp({
     return res.json({
       deletedUserId: deleted.user.id,
       deletedVideoCount: deleted.videos.length,
+    });
+  });
+
+  app.post('/api/admin/users/:userId/videos/youtube', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'A valid user id is required.' });
+    }
+
+    const targetUser = db.findUserById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const title = String(req.body?.title ?? '').trim();
+    const youtubeUrl = String(req.body?.youtubeUrl ?? '').trim();
+
+    if (!title) {
+      return res.status(400).json({ error: 'A title is required.' });
+    }
+
+    if (!youtubePattern.test(youtubeUrl)) {
+      return res.status(400).json({ error: 'Please enter a valid YouTube link.' });
+    }
+
+    const video = db.createVideo({
+      userId: targetUser.id,
+      title,
+      sourceType: 'youtube',
+      sourceUrl: youtubeUrl,
+      filePath: null,
+      originalFilename: null,
+      durationSeconds: null,
+      fileSizeBytes: null,
+      status: 'ready',
+    });
+
+    const hydratedVideo = findHydratedAdminVideo(db, video.id);
+
+    return res.status(201).json({
+      video: hydratedVideo ? serializeAdminVideo(hydratedVideo) : { ...serializeVideo(video), userId },
+    });
+  });
+
+  app.post('/api/admin/users/:userId/videos/upload', requireAdmin, (req, res) => {
+    upload.single('video')(req, res, async (uploadError) => {
+      if (uploadError) {
+        const message = uploadError instanceof Error ? uploadError.message : 'Upload failed.';
+        return res.status(400).json({ error: message });
+      }
+
+      const userId = parseIdParam(req.params.userId);
+      const file = req.file;
+
+      if (!userId) {
+        if (file?.path) {
+          await fs.rm(file.path, { force: true }).catch(() => {});
+        }
+        return res.status(400).json({ error: 'A valid user id is required.' });
+      }
+
+      const targetUser = db.findUserById(userId);
+
+      if (!targetUser) {
+        if (file?.path) {
+          await fs.rm(file.path, { force: true }).catch(() => {});
+        }
+        return res.status(404).json({ error: 'User not found.' });
+      }
+
+      const title = String(req.body?.title ?? '').trim();
+
+      if (!title) {
+        if (file?.path) {
+          await fs.rm(file.path, { force: true }).catch(() => {});
+        }
+        return res.status(400).json({ error: 'A title is required.' });
+      }
+
+      if (!file) {
+        return res.status(400).json({ error: 'Please choose a video file to upload.' });
+      }
+
+      try {
+        const processed = await processUploadedVideo({
+          inputPath: file.path,
+          originalFilename: file.originalname,
+          processedVideosDirectory: config.processedVideosDirectory,
+          publicVideosBasePath: config.publicVideosBasePath,
+          maxVideoDurationSeconds: config.maxVideoDurationSeconds,
+          targetVideoSizeBytes: config.targetVideoSizeBytes,
+          maxAllowedVideoSizeBytes: config.maxAllowedVideoSizeBytes,
+        });
+
+        const video = db.createVideo({
+          userId: targetUser.id,
+          title,
+          sourceType: 'upload',
+          sourceUrl: null,
+          filePath: processed.filePath,
+          originalFilename: file.originalname,
+          durationSeconds: processed.durationSeconds,
+          fileSizeBytes: processed.fileSizeBytes,
+          status: 'ready',
+        });
+
+        const hydratedVideo = findHydratedAdminVideo(db, video.id);
+
+        return res.status(201).json({
+          video: hydratedVideo ? serializeAdminVideo(hydratedVideo) : { ...serializeVideo(video), userId },
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to process the uploaded video.';
+        return res.status(400).json({ error: message });
+      } finally {
+        await fs.rm(file.path, { force: true }).catch(() => {});
+      }
     });
   });
 

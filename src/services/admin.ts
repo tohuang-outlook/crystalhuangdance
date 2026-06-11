@@ -35,6 +35,10 @@ interface AdminVideosEnvelope {
   videos: AdminVideoRecord[];
 }
 
+interface AdminVideoEnvelope {
+  video: AdminVideoRecord;
+}
+
 interface ApiErrorPayload {
   error?: string;
   message?: string;
@@ -43,11 +47,12 @@ interface ApiErrorPayload {
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormDataBody = typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const response = await fetch(`${apiBaseUrl}${path}`, {
     credentials: 'include',
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
       ...(init?.headers ?? {}),
     },
   });
@@ -89,5 +94,26 @@ export function deleteAdminUser(userId: number) {
 export function deleteAdminVideo(videoId: number) {
   return request<{ deletedVideoId: number }>(`/api/admin/videos/${videoId}`, {
     method: 'DELETE',
+  });
+}
+
+export function createAdminYoutubeVideo(
+  userId: number,
+  payload: { title: string; youtubeUrl: string }
+) {
+  return request<AdminVideoEnvelope>(`/api/admin/users/${userId}/videos/youtube`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function uploadAdminVideoFile(userId: number, payload: { title: string; file: File }) {
+  const formData = new FormData();
+  formData.append('title', payload.title);
+  formData.append('video', payload.file);
+
+  return request<AdminVideoEnvelope>(`/api/admin/users/${userId}/videos/upload`, {
+    method: 'POST',
+    body: formData,
   });
 }

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -56,6 +57,39 @@ function writeProcessedVideoFile(config, filename, contents = 'video-bytes') {
   const filePath = path.join(config.processedVideosDirectory, filename);
   fs.writeFileSync(filePath, contents);
   return `${config.publicVideosBasePath}/${filename}`;
+}
+
+function createUploadFixture(config, filename = 'fixture.mp4') {
+  const filePath = path.join(config.uploadTempDirectory, filename);
+  execFileSync(
+    'ffmpeg',
+    [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=black:s=320x240:d=1',
+      '-f',
+      'lavfi',
+      '-i',
+      'anullsrc=r=44100:cl=stereo',
+      '-shortest',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'ultrafast',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '64k',
+      filePath,
+    ],
+    { stdio: 'ignore' }
+  );
+
+  return filePath;
 }
 
 describe('auth and video backend foundation', () => {
@@ -479,6 +513,78 @@ describe('auth and video backend foundation', () => {
     expect(db.listVideosByUser(memberUser.id)).toEqual([]);
     expect(fs.existsSync(path.join(config.processedVideosDirectory, 'cascade-one.mp4'))).toBe(false);
     expect(fs.existsSync(path.join(config.processedVideosDirectory, 'cascade-two.mp4'))).toBe(false);
+  });
+
+  it('lets admins create a youtube video for a dancer and exposes it in the dancer archive', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const dancerAgent = request.agent(app);
+    const dancerUser = await registerUser(dancerAgent, 'dancer@example.com');
+
+    const createResponse = await adminAgent
+      .post(`/api/admin/users/${dancerUser.id}/videos/youtube`)
+      .send({
+        title: 'Assigned YAGP reel',
+        youtubeUrl: 'https://www.youtube.com/watch?v=abcd1234xyz',
+      });
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.video).toMatchObject({
+      title: 'Assigned YAGP reel',
+      uploader: {
+        id: dancerUser.id,
+        email: 'dancer@example.com',
+        role: 'user',
+      },
+    });
+
+    const dancerVideosResponse = await dancerAgent.get('/api/videos');
+    expect(dancerVideosResponse.status).toBe(200);
+    expect(dancerVideosResponse.body.videos).toEqual([
+      expect.objectContaining({
+        title: 'Assigned YAGP reel',
+        sourceType: 'youtube',
+      }),
+    ]);
+  });
+
+  it('lets admins upload a file for a dancer and exposes it in the dancer archive', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const dancerAgent = request.agent(app);
+    const dancerUser = await registerUser(dancerAgent, 'dancer@example.com');
+    const uploadFixturePath = createUploadFixture(config, 'assigned-admin-upload.mp4');
+
+    const createResponse = await adminAgent
+      .post(`/api/admin/users/${dancerUser.id}/videos/upload`)
+      .field('title', 'Assigned studio clip')
+      .attach('video', uploadFixturePath);
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.video).toMatchObject({
+      title: 'Assigned studio clip',
+      sourceType: 'upload',
+      uploader: {
+        id: dancerUser.id,
+        email: 'dancer@example.com',
+        role: 'user',
+      },
+    });
+
+    const dancerVideosResponse = await dancerAgent.get('/api/videos');
+    expect(dancerVideosResponse.status).toBe(200);
+    expect(dancerVideosResponse.body.videos).toEqual([
+      expect.objectContaining({
+        title: 'Assigned studio clip',
+        sourceType: 'upload',
+      }),
+    ]);
   });
 
   it('serves static frontend assets and SPA routes from the configured dist directory', async () => {
