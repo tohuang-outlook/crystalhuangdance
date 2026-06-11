@@ -57,7 +57,7 @@ describe('App dossier layout', () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({ user: userEvent.setup() }));
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /toggle language/i }));
+    await user.click(screen.getByRole('button', { name: /switch language/i }));
     const masterClassArchive = screen.getByRole('region', {
       name: '大師課與編舞指導',
     });
@@ -93,7 +93,7 @@ describe('App dossier layout', () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({ user: userEvent.setup() }));
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /toggle language/i }));
+    await user.click(screen.getByRole('button', { name: /switch language/i }));
 
     expect(screen.getAllByText('舞作範圍', { exact: true }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '專業洽詢' })).toBeInTheDocument();
@@ -133,10 +133,7 @@ describe('App dossier layout', () => {
     expect(screen.queryByRole('heading', { name: /User and video oversight/i })).not.toBeInTheDocument();
   });
 
-  it('shows an admin navigation link when the authenticated user is an admin', async () => {
-    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
-      user: userEvent.setup(),
-    }));
+  it('shows direct authenticated navigation links when the user is an admin', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
 
@@ -154,9 +151,11 @@ describe('App dossier layout', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /toggle account menu/i }));
-
-    expect(await screen.findAllByRole('link', { name: 'Admin' })).not.toHaveLength(0);
+    expect(await screen.findByText('admin')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'My Videos' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Upload' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Admin' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
   it('navigates from login to forgot password', async () => {
