@@ -1,11 +1,55 @@
+import { useEffect, useState } from 'react';
+import HoldingsTable from '../components/investment/HoldingsTable';
+import PortfolioSummary from '../components/investment/PortfolioSummary';
+import TransactionTable from '../components/investment/TransactionTable';
 import {
-  investmentHoldings,
-  investmentNotes,
-  investmentReports,
-  investmentSummaryCards,
-} from '../data/investmentDashboardData';
+  fetchMyInvestmentPortfolio,
+  type InvestmentPortfolioResponse,
+} from '../services/investment';
 
 export default function MyInvestmentPage() {
+  const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetchMyInvestmentPortfolio();
+        if (isMounted) {
+          setData(response);
+        }
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = err instanceof Error ? err.message : 'Unable to load your investment dashboard.';
+        if (message.toLowerCase().includes('portfolio not found')) {
+          setData(null);
+          setError(null);
+        } else {
+          setError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-6xl">
@@ -25,97 +69,56 @@ export default function MyInvestmentPage() {
             </button>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {investmentSummaryCards.map((card) => (
-              <article
-                key={card.label}
-                className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  {card.label}
-                </p>
-                <p className="mt-4 text-3xl text-[var(--text)]">{card.value}</p>
-              </article>
-            ))}
-          </div>
+          {error ? (
+            <p className="mt-8 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+              {error}
+            </p>
+          ) : null}
 
-          <div className="mt-10 grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
-            <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
-              <p className="eyebrow">Portfolio Overview</p>
-              <h2 className="mt-4 text-3xl text-[var(--text)]">Current Holdings</h2>
-              <div className="mt-6 overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-y-3 text-left">
-                  <thead>
-                    <tr className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      <th>Asset</th>
-                      <th>Quantity</th>
-                      <th>Invested</th>
-                      <th>Value</th>
-                      <th>P&amp;L</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {investmentHoldings.map((holding) => (
-                      <tr key={holding.symbol} className="rounded-2xl bg-[rgba(238,246,255,0.72)]">
-                        <td className="px-3 py-4">
-                          <div className="font-medium text-[var(--text)]">{holding.symbol}</div>
-                          <div className="text-sm text-[var(--text-muted)]">
-                            {holding.name} · {holding.allocation}
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 text-[var(--text)]">{holding.quantity}</td>
-                        <td className="px-3 py-4 text-[var(--text)]">{holding.invested}</td>
-                        <td className="px-3 py-4 text-[var(--text)]">{holding.value}</td>
-                        <td className="px-3 py-4 text-[var(--text)]">{holding.pnl}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <div className="grid gap-6">
-              <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
-                <p className="eyebrow">Reports</p>
-                <h2 className="mt-4 text-3xl text-[var(--text)]">Monthly Reports</h2>
-                <div className="mt-6 space-y-3">
-                  {investmentReports.map((report) => (
-                    <article
-                      key={report.month}
-                      className="rounded-2xl border border-[var(--line)] bg-[rgba(238,246,255,0.72)] p-4"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-base text-[var(--text)]">{report.month}</p>
-                          <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            {report.status}
-                          </p>
-                        </div>
-                        <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                          {report.actionLabel}
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
-                <p className="eyebrow">Notes</p>
-                <h2 className="mt-4 text-3xl text-[var(--text)]">Investment Notes</h2>
-                <ul className="mt-6 space-y-3 text-[var(--text-muted)]">
-                  {investmentNotes.map((note) => (
-                    <li
-                      key={note}
-                      className="rounded-2xl bg-[rgba(238,246,255,0.72)] px-4 py-3"
-                    >
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+          {isLoading ? (
+            <div className="mt-10 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-14 text-center">
+              <p className="eyebrow">Loading portfolio</p>
+              <h2 className="mt-4 text-3xl text-[var(--text)]">Preparing your investment snapshot</h2>
             </div>
-          </div>
+          ) : !data ? (
+            <div className="mt-10 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-14 text-center">
+              <h2 className="text-3xl text-[var(--text)]">Portfolio not set up yet</h2>
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-[var(--text-muted)]">
+                Your investment dashboard will appear here after an administrator creates your portfolio.
+              </p>
+            </div>
+          ) : (
+            <>
+              <PortfolioSummary summary={data.summary} />
+
+              <div className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
+                <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                  <p className="eyebrow">Portfolio Overview</p>
+                  <h2 className="mt-4 text-3xl text-[var(--text)]">Current Holdings</h2>
+                  <HoldingsTable holdings={data.holdings} />
+                </section>
+
+                <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                  <p className="eyebrow">Account</p>
+                  <h2 className="mt-4 text-3xl text-[var(--text)]">
+                    {data.portfolio.displayName || 'Investor Portfolio'}
+                  </h2>
+                  <div className="mt-6 space-y-3 text-sm text-[var(--text-muted)]">
+                    <p>Base currency: {data.portfolio.baseCurrency}</p>
+                    <p>Holdings: {data.holdings.length}</p>
+                    <p>Transactions: {data.transactions.length}</p>
+                    {data.portfolio.notes ? <p>Notes: {data.portfolio.notes}</p> : null}
+                  </div>
+                </section>
+              </div>
+
+              <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                <p className="eyebrow">Transactions</p>
+                <h2 className="mt-4 text-3xl text-[var(--text)]">Purchase History</h2>
+                <TransactionTable transactions={data.transactions} />
+              </section>
+            </>
+          )}
         </div>
       </div>
     </section>

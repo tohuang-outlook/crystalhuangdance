@@ -256,6 +256,48 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 1,
+              userId: 7,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 5000,
+              portfolioValue: 5400,
+              unrealizedPnL: 400,
+              totalReturnPercent: 8,
+            },
+            holdings: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                quantity: 0.1,
+                invested: 5000,
+                averageCost: 50000,
+                currentPrice: 54000,
+                currentValue: 5400,
+                unrealizedPnL: 400,
+                allocationPercent: 100,
+              },
+            ],
+            transactions: [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
       throw new Error(`Unhandled fetch request in App tests: ${url} (${init?.method ?? 'GET'})`);
     });
 
@@ -266,6 +308,82 @@ describe('App dossier layout', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('heading', { name: /my investment/i })).toBeInTheDocument();
+  });
+
+  it('renders investor holdings from the investment api', async () => {
+    window.history.replaceState({}, '', '/investment');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 11,
+              email: 'jennifer@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/investment/me')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 1,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 5000,
+              portfolioValue: 5400,
+              unrealizedPnL: 400,
+              totalReturnPercent: 8,
+            },
+            holdings: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                quantity: 0.1,
+                invested: 5000,
+                averageCost: 50000,
+                currentPrice: 54000,
+                currentValue: 5400,
+                unrealizedPnL: 400,
+                allocationPercent: 100,
+              },
+            ],
+            transactions: [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('BTC')).toBeInTheDocument();
+    expect(screen.getAllByText('$5,400.00').length).toBeGreaterThan(0);
   });
 
   it('routes dancer users to my videos after login', async () => {
@@ -349,6 +467,36 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 1,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 5000,
+              portfolioValue: 5400,
+              unrealizedPnL: 400,
+              totalReturnPercent: 8,
+            },
+            holdings: [],
+            transactions: [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
       throw new Error(`Unhandled fetch request in App tests: ${url}`);
     });
 
@@ -357,6 +505,324 @@ describe('App dossier layout', () => {
     expect(await screen.findAllByRole('link', { name: 'My Investment' })).not.toHaveLength(0);
     expect(screen.queryByRole('link', { name: 'My Videos' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Upload' })).not.toBeInTheDocument();
+  });
+
+  it('shows investor portfolio management controls for admins', async () => {
+    window.history.replaceState({}, '', '/admin');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio')) {
+        return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /Investor Portfolios/i })).toBeInTheDocument();
+    expect(screen.getByText('jennifer@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create portfolio/i })).toBeInTheDocument();
+  });
+
+  it('lets admins create an investor portfolio and add a buy transaction', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/admin');
+
+    let hasPortfolio = false;
+    let hasTransaction = false;
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio') && init?.method === 'POST') {
+        hasPortfolio = true;
+
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 21,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+          }),
+          {
+            status: 201,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (
+        url.endsWith('/api/admin/investors/11/portfolio/transactions') &&
+        init?.method === 'POST'
+      ) {
+        const payload = JSON.parse(String(init?.body));
+
+        expect(payload).toMatchObject({
+          assetSymbol: 'BTC',
+          assetName: 'Bitcoin',
+          amountInvested: 5000,
+          purchaseDate: '2026-06-01',
+        });
+        expect(payload.purchaseShares).toBeCloseTo(0.1, 6);
+        expect(payload.purchasePrice).toBeCloseTo(50000, 6);
+
+        hasTransaction = true;
+
+        return new Response(
+          JSON.stringify({
+            transaction: {
+              id: 90,
+              portfolioId: 21,
+              assetSymbol: 'BTC',
+              assetName: 'Bitcoin',
+              transactionType: 'buy',
+              amountInvested: 5000,
+              purchasePrice: 50000,
+              purchaseShares: 0.1,
+              purchaseDate: '2026-06-01',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+          }),
+          {
+            status: 201,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio')) {
+        if (!hasPortfolio) {
+          return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 21,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: hasTransaction ? 5000 : 0,
+              portfolioValue: hasTransaction ? 5400 : 0,
+              unrealizedPnL: hasTransaction ? 400 : 0,
+              totalReturnPercent: hasTransaction ? 8 : 0,
+            },
+            holdings: hasTransaction
+              ? [
+                  {
+                    assetSymbol: 'BTC',
+                    assetName: 'Bitcoin',
+                    quantity: 0.1,
+                    invested: 5000,
+                    averageCost: 50000,
+                    currentPrice: 54000,
+                    currentValue: 5400,
+                    unrealizedPnL: 400,
+                    allocationPercent: 100,
+                  },
+                ]
+              : [],
+            transactions: hasTransaction
+              ? [
+                  {
+                    id: 90,
+                    portfolioId: 21,
+                    assetSymbol: 'BTC',
+                    assetName: 'Bitcoin',
+                    transactionType: 'buy',
+                    amountInvested: 5000,
+                    purchasePrice: 50000,
+                    purchaseShares: 0.1,
+                    purchaseDate: '2026-06-01',
+                    notes: null,
+                    createdAt: '2026-06-18T00:00:00.000Z',
+                    updatedAt: '2026-06-18T00:00:00.000Z',
+                  },
+                ]
+              : [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /Create portfolio/i }));
+
+    expect(await screen.findByRole('heading', { name: /Record a purchase/i })).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('BTC'), 'btc');
+    await user.type(screen.getByPlaceholderText('Bitcoin'), 'Bitcoin');
+    await user.type(screen.getByPlaceholderText('5000'), '5000');
+    await user.type(screen.getByPlaceholderText('0.1'), '0.1');
+    await user.type(screen.getByLabelText(/purchase date/i), '2026-06-01');
+    await user.click(screen.getByRole('button', { name: /Add transaction/i }));
+
+    expect(await screen.findByText('Bitcoin · 100.0%')).toBeInTheDocument();
+    expect(screen.getAllByText('$5,400.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('0.10000000').length).toBeGreaterThan(0);
   });
 
   it('renders an invite code field on the registration page with mobile-friendly numeric hints', async () => {

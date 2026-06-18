@@ -39,6 +39,35 @@ export function createDatabase(filename) {
   ensureColumn(db, 'videos', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS investment_portfolios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      base_currency TEXT NOT NULL DEFAULT 'USD',
+      display_name TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS investment_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
+      asset_symbol TEXT NOT NULL,
+      asset_name TEXT NOT NULL,
+      transaction_type TEXT NOT NULL DEFAULT 'buy',
+      amount_invested REAL NOT NULL,
+      purchase_price REAL NOT NULL,
+      purchase_shares REAL NOT NULL,
+      purchase_date TEXT NOT NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   const statements = {
     createUser: db.prepare(
       `INSERT INTO users (email, password_hash, role, member_type)
@@ -50,6 +79,84 @@ export function createDatabase(filename) {
     ),
     findUserById: db.prepare(
       'SELECT id, email, role, member_type AS memberType FROM users WHERE id = ?'
+    ),
+    createInvestmentPortfolio: db.prepare(
+      `INSERT INTO investment_portfolios (user_id, base_currency, display_name, notes)
+       VALUES (@userId, @baseCurrency, @displayName, @notes)
+       RETURNING
+         id,
+         user_id AS userId,
+         base_currency AS baseCurrency,
+         display_name AS displayName,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    findInvestmentPortfolioByUserId: db.prepare(
+      `SELECT
+         id,
+         user_id AS userId,
+         base_currency AS baseCurrency,
+         display_name AS displayName,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_portfolios
+       WHERE user_id = ?`
+    ),
+    createInvestmentTransaction: db.prepare(
+      `INSERT INTO investment_transactions (
+         portfolio_id,
+         asset_symbol,
+         asset_name,
+         transaction_type,
+         amount_invested,
+         purchase_price,
+         purchase_shares,
+         purchase_date,
+         notes
+       ) VALUES (
+         @portfolioId,
+         @assetSymbol,
+         @assetName,
+         @transactionType,
+         @amountInvested,
+         @purchasePrice,
+         @purchaseShares,
+         @purchaseDate,
+         @notes
+       )
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         asset_symbol AS assetSymbol,
+         asset_name AS assetName,
+         transaction_type AS transactionType,
+         amount_invested AS amountInvested,
+         purchase_price AS purchasePrice,
+         purchase_shares AS purchaseShares,
+         purchase_date AS purchaseDate,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    listInvestmentTransactionsByPortfolioId: db.prepare(
+      `SELECT
+         id,
+         portfolio_id AS portfolioId,
+         asset_symbol AS assetSymbol,
+         asset_name AS assetName,
+         transaction_type AS transactionType,
+         amount_invested AS amountInvested,
+         purchase_price AS purchasePrice,
+         purchase_shares AS purchaseShares,
+         purchase_date AS purchaseDate,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_transactions
+       WHERE portfolio_id = ?
+       ORDER BY date(purchase_date) DESC, id DESC`
     ),
     setUserRoleByEmail: db.prepare(
       `UPDATE users
@@ -267,6 +374,48 @@ export function createDatabase(filename) {
     },
     findUserById(id) {
       return statements.findUserById.get(id) ?? null;
+    },
+    createInvestmentPortfolio({
+      userId,
+      displayName = null,
+      baseCurrency = 'USD',
+      notes = null,
+    }) {
+      return statements.createInvestmentPortfolio.get({
+        userId,
+        displayName,
+        baseCurrency,
+        notes,
+      });
+    },
+    findInvestmentPortfolioByUserId(userId) {
+      return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
+    },
+    createInvestmentTransaction({
+      portfolioId,
+      assetSymbol,
+      assetName,
+      transactionType = 'buy',
+      amountInvested,
+      purchasePrice,
+      purchaseShares,
+      purchaseDate,
+      notes = null,
+    }) {
+      return statements.createInvestmentTransaction.get({
+        portfolioId,
+        assetSymbol,
+        assetName,
+        transactionType,
+        amountInvested,
+        purchasePrice,
+        purchaseShares,
+        purchaseDate,
+        notes,
+      });
+    },
+    listInvestmentTransactionsByPortfolioId(portfolioId) {
+      return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
