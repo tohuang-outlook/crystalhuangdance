@@ -326,6 +326,39 @@ describe('App dossier layout', () => {
     expect(await screen.findByRole('heading', { name: /^my videos$/i })).toBeInTheDocument();
   });
 
+  it('shows my investment instead of dancer links for investor users', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 11,
+              email: 'jennifer@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findAllByRole('link', { name: 'My Investment' })).not.toHaveLength(0);
+    expect(screen.queryByRole('link', { name: 'My Videos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Upload' })).not.toBeInTheDocument();
+  });
+
   it('renders an invite code field on the registration page with mobile-friendly numeric hints', async () => {
     window.history.replaceState({}, '', '/register');
     render(<App />);

@@ -2,6 +2,7 @@ export interface AdminUserRecord {
   id: number;
   email: string;
   role: 'user' | 'admin';
+  memberType: 'dancer' | 'investor';
   uploadCount: number;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +38,10 @@ interface AdminVideosEnvelope {
 
 interface AdminVideoEnvelope {
   video: AdminVideoRecord;
+}
+
+interface AdminUserEnvelope {
+  user: AdminUserRecord;
 }
 
 interface ApiErrorPayload {
@@ -94,6 +99,16 @@ export function deleteAdminUser(userId: number) {
 export function deleteAdminVideo(videoId: number) {
   return request<{ deletedVideoId: number }>(`/api/admin/videos/${videoId}`, {
     method: 'DELETE',
+  });
+}
+
+export function updateAdminUserMemberType(
+  userId: number,
+  payload: { memberType: 'dancer' | 'investor' }
+) {
+  return request<AdminUserEnvelope>(`/api/admin/users/${userId}/member-type`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 }
 

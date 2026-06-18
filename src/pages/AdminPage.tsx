@@ -7,6 +7,7 @@ import {
   fetchAdminVideos,
   type AdminUserRecord,
   type AdminVideoRecord,
+  updateAdminUserMemberType,
   uploadAdminVideoFile,
 } from '../services/admin';
 
@@ -68,6 +69,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
+  const [activeMemberTypeUserId, setActiveMemberTypeUserId] = useState<number | null>(null);
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
 
   const stats = useMemo(
@@ -207,6 +209,31 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Unable to delete user.');
     } finally {
       setActiveDeleteKey(null);
+    }
+  };
+
+  const handleMemberTypeChange = async (
+    user: AdminUserRecord,
+    memberType: 'dancer' | 'investor'
+  ) => {
+    if (user.memberType === memberType) {
+      return;
+    }
+
+    setActiveMemberTypeUserId(user.id);
+    setError(null);
+
+    try {
+      const response = await updateAdminUserMemberType(user.id, { memberType });
+      setUsers((current) =>
+        current.map((entry) =>
+          entry.id === user.id ? { ...entry, memberType: response.user.memberType } : entry
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update member type.');
+    } finally {
+      setActiveMemberTypeUserId(null);
     }
   };
 
@@ -469,6 +496,7 @@ export default function AdminPage() {
                     {dancerUsers.map((user) => {
                       const userVideos = videosByUser.get(user.id) ?? [];
                       const isDeleting = activeDeleteKey === `user-${user.id}`;
+                      const isUpdatingMemberType = activeMemberTypeUserId === user.id;
                       const draft = getDraft(user.id);
                       const isAssigningYoutube = draft.mode === 'youtube';
 
@@ -496,9 +524,30 @@ export default function AdminPage() {
 
                           <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                             <span>Role: {user.role}</span>
+                            <span>Member type: {user.memberType}</span>
                             <span>Uploads: {user.uploadCount}</span>
                             <span>Joined: {formatDate(user.createdAt)}</span>
                           </div>
+
+                          <label className="mt-5 block">
+                            <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                              Member type
+                            </span>
+                            <select
+                              className="mt-2 w-full rounded-2xl border border-[var(--line)] bg-white/90 px-4 py-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={isUpdatingMemberType}
+                              onChange={(event) =>
+                                void handleMemberTypeChange(
+                                  user,
+                                  event.target.value as 'dancer' | 'investor'
+                                )
+                              }
+                              value={user.memberType}
+                            >
+                              <option value="dancer">Dancer</option>
+                              <option value="investor">Investor</option>
+                            </select>
+                          </label>
 
                           <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                             <div className="flex flex-wrap items-end justify-between gap-4">

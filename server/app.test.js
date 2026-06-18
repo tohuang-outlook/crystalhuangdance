@@ -630,12 +630,14 @@ describe('auth and video backend foundation', () => {
           id: adminUser.id,
           email: 'admin@example.com',
           role: 'admin',
+          memberType: 'dancer',
           uploadCount: 1,
         }),
         expect.objectContaining({
           id: memberUser.id,
           email: 'member@example.com',
           role: 'user',
+          memberType: 'dancer',
           uploadCount: 1,
         }),
       ])
