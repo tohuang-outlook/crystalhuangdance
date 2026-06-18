@@ -20,7 +20,10 @@ interface AuthContextValue {
   error: string | null;
   isAdmin: boolean;
   isAuthenticated: boolean;
+  isDancer: boolean;
+  isInvestor: boolean;
   isLoading: boolean;
+  getDefaultMemberRoute: () => '/my-videos' | '/investment';
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -101,7 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       isAdmin: user?.role === 'admin',
       isAuthenticated: Boolean(user),
+      isDancer: user?.memberType !== 'investor',
+      isInvestor: user?.memberType === 'investor',
       isLoading,
+      getDefaultMemberRoute: () =>
+        user?.memberType === 'investor' ? '/investment' : '/my-videos',
       login,
       logout,
       refreshUser,

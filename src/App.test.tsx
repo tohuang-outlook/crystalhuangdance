@@ -114,7 +114,26 @@ describe('App dossier layout', () => {
       const url = typeof input === 'string' ? input : input.toString();
 
       if (url.endsWith('/api/auth/me')) {
-        return new Response(JSON.stringify({ user: { id: 7, email: 'viewer@example.com', role: 'user' } }), {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 7,
+              email: 'viewer@example.com',
+              role: 'user',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
@@ -127,9 +146,7 @@ describe('App dossier layout', () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole('heading', { name: /Crystal Huang/i, level: 1 })
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^my videos$/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /User and video oversight/i })).not.toBeInTheDocument();
   });
 
@@ -200,6 +217,113 @@ describe('App dossier layout', () => {
         name: /Reset your password without contacting support/i,
       })
     ).toBeInTheDocument();
+  });
+
+  it('routes investor users to my investment after login', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/login');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/login')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 7,
+              email: 'jennifer@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url} (${init?.method ?? 'GET'})`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/email/i), 'jennifer@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByRole('heading', { name: /my investment/i })).toBeInTheDocument();
+  });
+
+  it('routes dancer users to my videos after login', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/login');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/login')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 8,
+              email: 'dancer@example.com',
+              role: 'user',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url} (${init?.method ?? 'GET'})`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/email/i), 'dancer@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByRole('heading', { name: /^my videos$/i })).toBeInTheDocument();
   });
 
   it('renders an invite code field on the registration page with mobile-friendly numeric hints', async () => {

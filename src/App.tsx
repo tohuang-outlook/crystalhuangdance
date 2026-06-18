@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import MyVideosPage from './pages/MyVideosPage';
+import MyInvestmentPage from './pages/MyInvestmentPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -48,6 +49,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <MyVideosPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/investment"
+                  element={
+                    <ProtectedRoute requireMemberType="investor">
+                      <MyInvestmentPage />
                     </ProtectedRoute>
                   }
                 />
