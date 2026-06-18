@@ -26,6 +26,8 @@ function createTestConfig() {
     targetVideoSizeBytes: 19 * 1024 * 1024,
     maxAllowedVideoSizeBytes: 20 * 1024 * 1024,
     uploadFileSizeLimitBytes: 512 * 1024 * 1024,
+    requireInviteCode: false,
+    inviteCodes: [],
   };
 }
 
@@ -210,6 +212,150 @@ describe('auth and video backend foundation', () => {
 
     expect(loginResponse.status).toBe(401);
     expect(loginResponse.body.error).toMatch(/invalid email or password/i);
+  });
+
+  it('registers without an invite code when enforcement is disabled', async () => {
+    config.requireInviteCode = false;
+    config.inviteCodes = ['123456'];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const response = await request(app).post('/api/auth/register').send({
+      email: 'disabled@example.com',
+      password: 'password123',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.user).toMatchObject({
+      email: 'disabled@example.com',
+      role: 'user',
+    });
+  });
+
+  it('requires a valid six-digit invite code when enforcement is enabled', async () => {
+    config.requireInviteCode = true;
+    config.inviteCodes = ['123456'];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const response = await request(app).post('/api/auth/register').send({
+      email: 'missing-code@example.com',
+      password: 'password123',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: 'A valid six-digit invite code is required.',
+    });
+  });
+
+  it('rejects invite codes that are not six digits when enforcement is enabled', async () => {
+    config.requireInviteCode = true;
+    config.inviteCodes = ['123456'];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const response = await request(app).post('/api/auth/register').send({
+      email: 'bad-format@example.com',
+      password: 'password123',
+      inviteCode: '12ab56',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: 'A valid six-digit invite code is required.',
+    });
+  });
+
+  it('rejects unknown invite codes when enforcement is enabled', async () => {
+    config.requireInviteCode = true;
+    config.inviteCodes = ['123456'];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const response = await request(app).post('/api/auth/register').send({
+      email: 'wrong-code@example.com',
+      password: 'password123',
+      inviteCode: '654321',
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: 'Invite code is invalid.',
+    });
+  });
+
+  it('registers with a known invite code when enforcement is enabled', async () => {
+    config.requireInviteCode = true;
+    config.inviteCodes = ['123456'];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const response = await request(app).post('/api/auth/register').send({
+      email: 'accepted-code@example.com',
+      password: 'password123',
+      inviteCode: '123456',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.user).toMatchObject({
+      email: 'accepted-code@example.com',
+      role: 'user',
+    });
+  });
+
+  it('fails fast when invite code enforcement is enabled without usable invite codes', () => {
+    config.requireInviteCode = true;
+    config.inviteCodes = [];
+
+    expect(() =>
+      createApp({
+        db,
+        sessionSecret: 'test-session-secret',
+        config,
+        now: () => currentTime,
+        sendPasswordResetEmail: async (payload) => {
+          sentResetEmails.push(payload);
+        },
+      })
+    ).toThrow(
+      'Invite code enforcement requires at least one configured six-digit invite code.'
+    );
   });
 
   it('protects video routes and stores youtube links for authenticated users', async () => {

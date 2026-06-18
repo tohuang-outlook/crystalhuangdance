@@ -1,11 +1,29 @@
 import path from 'path';
 
+const inviteCodePattern = /^\d{6}$/;
+
+function parseInviteCodes(value) {
+  return String(value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => inviteCodePattern.test(entry));
+}
+
+function validateInviteCodeConfig(requireInviteCode, inviteCodes) {
+  if (requireInviteCode && inviteCodes.length === 0) {
+    throw new Error(
+      'INVITE_CODES must include at least one valid six-digit code when REQUIRE_INVITE_CODE=true.'
+    );
+  }
+}
+
 export function getServerConfig() {
   const port = Number.parseInt(process.env.PORT ?? '3001', 10);
   const passwordResetTokenTtlMinutes = Number.parseInt(
     process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES ?? '15',
     10
   );
+  const requireInviteCode = process.env.REQUIRE_INVITE_CODE === 'true';
   const explicitDbFile = process.env.SQLITE_DB_PATH
     ? path.resolve(process.env.SQLITE_DB_PATH)
     : null;
@@ -20,6 +38,9 @@ export function getServerConfig() {
   const resetPasswordUrlBase =
     process.env.RESET_PASSWORD_URL_BASE ??
     `${process.env.PUBLIC_APP_ORIGIN ?? 'http://localhost:5173'}/reset-password`;
+  const inviteCodes = parseInviteCodes(process.env.INVITE_CODES);
+
+  validateInviteCodeConfig(requireInviteCode, inviteCodes);
 
   return {
     port: Number.isNaN(port) ? 3001 : port,
@@ -44,5 +65,7 @@ export function getServerConfig() {
     resetPasswordUrlBase,
     resendApiKey: process.env.RESEND_API_KEY ?? null,
     emailFromAddress: process.env.RESET_EMAIL_FROM ?? 'noreply@crystalhuangdance.org',
+    requireInviteCode,
+    inviteCodes,
   };
 }

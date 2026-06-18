@@ -14,20 +14,36 @@ const originalEnv = {
   RESET_EMAIL_FROM: process.env.RESET_EMAIL_FROM,
   TRUST_PROXY: process.env.TRUST_PROXY,
   NODE_ENV: process.env.NODE_ENV,
+  REQUIRE_INVITE_CODE: process.env.REQUIRE_INVITE_CODE,
+  INVITE_CODES: process.env.INVITE_CODES,
 };
 
+function restoreEnvValue(key, value) {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+
+  process.env[key] = value;
+}
+
 afterEach(() => {
-  process.env.DATA_DIRECTORY = originalEnv.DATA_DIRECTORY;
-  process.env.SQLITE_DB_PATH = originalEnv.SQLITE_DB_PATH;
-  process.env.UPLOADS_DIRECTORY = originalEnv.UPLOADS_DIRECTORY;
-  process.env.FRONTEND_DIST_DIRECTORY = originalEnv.FRONTEND_DIST_DIRECTORY;
-  process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES = originalEnv.PASSWORD_RESET_TOKEN_TTL_MINUTES;
-  process.env.PUBLIC_APP_ORIGIN = originalEnv.PUBLIC_APP_ORIGIN;
-  process.env.RESET_PASSWORD_URL_BASE = originalEnv.RESET_PASSWORD_URL_BASE;
-  process.env.RESEND_API_KEY = originalEnv.RESEND_API_KEY;
-  process.env.RESET_EMAIL_FROM = originalEnv.RESET_EMAIL_FROM;
-  process.env.TRUST_PROXY = originalEnv.TRUST_PROXY;
-  process.env.NODE_ENV = originalEnv.NODE_ENV;
+  restoreEnvValue('DATA_DIRECTORY', originalEnv.DATA_DIRECTORY);
+  restoreEnvValue('SQLITE_DB_PATH', originalEnv.SQLITE_DB_PATH);
+  restoreEnvValue('UPLOADS_DIRECTORY', originalEnv.UPLOADS_DIRECTORY);
+  restoreEnvValue('FRONTEND_DIST_DIRECTORY', originalEnv.FRONTEND_DIST_DIRECTORY);
+  restoreEnvValue(
+    'PASSWORD_RESET_TOKEN_TTL_MINUTES',
+    originalEnv.PASSWORD_RESET_TOKEN_TTL_MINUTES
+  );
+  restoreEnvValue('PUBLIC_APP_ORIGIN', originalEnv.PUBLIC_APP_ORIGIN);
+  restoreEnvValue('RESET_PASSWORD_URL_BASE', originalEnv.RESET_PASSWORD_URL_BASE);
+  restoreEnvValue('RESEND_API_KEY', originalEnv.RESEND_API_KEY);
+  restoreEnvValue('RESET_EMAIL_FROM', originalEnv.RESET_EMAIL_FROM);
+  restoreEnvValue('TRUST_PROXY', originalEnv.TRUST_PROXY);
+  restoreEnvValue('NODE_ENV', originalEnv.NODE_ENV);
+  restoreEnvValue('REQUIRE_INVITE_CODE', originalEnv.REQUIRE_INVITE_CODE);
+  restoreEnvValue('INVITE_CODES', originalEnv.INVITE_CODES);
 });
 
 describe('getServerConfig', () => {
@@ -90,5 +106,52 @@ describe('getServerConfig', () => {
     const config = getServerConfig();
 
     expect(config.resetPasswordUrlBase).toBe('https://accounts.crystalhuangdance.org/reset');
+  });
+
+  it('defaults invite code enforcement off with no configured codes', () => {
+    delete process.env.REQUIRE_INVITE_CODE;
+    delete process.env.INVITE_CODES;
+
+    const config = getServerConfig();
+
+    expect(config.requireInviteCode).toBe(false);
+    expect(config.inviteCodes).toEqual([]);
+  });
+
+  it('parses invite code env settings and discards invalid entries', () => {
+    process.env.REQUIRE_INVITE_CODE = 'true';
+    process.env.INVITE_CODES = '123456, 654321, abcdef, 12345, , 999999 ';
+
+    const config = getServerConfig();
+
+    expect(config.requireInviteCode).toBe(true);
+    expect(config.inviteCodes).toEqual(['123456', '654321', '999999']);
+  });
+
+  it('treats only the exact string true as enabled for invite code enforcement', () => {
+    process.env.REQUIRE_INVITE_CODE = 'false';
+    process.env.INVITE_CODES = '123456';
+
+    const config = getServerConfig();
+
+    expect(config.requireInviteCode).toBe(false);
+    expect(config.inviteCodes).toEqual(['123456']);
+  });
+
+  it('rejects invite code enforcement without at least one valid configured code', () => {
+    process.env.REQUIRE_INVITE_CODE = 'true';
+    process.env.INVITE_CODES = 'abcdef, 12345, ';
+
+    expect(() => getServerConfig()).toThrow(
+      'INVITE_CODES must include at least one valid six-digit code when REQUIRE_INVITE_CODE=true.'
+    );
+  });
+
+  it('restores missing invite env vars without stringifying undefined', () => {
+    restoreEnvValue('REQUIRE_INVITE_CODE', undefined);
+    restoreEnvValue('INVITE_CODES', undefined);
+
+    expect(process.env.REQUIRE_INVITE_CODE).toBeUndefined();
+    expect(process.env.INVITE_CODES).toBeUndefined();
   });
 });

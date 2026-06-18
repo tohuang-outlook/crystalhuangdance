@@ -20,6 +20,7 @@ const allowedMimeTypes = new Set([
   'video/x-msvideo',
   'video/avi',
 ]);
+const inviteCodePattern = /^\d{6}$/;
 
 function toSafeUser(user) {
   return {
@@ -182,6 +183,12 @@ export function createApp({
   sendPasswordResetEmail = async () => {},
   processUploadedVideoFn = processUploadedVideo,
 }) {
+  if (config.requireInviteCode && config.inviteCodes.length === 0) {
+    throw new Error(
+      'Invite code enforcement requires at least one configured six-digit invite code.'
+    );
+  }
+
   const app = express();
   const upload = createUploadMiddleware(config);
 
@@ -221,6 +228,7 @@ export function createApp({
   app.post('/api/auth/register', async (req, res) => {
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     const password = String(req.body?.password ?? '');
+    const inviteCode = String(req.body?.inviteCode ?? '').trim();
 
     if (!emailPattern.test(email)) {
       return res.status(400).json({ error: 'A valid email is required.' });
@@ -230,6 +238,16 @@ export function createApp({
       return res.status(400).json({
         error: `Password must be at least ${minimumPasswordLength} characters.`,
       });
+    }
+
+    if (config.requireInviteCode) {
+      if (!inviteCodePattern.test(inviteCode)) {
+        return res.status(400).json({ error: 'A valid six-digit invite code is required.' });
+      }
+
+      if (!config.inviteCodes.includes(inviteCode)) {
+        return res.status(403).json({ error: 'Invite code is invalid.' });
+      }
     }
 
     if (db.findUserByEmail(email)) {

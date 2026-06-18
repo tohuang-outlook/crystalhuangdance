@@ -14,9 +14,13 @@ interface ApiErrorPayload {
   message?: string;
 }
 
-export interface AuthCredentials {
+export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+export interface RegisterCredentials extends LoginCredentials {
+  inviteCode: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -64,14 +68,14 @@ export function fetchCurrentUser() {
   return request<AuthEnvelope>('/api/auth/me', { method: 'GET' });
 }
 
-export function loginUser(credentials: AuthCredentials) {
+export function loginUser(credentials: LoginCredentials) {
   return request<AuthEnvelope>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify(credentials),
   });
 }
 
-export function registerUser(credentials: AuthCredentials) {
+export function registerUser(credentials: RegisterCredentials) {
   return request<AuthEnvelope>('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify(credentials),

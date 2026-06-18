@@ -26,6 +26,18 @@ npm install
 npm run dev
 ```
 
+## Invite-Code Registration
+
+Set these environment variables to require an invite code during registration:
+
+```bash
+REQUIRE_INVITE_CODE=true
+INVITE_CODES=123456,234567,345678
+```
+
+For local development, add them to your local `.env` before starting the app.
+For production, configure the same values in your deployment environment.
+
 ## Build
 
 ```bash

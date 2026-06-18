@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -22,7 +23,7 @@ export default function RegisterPage() {
     setFormError(null);
 
     try {
-      await register({ email, password });
+      await register({ email, password, inviteCode });
       navigate('/my-videos', { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Unable to create account');
@@ -75,6 +76,22 @@ export default function RegisterPage() {
             required
             type="password"
             value={confirmPassword}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Invite Code
+          </span>
+          <input
+            autoComplete="one-time-code"
+            className="w-full rounded-2xl border border-[var(--line)] bg-white/80 px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--accent-strong)]"
+            inputMode="numeric"
+            maxLength={6}
+            onChange={(event) => setInviteCode(event.target.value)}
+            pattern="[0-9]{6}"
+            required
+            type="text"
+            value={inviteCode}
           />
         </label>
         {(formError || error) && (

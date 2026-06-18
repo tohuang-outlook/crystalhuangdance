@@ -202,6 +202,128 @@ describe('App dossier layout', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders an invite code field on the registration page with mobile-friendly numeric hints', async () => {
+    window.history.replaceState({}, '', '/register');
+    render(<App />);
+
+    const inviteCodeInput = await screen.findByLabelText(/invite code/i);
+
+    expect(inviteCodeInput).toBeInTheDocument();
+    expect(inviteCodeInput).toHaveAttribute('inputmode', 'numeric');
+    expect(inviteCodeInput).toHaveAttribute('pattern', '[0-9]{6}');
+    expect(inviteCodeInput).toHaveAttribute('autocomplete', 'one-time-code');
+    expect(inviteCodeInput).toHaveAttribute('maxlength', '6');
+  });
+
+  it('submits inviteCode in the register request payload', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/register');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/register')) {
+        expect(init?.method).toBe('POST');
+        expect(init?.body).toBe(
+          JSON.stringify({
+            email: 'dancer@example.com',
+            password: 'new-password-1',
+            inviteCode: '123456',
+          })
+        );
+
+        return new Response(
+          JSON.stringify({ user: { id: 9, email: 'dancer@example.com', role: 'user' } }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/email/i), 'dancer@example.com');
+    await user.type(screen.getByLabelText(/^password$/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/confirm password/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/invite code/i), '123456');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(await screen.findByRole('heading', { name: /^my videos$/i })).toBeInTheDocument();
+  });
+
+  it('shows the backend invite-code error when registration is rejected', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/register');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/auth/register')) {
+        expect(init?.body).toBe(
+          JSON.stringify({
+            email: 'dancer@example.com',
+            password: 'new-password-1',
+            inviteCode: '123456',
+          })
+        );
+
+        return new Response(JSON.stringify({ message: 'Invite code is invalid or expired' }), {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/email/i), 'dancer@example.com');
+    await user.type(screen.getByLabelText(/^password$/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/confirm password/i), 'new-password-1');
+    await user.type(screen.getByLabelText(/invite code/i), '123456');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(await screen.findByText(/Invite code is invalid or expired/i)).toBeInTheDocument();
+  });
+
   it('submits forgot password requests with generic success messaging', async () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
       user: userEvent.setup(),

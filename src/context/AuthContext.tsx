@@ -11,8 +11,9 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-  type AuthCredentials,
   type AuthUser,
+  type LoginCredentials,
+  type RegisterCredentials,
 } from '../services/auth';
 
 interface AuthContextValue {
@@ -20,10 +21,10 @@ interface AuthContextValue {
   isAdmin: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: AuthCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  register: (credentials: AuthCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   user: AuthUser | null;
 }
 
@@ -56,9 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void loadUser();
   }, []);
 
-  const handleAuthAction = async (
-    action: (credentials: AuthCredentials) => Promise<{ user: AuthUser }>,
-    credentials: AuthCredentials
+  const handleAuthAction = async <TCredentials,>(
+    action: (credentials: TCredentials) => Promise<{ user: AuthUser }>,
+    credentials: TCredentials
   ) => {
     setIsLoading(true);
     setError(null);
@@ -75,11 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (credentials: AuthCredentials) => {
+  const login = async (credentials: LoginCredentials) => {
     await handleAuthAction(loginUser, credentials);
   };
 
-  const register = async (credentials: AuthCredentials) => {
+  const register = async (credentials: RegisterCredentials) => {
     await handleAuthAction(registerUser, credentials);
   };
 
