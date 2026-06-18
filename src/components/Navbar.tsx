@@ -11,6 +11,7 @@ export default function Navbar() {
   const { isAdmin, isAuthenticated, isLoading, logout, user } = useAuth();
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const isInvestor = user?.memberType === 'investor';
 
   const navLinks = [
     { label: t('Profile', '簡介'), href: '#profile' },
@@ -21,11 +22,16 @@ export default function Navbar() {
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 
-  const privateLinks = [
-    { label: 'My Videos', to: '/my-videos' },
-    { label: 'Upload', to: '/upload' },
-    ...(isAdmin ? [{ label: 'Admin', to: '/admin' }] : []),
-  ];
+  const privateLinks = isInvestor
+    ? [{ label: 'My Investment', to: '/investment' }]
+    : [
+        { label: 'My Videos', to: '/my-videos' },
+        { label: 'Upload', to: '/upload' },
+      ];
+
+  if (isAdmin) {
+    privateLinks.push({ label: 'Admin', to: '/admin' });
+  }
 
   const accountLabel = useMemo(() => {
     if (!user?.email) {

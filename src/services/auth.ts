@@ -1,7 +1,10 @@
+export type MemberType = 'dancer' | 'investor';
+
 export interface AuthUser {
   id: number;
   email: string;
   role: 'user' | 'admin';
+  memberType: MemberType;
   name?: string | null;
 }
 

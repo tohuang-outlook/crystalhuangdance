@@ -6,17 +6,18 @@ import AuthPageFrame from './AuthPageFrame';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { error, isAuthenticated, isLoading, login } = useAuth();
+  const { error, getDefaultMemberRoute, isAuthenticated, isLoading, login, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const from = typeof location.state?.from === 'string' ? location.state.from : '/my-videos';
+  const from = typeof location.state?.from === 'string' ? location.state.from : null;
+  const destination = from ?? getDefaultMemberRoute();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      navigate(destination, { replace: true });
     }
-  }, [from, isAuthenticated, navigate]);
+  }, [destination, isAuthenticated, navigate, user?.memberType]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,7 +25,6 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-      navigate(from, { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Unable to sign in');
     }

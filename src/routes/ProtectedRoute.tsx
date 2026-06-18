@@ -5,11 +5,13 @@ import { useAuth } from '../context/AuthContext';
 export default function ProtectedRoute({
   children,
   requireAdmin = false,
+  requireMemberType,
 }: {
   children: ReactNode;
   requireAdmin?: boolean;
+  requireMemberType?: 'dancer' | 'investor';
 }) {
-  const { isAdmin, isAuthenticated, isLoading } = useAuth();
+  const { getDefaultMemberRoute, isAdmin, isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -36,7 +38,11 @@ export default function ProtectedRoute({
   }
 
   if (requireAdmin && !isAdmin) {
-    return <Navigate replace to="/" />;
+    return <Navigate replace to={getDefaultMemberRoute()} />;
+  }
+
+  if (requireMemberType && user?.memberType !== requireMemberType) {
+    return <Navigate replace to={getDefaultMemberRoute()} />;
   }
 
   return <>{children}</>;

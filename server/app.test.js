@@ -139,6 +139,7 @@ describe('auth and video backend foundation', () => {
       id: 1,
       email: 'crystal@example.com',
       role: 'user',
+      memberType: 'dancer',
     });
 
     const meResponse = await agent.get('/api/auth/me');
@@ -149,6 +150,7 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
     });
 
@@ -160,6 +162,7 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
     });
 
@@ -167,6 +170,7 @@ describe('auth and video backend foundation', () => {
       id: 1,
       email: 'crystal@example.com',
       role: 'user',
+      memberType: 'dancer',
     });
 
     const logoutResponse = await agent.post('/api/auth/logout');
@@ -185,7 +189,31 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
+    });
+  });
+
+  it('returns the default member type for newly registered users', async () => {
+    const agent = request.agent(app);
+
+    const response = await agent.post('/api/auth/register').send({
+      email: 'investor-default@example.com',
+      password: 'password123',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.user).toEqual({
+      id: 1,
+      email: 'investor-default@example.com',
+      role: 'user',
+      memberType: 'dancer',
+    });
+
+    expect(db.findUserByEmail('investor-default@example.com')).toMatchObject({
+      email: 'investor-default@example.com',
+      role: 'user',
+      memberType: 'dancer',
     });
   });
 
@@ -602,12 +630,14 @@ describe('auth and video backend foundation', () => {
           id: adminUser.id,
           email: 'admin@example.com',
           role: 'admin',
+          memberType: 'dancer',
           uploadCount: 1,
         }),
         expect.objectContaining({
           id: memberUser.id,
           email: 'member@example.com',
           role: 'user',
+          memberType: 'dancer',
           uploadCount: 1,
         }),
       ])
@@ -633,6 +663,54 @@ describe('auth and video backend foundation', () => {
         },
       }),
     ]);
+  });
+
+  it('lets an admin update a member type between dancer and investor', async () => {
+    const adminAgent = request.agent(app);
+    const userAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+    const createdUser = await registerUser(userAgent, 'jennifer@example.com');
+
+    const response = await adminAgent
+      .patch(`/api/admin/users/${createdUser.id}/member-type`)
+      .send({
+        memberType: 'investor',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toEqual({
+      id: createdUser.id,
+      email: 'jennifer@example.com',
+      role: 'user',
+      memberType: 'investor',
+    });
+
+    expect(db.findUserByEmail('jennifer@example.com')).toMatchObject({
+      email: 'jennifer@example.com',
+      memberType: 'investor',
+    });
+  });
+
+  it('rejects unsupported member type values', async () => {
+    const adminAgent = request.agent(app);
+    const userAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+    const createdUser = await registerUser(userAgent, 'bad-role@example.com');
+
+    const response = await adminAgent
+      .patch(`/api/admin/users/${createdUser.id}/member-type`)
+      .send({
+        memberType: 'vip',
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toMatch(/member type/i);
   });
 
   it('deletes a single video and removes its processed file for admins', async () => {
