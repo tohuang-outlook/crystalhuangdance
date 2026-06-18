@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import HoldingsTable from '../components/investment/HoldingsTable';
+import PortfolioSummary from '../components/investment/PortfolioSummary';
+import TransactionForm from '../components/investment/TransactionForm';
+import TransactionTable from '../components/investment/TransactionTable';
+import {
+  createAdminInvestmentPortfolio,
+  createAdminInvestmentTransaction,
+  fetchAdminInvestmentPortfolio,
+  type InvestmentPortfolioResponse,
+} from '../services/investment';
 import {
   createAdminYoutubeVideo,
   deleteAdminUser,
@@ -71,6 +81,10 @@ export default function AdminPage() {
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeMemberTypeUserId, setActiveMemberTypeUserId] = useState<number | null>(null);
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
+  const [portfolioByInvestorId, setPortfolioByInvestorId] = useState<
+    Record<number, InvestmentPortfolioResponse | null | undefined>
+  >({});
+  const [activePortfolioAction, setActivePortfolioAction] = useState<string | null>(null);
 
   const stats = useMemo(
     () => ({
@@ -87,7 +101,12 @@ export default function AdminPage() {
   );
 
   const dancerUsers = useMemo(
-    () => users.filter((user) => user.role !== 'admin'),
+    () => users.filter((user) => user.role !== 'admin' && user.memberType !== 'investor'),
+    [users]
+  );
+
+  const investorUsers = useMemo(
+    () => users.filter((user) => user.role !== 'admin' && user.memberType === 'investor'),
     [users]
   );
 
@@ -136,6 +155,37 @@ export default function AdminPage() {
   useEffect(() => {
     void loadDashboard({ keepLoadingState: true });
   }, []);
+
+  useEffect(() => {
+    const loadInvestorPortfolios = async () => {
+      if (investorUsers.length === 0) {
+        setPortfolioByInvestorId({});
+        return;
+      }
+
+      const entries = await Promise.all(
+        investorUsers.map(async (user) => {
+          try {
+            const response = await fetchAdminInvestmentPortfolio(user.id);
+            return [user.id, response] as const;
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to load portfolio.';
+            if (message.toLowerCase().includes('portfolio not found')) {
+              return [user.id, null] as const;
+            }
+
+            throw err;
+          }
+        })
+      );
+
+      setPortfolioByInvestorId(Object.fromEntries(entries));
+    };
+
+    void loadInvestorPortfolios().catch((err) => {
+      setError(err instanceof Error ? err.message : 'Unable to load investor portfolios.');
+    });
+  }, [investorUsers]);
 
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
@@ -294,6 +344,70 @@ export default function AdminPage() {
     }
 
     updateDraft(user.id, { isSubmitting: false });
+  };
+
+  const loadInvestorPortfolio = async (userId: number) => {
+    const response = await fetchAdminInvestmentPortfolio(userId);
+    setPortfolioByInvestorId((current) => ({
+      ...current,
+      [userId]: response,
+    }));
+  };
+
+  const handleCreateInvestorPortfolio = async (user: AdminUserRecord) => {
+    setActivePortfolioAction(`create-${user.id}`);
+    setError(null);
+
+    try {
+      const response = await createAdminInvestmentPortfolio(user.id, {
+        displayName: `${user.email.split('@')[0]} Portfolio`,
+      });
+
+      setPortfolioByInvestorId((current) => ({
+        ...current,
+        [user.id]: {
+          portfolio: response.portfolio,
+          summary: {
+            totalInvested: 0,
+            portfolioValue: 0,
+            unrealizedPnL: 0,
+            totalReturnPercent: 0,
+          },
+          holdings: [],
+          transactions: [],
+        },
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create investor portfolio.');
+    } finally {
+      setActivePortfolioAction(null);
+    }
+  };
+
+  const handleCreateInvestorTransaction = async (
+    user: AdminUserRecord,
+    payload: {
+      assetSymbol: string;
+      assetName: string;
+      amountInvested: number;
+      purchasePrice: number;
+      purchaseShares: number;
+      purchaseDate: string;
+      notes: string | null;
+    }
+  ) => {
+    setActivePortfolioAction(`transaction-${user.id}`);
+    setError(null);
+
+    try {
+      await createAdminInvestmentTransaction(user.id, payload);
+      await loadInvestorPortfolio(user.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create investment transaction.');
+      throw err;
+    } finally {
+      setActivePortfolioAction(null);
+    }
   };
 
   const renderVideoCard = (video: AdminVideoRecord, compact = false) => {
@@ -685,6 +799,103 @@ export default function AdminPage() {
                             <div className="mt-5 grid gap-5 xl:grid-cols-2">
                               {userVideos.map((video) => renderVideoCard(video, true))}
                             </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              <section aria-labelledby="admin-investors-heading">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="eyebrow">Investor</p>
+                    <h2 id="admin-investors-heading" className="mt-3 text-4xl text-[var(--text)]">
+                      Investor Portfolios
+                    </h2>
+                  </div>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {investorUsers.length} account{investorUsers.length === 1 ? '' : 's'}
+                  </p>
+                </div>
+
+                {investorUsers.length === 0 ? (
+                  <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
+                    <p className="text-sm text-[var(--text-muted)]">No investor accounts yet.</p>
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-6">
+                    {investorUsers.map((user) => {
+                      const portfolio = portfolioByInvestorId[user.id];
+                      const isCreatingPortfolio = activePortfolioAction === `create-${user.id}`;
+                      const isCreatingTransaction = activePortfolioAction === `transaction-${user.id}`;
+
+                      return (
+                        <article
+                          key={user.id}
+                          className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                              <p className="eyebrow text-[10px]">Investor account</p>
+                              <h3 className="mt-3 text-3xl text-[var(--text)]">{user.email}</h3>
+                            </div>
+                            {portfolio === null ? (
+                              <button
+                                className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={isCreatingPortfolio}
+                                onClick={() => void handleCreateInvestorPortfolio(user)}
+                                type="button"
+                              >
+                                {isCreatingPortfolio ? 'Creating...' : 'Create portfolio'}
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                            <span>Role: {user.role}</span>
+                            <span>Member type: {user.memberType}</span>
+                            <span>Joined: {formatDate(user.createdAt)}</span>
+                          </div>
+
+                          {portfolio === undefined ? (
+                            <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                              Loading portfolio...
+                            </div>
+                          ) : portfolio === null ? (
+                            <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                              No portfolio created yet.
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                                <p className="eyebrow text-[10px]">Portfolio summary</p>
+                                <h4 className="mt-3 text-2xl text-[var(--text)]">
+                                  {portfolio.portfolio.displayName || 'Investor Portfolio'}
+                                </h4>
+                                <PortfolioSummary summary={portfolio.summary} />
+                                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                                  <div>
+                                    <p className="text-sm text-[var(--text-muted)]">Holdings</p>
+                                    <HoldingsTable holdings={portfolio.holdings} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-[var(--text-muted)]">Transactions</p>
+                                    <TransactionTable transactions={portfolio.transactions} />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                                <p className="eyebrow text-[10px]">Add buy transaction</p>
+                                <h4 className="mt-3 text-2xl text-[var(--text)]">Record a purchase</h4>
+                                <TransactionForm
+                                  isSubmitting={isCreatingTransaction}
+                                  onSubmit={(payload) => handleCreateInvestorTransaction(user, payload)}
+                                />
+                              </div>
+                            </>
                           )}
                         </article>
                       );
