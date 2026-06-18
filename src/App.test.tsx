@@ -158,6 +158,34 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
+  it('removes the five-minute upload messaging for admins', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+    window.history.replaceState({}, '', '/upload');
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(JSON.stringify({ user: { id: 1, email: 'admin@example.com', role: 'admin' } }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /Upload a new video/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Upload File/i }));
+    expect(screen.queryByText(/^5 minutes$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/No maximum length for admin uploads/i)).toBeInTheDocument();
+  });
+
   it('navigates from login to forgot password', async () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
       user: userEvent.setup(),

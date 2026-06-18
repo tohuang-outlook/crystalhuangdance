@@ -98,7 +98,10 @@ export async function processUploadedVideo({
 }) {
   const durationSeconds = await probeDurationSeconds(inputPath);
 
-  if (durationSeconds > maxVideoDurationSeconds) {
+  if (
+    typeof maxVideoDurationSeconds === 'number' &&
+    durationSeconds > maxVideoDurationSeconds
+  ) {
     throw new Error(`Video length must be ${Math.floor(maxVideoDurationSeconds / 60)} minutes or less.`);
   }
 

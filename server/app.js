@@ -180,6 +180,7 @@ export function createApp({
   config,
   now = () => new Date(),
   sendPasswordResetEmail = async () => {},
+  processUploadedVideoFn = processUploadedVideo,
 }) {
   const app = express();
   const upload = createUploadMiddleware(config);
@@ -578,12 +579,13 @@ export function createApp({
       }
 
       try {
-        const processed = await processUploadedVideo({
+        const processed = await processUploadedVideoFn({
           inputPath: file.path,
           originalFilename: file.originalname,
           processedVideosDirectory: config.processedVideosDirectory,
           publicVideosBasePath: config.publicVideosBasePath,
-          maxVideoDurationSeconds: config.maxVideoDurationSeconds,
+          maxVideoDurationSeconds:
+            req.session.user.role === 'admin' ? null : config.maxVideoDurationSeconds,
           targetVideoSizeBytes: config.targetVideoSizeBytes,
           maxAllowedVideoSizeBytes: config.maxAllowedVideoSizeBytes,
         });

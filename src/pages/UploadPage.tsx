@@ -1,5 +1,6 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { createYoutubeVideo, uploadVideoFile } from '../services/videos';
 
 const maximumDurationSeconds = 300;
@@ -34,6 +35,7 @@ async function readVideoDuration(file: File) {
 
 export default function UploadPage() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [mode, setMode] = useState<UploadMode>('youtube');
   const [title, setTitle] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -47,8 +49,10 @@ export default function UploadPage() {
     () =>
       mode === 'youtube'
         ? 'Paste a valid YouTube URL and we will save it to your private reel list without downloading the video.'
-        : 'Upload MP4, MOV, or AVI clips up to 5 minutes long. The server will automatically compress the final file to stay under 20MB.',
-    [mode]
+        : isAdmin
+          ? 'Upload MP4, MOV, or AVI clips with no maximum length for admin accounts. The server will automatically compress the final file to stay under 20MB.'
+          : 'Upload MP4, MOV, or AVI clips up to 5 minutes long. The server will automatically compress the final file to stay under 20MB.',
+    [isAdmin, mode]
   );
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +69,7 @@ export default function UploadPage() {
     try {
       const duration = await readVideoDuration(nextFile);
 
-      if (duration > maximumDurationSeconds) {
+      if (!isAdmin && duration > maximumDurationSeconds) {
         setFile(null);
         setError('Video length must be 5 minutes or less.');
         event.target.value = '';
@@ -136,7 +140,10 @@ export default function UploadPage() {
             Upload a new video.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
-            Choose whether you want to save a YouTube link or upload a local file. Local uploads are checked for length and then compressed on the server before they enter your library.
+            Choose whether you want to save a YouTube link or upload a local file.{' '}
+            {isAdmin
+              ? 'Admin uploads skip the local duration cap and are still compressed on the server before they enter your library.'
+              : 'Local uploads are checked for length and then compressed on the server before they enter your library.'}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -213,7 +220,7 @@ export default function UploadPage() {
                     </div>
                     <div>
                       <p className="eyebrow text-[10px]">Max length</p>
-                      <p className="mt-2">5 minutes</p>
+                      <p className="mt-2">{isAdmin ? 'No maximum length for admin uploads' : '5 minutes'}</p>
                     </div>
                     <div>
                       <p className="eyebrow text-[10px]">Compression target</p>

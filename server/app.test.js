@@ -369,6 +369,53 @@ describe('auth and video backend foundation', () => {
     expect(videosResponse.body.error).toMatch(/admin/i);
   });
 
+  it('skips the upload duration limit for admins while preserving it for regular users', async () => {
+    const processedPayloads = [];
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      processUploadedVideoFn: async (payload) => {
+        processedPayloads.push(payload);
+        return {
+          filePath: `${config.publicVideosBasePath}/processed.mp4`,
+          durationSeconds: 721,
+          fileSizeBytes: 1024,
+          outputPath: path.join(config.processedVideosDirectory, 'processed.mp4'),
+        };
+      },
+    });
+
+    const memberAgent = request.agent(app);
+    await registerUser(memberAgent, 'member@example.com');
+
+    const memberUploadResponse = await memberAgent
+      .post('/api/videos/upload')
+      .field('title', 'Member upload')
+      .attach('video', Buffer.from('fake-video'), 'member.mov');
+
+    expect(memberUploadResponse.status).toBe(201);
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const adminUploadResponse = await adminAgent
+      .post('/api/videos/upload')
+      .field('title', 'Admin upload')
+      .attach('video', Buffer.from('fake-video'), 'admin.mov');
+
+    expect(adminUploadResponse.status).toBe(201);
+    expect(processedPayloads).toHaveLength(2);
+    expect(processedPayloads[0].maxVideoDurationSeconds).toBe(300);
+    expect(processedPayloads[1].maxVideoDurationSeconds).toBeNull();
+  });
+
   it('lists all users with upload counts and all videos with uploader info for admins', async () => {
     const adminAgent = request.agent(app);
     const adminUser = await registerUser(adminAgent, 'admin@example.com');
