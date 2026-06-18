@@ -31,6 +31,7 @@ export function createDatabase(filename) {
   db.exec(schemaSql);
 
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
+  ensureColumn(db, 'users', 'member_type', "TEXT NOT NULL DEFAULT 'dancer'");
   ensureColumn(db, 'users', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'videos', 'original_filename', 'TEXT');
   ensureColumn(db, 'videos', 'duration_seconds', 'INTEGER');
@@ -40,27 +41,36 @@ export function createDatabase(filename) {
 
   const statements = {
     createUser: db.prepare(
-      `INSERT INTO users (email, password_hash, role)
-       VALUES (@email, @passwordHash, @role)
-       RETURNING id, email, role`
+      `INSERT INTO users (email, password_hash, role, member_type)
+       VALUES (@email, @passwordHash, @role, @memberType)
+       RETURNING id, email, role, member_type AS memberType`
     ),
     findUserByEmail: db.prepare(
-      'SELECT id, email, role, password_hash AS passwordHash FROM users WHERE email = ?'
+      'SELECT id, email, role, member_type AS memberType, password_hash AS passwordHash FROM users WHERE email = ?'
     ),
-    findUserById: db.prepare('SELECT id, email, role FROM users WHERE id = ?'),
+    findUserById: db.prepare(
+      'SELECT id, email, role, member_type AS memberType FROM users WHERE id = ?'
+    ),
     setUserRoleByEmail: db.prepare(
       `UPDATE users
        SET role = @role,
            updated_at = CURRENT_TIMESTAMP
        WHERE email = @email
-       RETURNING id, email, role`
+       RETURNING id, email, role, member_type AS memberType`
+    ),
+    setUserMemberTypeById: db.prepare(
+      `UPDATE users
+       SET member_type = @memberType,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @userId
+       RETURNING id, email, role, member_type AS memberType`
     ),
     updateUserPasswordHash: db.prepare(
       `UPDATE users
        SET password_hash = @passwordHash,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @userId
-       RETURNING id, email, role`
+       RETURNING id, email, role, member_type AS memberType`
     ),
     createVideo: db.prepare(
       `INSERT INTO videos (
@@ -120,6 +130,7 @@ export function createDatabase(filename) {
           users.id,
           users.email,
           users.role,
+          users.member_type AS memberType,
           users.created_at AS createdAt,
           users.updated_at AS updatedAt,
           COUNT(videos.id) AS uploadCount
@@ -186,7 +197,7 @@ export function createDatabase(filename) {
     deleteUserById: db.prepare(
       `DELETE FROM users
        WHERE id = ?
-       RETURNING id, email, role`
+       RETURNING id, email, role, member_type AS memberType`
     ),
     insertPasswordResetToken: db.prepare(
       `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
@@ -248,8 +259,8 @@ export function createDatabase(filename) {
 
   return {
     raw: db,
-    createUser({ email, passwordHash, role = 'user' }) {
-      return statements.createUser.get({ email, passwordHash, role });
+    createUser({ email, passwordHash, role = 'user', memberType = 'dancer' }) {
+      return statements.createUser.get({ email, passwordHash, role, memberType });
     },
     findUserByEmail(email) {
       return statements.findUserByEmail.get(email) ?? null;
@@ -259,6 +270,9 @@ export function createDatabase(filename) {
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
+    },
+    setUserMemberTypeById(userId, memberType) {
+      return statements.setUserMemberTypeById.get({ userId, memberType }) ?? null;
     },
     createPasswordResetToken(passwordResetToken) {
       return replacePasswordResetToken(passwordResetToken);

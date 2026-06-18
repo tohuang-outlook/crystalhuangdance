@@ -21,12 +21,14 @@ const allowedMimeTypes = new Set([
   'video/avi',
 ]);
 const inviteCodePattern = /^\d{6}$/;
+const allowedMemberTypes = new Set(['dancer', 'investor']);
 
 function toSafeUser(user) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
+    memberType: user.memberType,
   };
 }
 
@@ -82,6 +84,7 @@ function serializeAdminUser(user) {
     id: user.id,
     email: user.email,
     role: user.role,
+    memberType: user.memberType,
     uploadCount: user.uploadCount,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -380,6 +383,29 @@ export function createApp({
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
+  });
+
+  app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const memberType = String(req.body?.memberType ?? '')
+      .trim()
+      .toLowerCase();
+
+    if (!userId) {
+      return res.status(400).json({ error: 'A valid user id is required.' });
+    }
+
+    if (!allowedMemberTypes.has(memberType)) {
+      return res.status(400).json({ error: 'A valid member type is required.' });
+    }
+
+    const updatedUser = db.setUserMemberTypeById(userId, memberType);
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({ user: toSafeUser(updatedUser) });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {
