@@ -6,8 +6,11 @@ import TransactionTable from '../components/investment/TransactionTable';
 import {
   createAdminInvestmentPortfolio,
   createAdminInvestmentTransaction,
+  deleteAdminInvestmentTransaction,
   fetchAdminInvestmentPortfolio,
+  type InvestmentTransaction,
   type InvestmentPortfolioResponse,
+  updateAdminInvestmentTransaction,
 } from '../services/investment';
 import {
   createAdminYoutubeVideo,
@@ -22,11 +25,12 @@ import {
 } from '../services/admin';
 
 function formatDate(value: string) {
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(value));
+  }).format(new Date(normalizedValue));
 }
 
 function formatDuration(seconds: number | null) {
@@ -85,6 +89,7 @@ export default function AdminPage() {
     Record<number, InvestmentPortfolioResponse | null | undefined>
   >({});
   const [activePortfolioAction, setActivePortfolioAction] = useState<string | null>(null);
+  const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
 
   const stats = useMemo(
     () => ({
@@ -405,6 +410,63 @@ export default function AdminPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create investment transaction.');
       throw err;
+    } finally {
+      setActivePortfolioAction(null);
+    }
+  };
+
+  const handleUpdateInvestorTransaction = async (
+    user: AdminUserRecord,
+    transactionId: number,
+    payload: {
+      assetSymbol: string;
+      assetName: string;
+      amountInvested: number;
+      purchasePrice: number;
+      purchaseShares: number;
+      purchaseDate: string;
+      notes: string | null;
+    }
+  ) => {
+    setActivePortfolioAction(`transaction-${transactionId}`);
+    setError(null);
+
+    try {
+      await updateAdminInvestmentTransaction(transactionId, payload);
+      await loadInvestorPortfolio(user.id);
+      setEditingTransactionId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update investment transaction.');
+      throw err;
+    } finally {
+      setActivePortfolioAction(null);
+    }
+  };
+
+  const handleDeleteInvestorTransaction = async (
+    user: AdminUserRecord,
+    transaction: InvestmentTransaction
+  ) => {
+    if (
+      !window.confirm(
+        `Delete the ${transaction.assetSymbol} transaction from ${formatDate(transaction.purchaseDate)}?`
+      )
+    ) {
+      return;
+    }
+
+    setActivePortfolioAction(`delete-transaction-${transaction.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminInvestmentTransaction(transaction.id);
+      await loadInvestorPortfolio(user.id);
+
+      if (editingTransactionId === transaction.id) {
+        setEditingTransactionId(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete investment transaction.');
     } finally {
       setActivePortfolioAction(null);
     }
@@ -830,6 +892,20 @@ export default function AdminPage() {
                       const portfolio = portfolioByInvestorId[user.id];
                       const isCreatingPortfolio = activePortfolioAction === `create-${user.id}`;
                       const isCreatingTransaction = activePortfolioAction === `transaction-${user.id}`;
+                      const editingTransaction =
+                        portfolio && portfolio !== null
+                          ? portfolio.transactions.find(
+                              (transaction) => transaction.id === editingTransactionId
+                            ) ?? null
+                          : null;
+                      const isUpdatingTransaction =
+                        editingTransactionId != null &&
+                        activePortfolioAction === `transaction-${editingTransactionId}`;
+                      const activeDeleteTransactionId = activePortfolioAction?.startsWith(
+                        'delete-transaction-'
+                      )
+                        ? Number(activePortfolioAction.replace('delete-transaction-', ''))
+                        : null;
 
                       return (
                         <article
@@ -882,7 +958,44 @@ export default function AdminPage() {
                                   </div>
                                   <div>
                                     <p className="text-sm text-[var(--text-muted)]">Transactions</p>
-                                    <TransactionTable transactions={portfolio.transactions} />
+                                    <TransactionTable
+                                      activeDeleteId={activeDeleteTransactionId}
+                                      activeEditId={editingTransactionId}
+                                      onDelete={(transaction) =>
+                                        void handleDeleteInvestorTransaction(user, transaction)
+                                      }
+                                      onEdit={(transaction) => setEditingTransactionId(transaction.id)}
+                                      transactions={portfolio.transactions}
+                                    />
+                                    {editingTransaction ? (
+                                      <div className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white p-5">
+                                        <p className="eyebrow text-[10px]">Edit transaction</p>
+                                        <h5 className="mt-3 text-xl text-[var(--text)]">
+                                          Update {editingTransaction.assetSymbol} purchase
+                                        </h5>
+                                        <TransactionForm
+                                          initialValues={{
+                                            assetSymbol: editingTransaction.assetSymbol,
+                                            assetName: editingTransaction.assetName,
+                                            amountInvested: String(editingTransaction.amountInvested),
+                                            purchasePrice: String(editingTransaction.purchasePrice),
+                                            purchaseShares: String(editingTransaction.purchaseShares),
+                                            purchaseDate: editingTransaction.purchaseDate,
+                                            notes: editingTransaction.notes ?? '',
+                                          }}
+                                          isSubmitting={isUpdatingTransaction}
+                                          onCancel={() => setEditingTransactionId(null)}
+                                          onSubmit={(payload) =>
+                                            handleUpdateInvestorTransaction(
+                                              user,
+                                              editingTransaction.id,
+                                              payload
+                                            )
+                                          }
+                                          submitLabel="Save changes"
+                                        />
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>

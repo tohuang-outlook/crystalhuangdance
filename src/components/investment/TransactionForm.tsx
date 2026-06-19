@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TransactionFormValues {
   assetSymbol: string;
@@ -20,11 +20,23 @@ const defaultValues: TransactionFormValues = {
   notes: '',
 };
 
+function normalizeInitialValues(values?: Partial<TransactionFormValues>): TransactionFormValues {
+  return {
+    ...defaultValues,
+    ...values,
+  };
+}
+
 export default function TransactionForm({
+  initialValues,
   isSubmitting,
+  onCancel,
   onSubmit,
+  submitLabel = 'Add transaction',
 }: {
+  initialValues?: Partial<TransactionFormValues>;
   isSubmitting: boolean;
+  onCancel?: () => void;
   onSubmit: (payload: {
     assetSymbol: string;
     assetName: string;
@@ -34,9 +46,15 @@ export default function TransactionForm({
     purchaseDate: string;
     notes: string | null;
   }) => Promise<void>;
+  submitLabel?: string;
 }) {
-  const [values, setValues] = useState<TransactionFormValues>(defaultValues);
+  const [values, setValues] = useState<TransactionFormValues>(normalizeInitialValues(initialValues));
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValues(normalizeInitialValues(initialValues));
+    setError(null);
+  }, [initialValues]);
 
   const handleChange =
     (field: keyof TransactionFormValues) =>
@@ -166,14 +184,24 @@ export default function TransactionForm({
         />
       </label>
 
-      <div className="flex items-end">
+      <div className="flex items-end gap-3">
         <button
           className="w-full rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}
           type="submit"
         >
-          {isSubmitting ? 'Saving...' : 'Add transaction'}
+          {isSubmitting ? 'Saving...' : submitLabel}
         </button>
+        {onCancel ? (
+          <button
+            className="w-full rounded-full border border-[var(--line)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting}
+            onClick={onCancel}
+            type="button"
+          >
+            Cancel
+          </button>
+        ) : null}
       </div>
 
       {error ? (

@@ -140,6 +140,66 @@ export function createDatabase(filename) {
          created_at AS createdAt,
          updated_at AS updatedAt`
     ),
+    findInvestmentTransactionById: db.prepare(
+      `SELECT
+         id,
+         portfolio_id AS portfolioId,
+         asset_symbol AS assetSymbol,
+         asset_name AS assetName,
+         transaction_type AS transactionType,
+         amount_invested AS amountInvested,
+         purchase_price AS purchasePrice,
+         purchase_shares AS purchaseShares,
+         purchase_date AS purchaseDate,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_transactions
+       WHERE id = ?`
+    ),
+    updateInvestmentTransaction: db.prepare(
+      `UPDATE investment_transactions
+       SET asset_symbol = @assetSymbol,
+           asset_name = @assetName,
+           transaction_type = @transactionType,
+           amount_invested = @amountInvested,
+           purchase_price = @purchasePrice,
+           purchase_shares = @purchaseShares,
+           purchase_date = @purchaseDate,
+           notes = @notes,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         asset_symbol AS assetSymbol,
+         asset_name AS assetName,
+         transaction_type AS transactionType,
+         amount_invested AS amountInvested,
+         purchase_price AS purchasePrice,
+         purchase_shares AS purchaseShares,
+         purchase_date AS purchaseDate,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    deleteInvestmentTransactionById: db.prepare(
+      `DELETE FROM investment_transactions
+       WHERE id = ?
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         asset_symbol AS assetSymbol,
+         asset_name AS assetName,
+         transaction_type AS transactionType,
+         amount_invested AS amountInvested,
+         purchase_price AS purchasePrice,
+         purchase_shares AS purchaseShares,
+         purchase_date AS purchaseDate,
+         notes,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
     listInvestmentTransactionsByPortfolioId: db.prepare(
       `SELECT
          id,
@@ -413,6 +473,35 @@ export function createDatabase(filename) {
         purchaseDate,
         notes,
       });
+    },
+    findInvestmentTransactionById(transactionId) {
+      return statements.findInvestmentTransactionById.get(transactionId) ?? null;
+    },
+    updateInvestmentTransaction({
+      id,
+      assetSymbol,
+      assetName,
+      transactionType = 'buy',
+      amountInvested,
+      purchasePrice,
+      purchaseShares,
+      purchaseDate,
+      notes = null,
+    }) {
+      return statements.updateInvestmentTransaction.get({
+        id,
+        assetSymbol,
+        assetName,
+        transactionType,
+        amountInvested,
+        purchasePrice,
+        purchaseShares,
+        purchaseDate,
+        notes,
+      }) ?? null;
+    },
+    deleteInvestmentTransactionById(transactionId) {
+      return statements.deleteInvestmentTransactionById.get(transactionId) ?? null;
     },
     listInvestmentTransactionsByPortfolioId(portfolioId) {
       return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);

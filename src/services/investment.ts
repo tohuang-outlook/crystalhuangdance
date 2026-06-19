@@ -144,3 +144,33 @@ export function createAdminInvestmentTransaction(
     }
   );
 }
+
+export function updateAdminInvestmentTransaction(
+  transactionId: number,
+  payload: {
+    assetSymbol: string;
+    assetName: string;
+    amountInvested: number;
+    purchasePrice: number;
+    purchaseShares: number;
+    purchaseDate: string;
+    notes?: string | null;
+  }
+) {
+  return requestJson<AdminInvestmentTransactionEnvelope>(
+    `/api/admin/portfolio-transactions/${transactionId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function deleteAdminInvestmentTransaction(transactionId: number) {
+  return requestJson<{ deletedTransactionId: number }>(
+    `/api/admin/portfolio-transactions/${transactionId}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}

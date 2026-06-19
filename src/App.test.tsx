@@ -825,6 +825,238 @@ describe('App dossier layout', () => {
     expect(screen.getAllByText('0.10000000').length).toBeGreaterThan(0);
   });
 
+  it('lets admins edit and delete investor transactions inline', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/admin');
+
+    let portfolioState = {
+      portfolio: {
+        id: 21,
+        userId: 11,
+        baseCurrency: 'USD',
+        displayName: 'jennifer Portfolio',
+        notes: null,
+        createdAt: '2026-06-18T00:00:00.000Z',
+        updatedAt: '2026-06-18T00:00:00.000Z',
+      },
+      summary: {
+        totalInvested: 5000,
+        portfolioValue: 5400,
+        unrealizedPnL: 400,
+        totalReturnPercent: 8,
+      },
+      holdings: [
+        {
+          assetSymbol: 'BTC',
+          assetName: 'Bitcoin',
+          quantity: 0.1,
+          invested: 5000,
+          averageCost: 50000,
+          currentPrice: 54000,
+          currentValue: 5400,
+          unrealizedPnL: 400,
+          allocationPercent: 100,
+        },
+      ],
+      transactions: [
+        {
+          id: 90,
+          portfolioId: 21,
+          assetSymbol: 'BTC',
+          assetName: 'Bitcoin',
+          transactionType: 'buy',
+          amountInvested: 5000,
+          purchasePrice: 50000,
+          purchaseShares: 0.1,
+          purchaseDate: '2026-06-01',
+          notes: 'Initial BTC position',
+          createdAt: '2026-06-18T00:00:00.000Z',
+          updatedAt: '2026-06-18T00:00:00.000Z',
+        },
+      ],
+    };
+
+    vi.spyOn(window, 'confirm').mockImplementation(() => true);
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio') && (!init?.method || init.method === 'GET')) {
+        return new Response(JSON.stringify(portfolioState), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/portfolio-transactions/90') && init?.method === 'PATCH') {
+        const payload = JSON.parse(String(init?.body));
+        expect(payload.amountInvested).toBe(6000);
+        expect(payload.purchasePrice).toBe(60000);
+        expect(payload.purchaseDate).toBe('2026-06-02');
+
+        portfolioState = {
+          ...portfolioState,
+          summary: {
+            totalInvested: 6000,
+            portfolioValue: 5400,
+            unrealizedPnL: -600,
+            totalReturnPercent: -10,
+          },
+          holdings: [
+            {
+              ...portfolioState.holdings[0],
+              invested: 6000,
+              averageCost: 60000,
+              unrealizedPnL: -600,
+            },
+          ],
+          transactions: [
+            {
+              ...portfolioState.transactions[0],
+              amountInvested: 6000,
+              purchasePrice: 60000,
+              purchaseDate: '2026-06-02',
+              notes: 'Updated BTC position',
+            },
+          ],
+        };
+
+        return new Response(
+          JSON.stringify({
+            transaction: portfolioState.transactions[0],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/portfolio-transactions/90') && init?.method === 'DELETE') {
+        portfolioState = {
+          ...portfolioState,
+          summary: {
+            totalInvested: 0,
+            portfolioValue: 0,
+            unrealizedPnL: 0,
+            totalReturnPercent: 0,
+          },
+          holdings: [],
+          transactions: [],
+        };
+
+        return new Response(JSON.stringify({ deletedTransactionId: 90 }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('Initial BTC position')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Edit BTC transaction from Jun/i }));
+
+    const investedInputs = screen.getAllByDisplayValue('5000');
+    await user.clear(investedInputs[investedInputs.length - 1]);
+    await user.type(investedInputs[investedInputs.length - 1], '6000');
+
+    const priceInputs = screen.getAllByDisplayValue('50000');
+    await user.clear(priceInputs[priceInputs.length - 1]);
+    await user.type(priceInputs[priceInputs.length - 1], '60000');
+
+    const dateInput = screen.getByDisplayValue('2026-06-01');
+    await user.clear(dateInput);
+    await user.type(dateInput, '2026-06-02');
+
+    const notesInput = screen.getByDisplayValue('Initial BTC position');
+    await user.clear(notesInput);
+    await user.type(notesInput, 'Updated BTC position');
+
+    await user.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    expect(await screen.findByText('Updated BTC position')).toBeInTheDocument();
+    expect(screen.getAllByText('$6,000.00').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: /Delete BTC transaction from Jun/i }));
+
+    expect(await screen.findByText('No transactions recorded yet.')).toBeInTheDocument();
+    expect(screen.getAllByText('$0.00').length).toBeGreaterThan(0);
+  });
+
   it('renders an invite code field on the registration page with mobile-friendly numeric hints', async () => {
     window.history.replaceState({}, '', '/register');
     render(<App />);
