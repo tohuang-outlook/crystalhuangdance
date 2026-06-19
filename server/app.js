@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { AsyncLocalStorage } from 'async_hooks';
 import { createHash, randomBytes } from 'crypto';
 import express from 'express';
 import session from 'express-session';
@@ -29,6 +30,14 @@ const investmentAssetNamesBySymbol = {
   XRP: 'XRP',
   SOL: 'Solana',
   DOGE: 'Dogecoin',
+};
+const investmentAssetIdsBySymbol = {
+  BTC: 'bitcoin',
+  ETH: 'ethereum',
+  ADA: 'cardano',
+  XRP: 'ripple',
+  SOL: 'solana',
+  DOGE: 'dogecoin',
 };
 
 function toSafeUser(user) {
@@ -222,6 +231,110 @@ function buildPortfolioSnapshot(transactions, livePricesBySymbol) {
   };
 }
 
+function normalizeInvestmentSymbols(symbols = Object.keys(investmentAssetIdsBySymbol)) {
+  return [...new Set(symbols)].filter((symbol) => investmentAssetIdsBySymbol[symbol]);
+}
+
+function buildLivePrices(symbols, livePricesBySymbol) {
+  return normalizeInvestmentSymbols(symbols)
+    .map((assetSymbol) => {
+      const currentPrice = Number(livePricesBySymbol[assetSymbol]);
+
+      if (!Number.isFinite(currentPrice)) {
+        return null;
+      }
+
+      return {
+        assetSymbol,
+        assetName: investmentAssetNamesBySymbol[assetSymbol],
+        currentPrice: roundCurrency(currentPrice),
+      };
+    })
+    .filter(Boolean);
+}
+
+async function defaultCoinGeckoPriceFetcher(symbols, fetchFn = fetch) {
+  const normalizedSymbols = normalizeInvestmentSymbols(symbols);
+
+  if (normalizedSymbols.length === 0) {
+    return {
+      pricesBySymbol: {},
+      pricesLastUpdatedAt: null,
+    };
+  }
+
+  const coinGeckoIds = normalizedSymbols.map((symbol) => investmentAssetIdsBySymbol[symbol]);
+  const url = new URL('https://api.coingecko.com/api/v3/simple/price');
+  url.searchParams.set('ids', coinGeckoIds.join(','));
+  url.searchParams.set('vs_currencies', 'usd');
+  url.searchParams.set('include_last_updated_at', 'true');
+
+  const response = await fetchFn(url);
+
+  if (!response.ok) {
+    throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const pricesBySymbol = {};
+  let latestTimestampSeconds = null;
+
+  for (const symbol of normalizedSymbols) {
+    const assetPayload = payload[investmentAssetIdsBySymbol[symbol]];
+    const currentPrice = Number(assetPayload?.usd);
+
+    if (Number.isFinite(currentPrice)) {
+      pricesBySymbol[symbol] = currentPrice;
+    }
+
+    const updatedAt = Number(assetPayload?.last_updated_at);
+
+    if (Number.isFinite(updatedAt)) {
+      latestTimestampSeconds =
+        latestTimestampSeconds === null ? updatedAt : Math.max(latestTimestampSeconds, updatedAt);
+    }
+  }
+
+  return {
+    pricesBySymbol,
+    pricesLastUpdatedAt:
+      latestTimestampSeconds === null ? null : new Date(latestTimestampSeconds * 1000).toISOString(),
+  };
+}
+
+async function loadInvestmentPricing(symbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt) {
+  const normalizedSymbols = normalizeInvestmentSymbols(symbols);
+
+  if (normalizedSymbols.length === 0) {
+    return {
+      livePricesBySymbol: {},
+      livePrices: [],
+      pricesLastUpdatedAt: null,
+    };
+  }
+
+  try {
+    const livePricesBySymbol = await getInvestmentPrices(normalizedSymbols);
+
+    return {
+      livePricesBySymbol,
+      livePrices: buildLivePrices(normalizedSymbols, livePricesBySymbol),
+      pricesLastUpdatedAt: getInvestmentPricesLastUpdatedAt() ?? null,
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.warn('Investment pricing unavailable; returning snapshot without live prices.', {
+      reason,
+    });
+
+    return {
+      livePricesBySymbol: {},
+      livePrices: [],
+      pricesLastUpdatedAt: null,
+    };
+  }
+}
+
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -346,8 +459,45 @@ export function createApp({
   now = () => new Date(),
   sendPasswordResetEmail = async () => {},
   processUploadedVideoFn = processUploadedVideo,
-  getInvestmentPrices = async () => ({}),
+  getInvestmentPrices: customGetInvestmentPrices,
+  getInvestmentPricesLastUpdatedAt: customGetInvestmentPricesLastUpdatedAt,
 }) {
+  const investmentPricingRequestState = new AsyncLocalStorage();
+  const runWithInvestmentPricingRequestState = (callback) =>
+    investmentPricingRequestState.run({ pricesLastUpdatedAt: null }, callback);
+  const setInvestmentPricingRequestTimestamp = (pricesLastUpdatedAt) => {
+    const store = investmentPricingRequestState.getStore();
+
+    if (store) {
+      store.pricesLastUpdatedAt = pricesLastUpdatedAt ?? null;
+    }
+  };
+  const getInvestmentPricingRequestTimestamp = () =>
+    investmentPricingRequestState.getStore()?.pricesLastUpdatedAt ?? null;
+
+  let getInvestmentPrices;
+
+  if (customGetInvestmentPrices) {
+    getInvestmentPrices = async (symbols) => {
+      const pricesBySymbol = await customGetInvestmentPrices(symbols);
+
+      if (!customGetInvestmentPricesLastUpdatedAt) {
+        setInvestmentPricingRequestTimestamp(new Date(now()).toISOString());
+      }
+
+      return pricesBySymbol;
+    };
+  } else {
+    getInvestmentPrices = async (symbols) => {
+      const { pricesBySymbol, pricesLastUpdatedAt } = await defaultCoinGeckoPriceFetcher(symbols);
+      setInvestmentPricingRequestTimestamp(pricesLastUpdatedAt);
+      return pricesBySymbol;
+    };
+  }
+
+  const getInvestmentPricesLastUpdatedAt =
+    customGetInvestmentPricesLastUpdatedAt ?? getInvestmentPricingRequestTimestamp;
+
   if (config.requireInviteCode && config.inviteCodes.length === 0) {
     throw new Error(
       'Invite code enforcement requires at least one configured six-digit invite code.'
@@ -551,7 +701,10 @@ export function createApp({
 
     const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
     const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
-    const livePricesBySymbol = await getInvestmentPrices(priceSymbols);
+    const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
+      await runWithInvestmentPricingRequestState(() =>
+        loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
+      );
     const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
 
     return res.json({
@@ -559,6 +712,8 @@ export function createApp({
       summary: snapshot.summary,
       holdings: snapshot.holdings,
       transactions: transactions.map(serializeInvestmentTransaction),
+      livePrices,
+      pricesLastUpdatedAt,
     });
   });
 
@@ -638,7 +793,11 @@ export function createApp({
     }
 
     const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
-    const livePricesBySymbol = await getInvestmentPrices();
+    const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
+    const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
+      await runWithInvestmentPricingRequestState(() =>
+        loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
+      );
     const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
 
     return res.json({
@@ -646,6 +805,8 @@ export function createApp({
       summary: snapshot.summary,
       holdings: snapshot.holdings,
       transactions: transactions.map(serializeInvestmentTransaction),
+      livePrices,
+      pricesLastUpdatedAt,
     });
   });
 
