@@ -593,6 +593,106 @@ describe('App dossier layout', () => {
     expect(screen.getByRole('button', { name: /Create portfolio/i })).toBeInTheDocument();
   });
 
+  it('keeps the admin page stable when an investor portfolio response is missing snapshot fields', async () => {
+    window.history.replaceState({}, '', '/admin');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio') && (!init?.method || init.method === 'GET')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 21,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /Investor Portfolios/i })).toBeInTheDocument();
+    expect(screen.getByText('Jennifer Portfolio')).toBeInTheDocument();
+    expect(screen.getAllByText('$0.00').length).toBeGreaterThan(0);
+    expect(screen.getByText('No transactions recorded yet.')).toBeInTheDocument();
+  });
+
   it('lets admins create an investor portfolio and add a buy transaction', async () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
       user: userEvent.setup(),

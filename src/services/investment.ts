@@ -73,6 +73,24 @@ interface AdminInvestmentTransactionEnvelope {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 
+function normalizeInvestmentPortfolioResponse(
+  payload: Partial<InvestmentPortfolioResponse> & {
+    portfolio: InvestmentPortfolioRecord;
+  }
+): InvestmentPortfolioResponse {
+  return {
+    portfolio: payload.portfolio,
+    summary: payload.summary ?? {
+      totalInvested: 0,
+      portfolioValue: 0,
+      unrealizedPnL: 0,
+      totalReturnPercent: 0,
+    },
+    holdings: Array.isArray(payload.holdings) ? payload.holdings : [],
+    transactions: Array.isArray(payload.transactions) ? payload.transactions : [],
+  };
+}
+
 async function parseError(response: Response) {
   let message = 'Request failed';
 
@@ -97,7 +115,11 @@ export async function fetchMyInvestmentPortfolio() {
     await parseError(response);
   }
 
-  return (await response.json()) as InvestmentPortfolioResponse;
+  return normalizeInvestmentPortfolioResponse(
+    (await response.json()) as Partial<InvestmentPortfolioResponse> & {
+      portfolio: InvestmentPortfolioRecord;
+    }
+  );
 }
 
 async function requestJson<T>(path: string, init?: RequestInit) {
@@ -118,9 +140,12 @@ async function requestJson<T>(path: string, init?: RequestInit) {
 }
 
 export function fetchAdminInvestmentPortfolio(userId: number) {
-  return requestJson<InvestmentPortfolioResponse>(`/api/admin/investors/${userId}/portfolio`, {
-    method: 'GET',
-  });
+  return requestJson<Partial<InvestmentPortfolioResponse> & { portfolio: InvestmentPortfolioRecord }>(
+    `/api/admin/investors/${userId}/portfolio`,
+    {
+      method: 'GET',
+    }
+  ).then(normalizeInvestmentPortfolioResponse);
 }
 
 export function createAdminInvestmentPortfolio(
