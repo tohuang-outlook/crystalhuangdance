@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import HoldingsTable from '../components/investment/HoldingsTable';
+import LivePricesCard from '../components/investment/LivePricesCard';
 import PortfolioSummary from '../components/investment/PortfolioSummary';
 import TransactionTable from '../components/investment/TransactionTable';
 import {
@@ -10,43 +11,80 @@ import {
 export default function MyInvestmentPage() {
   const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
+  const isRefreshInFlightRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
+    const load = async ({ background = false } = {}) => {
+      if (background && isRefreshInFlightRef.current) {
+        return;
+      }
+
+      if (background) {
+        isRefreshInFlightRef.current = true;
+      }
+
+      if (!background && !hasLoadedOnceRef.current) {
+        setIsLoading(true);
+      }
+
+      if (!background) {
+        setError(null);
+        setRefreshError(null);
+      }
 
       try {
         const response = await fetchMyInvestmentPortfolio();
-        if (isMounted) {
-          setData(response);
+        if (!isMounted) {
+          return;
         }
+
+        setData(response);
+        setError(null);
+        setRefreshError(null);
+        hasLoadedOnceRef.current = true;
       } catch (err) {
         if (!isMounted) {
           return;
         }
 
-        const message = err instanceof Error ? err.message : 'Unable to load your investment dashboard.';
-        if (message.toLowerCase().includes('portfolio not found')) {
-          setData(null);
-          setError(null);
-        } else {
-          setError(message);
+        const message =
+          err instanceof Error ? err.message : 'Unable to load your investment dashboard.';
+
+        if (!hasLoadedOnceRef.current) {
+          if (message.toLowerCase().includes('portfolio not found')) {
+            hasLoadedOnceRef.current = true;
+            setData(null);
+            setError(null);
+          } else {
+            setError(message);
+          }
+        } else if (background) {
+          setRefreshError('Live prices may be stale. We could not refresh your dashboard just now.');
         }
       } finally {
-        if (isMounted) {
+        if (background) {
+          isRefreshInFlightRef.current = false;
+        }
+
+        if (isMounted && !background) {
           setIsLoading(false);
         }
       }
     };
 
     void load();
+    const intervalId = window.setInterval(() => {
+      void load({ background: true });
+    }, 60000);
 
     return () => {
       isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -75,6 +113,12 @@ export default function MyInvestmentPage() {
             </p>
           ) : null}
 
+          {refreshError && data ? (
+            <p className="mt-8 rounded-2xl border border-[rgba(228,178,58,0.28)] bg-[rgba(255,245,204,0.72)] px-4 py-3 text-sm text-[var(--text)]">
+              {refreshError}
+            </p>
+          ) : null}
+
           {isLoading ? (
             <div className="mt-10 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-14 text-center">
               <p className="eyebrow">Loading portfolio</p>
@@ -90,6 +134,10 @@ export default function MyInvestmentPage() {
           ) : (
             <>
               <PortfolioSummary summary={data.summary} />
+              <LivePricesCard
+                livePrices={data.livePrices}
+                pricesLastUpdatedAt={data.pricesLastUpdatedAt}
+              />
 
               <div className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
                 <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">

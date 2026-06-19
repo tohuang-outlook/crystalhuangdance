@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { siteConfig } from './data/siteData';
 
@@ -384,6 +384,196 @@ describe('App dossier layout', () => {
 
     expect(await screen.findByText('BTC')).toBeInTheDocument();
     expect(screen.getAllByText('$5,400.00').length).toBeGreaterThan(0);
+  });
+
+  it('renders live prices and current price data for investor users', async () => {
+    window.history.replaceState({}, '', '/investment');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 7,
+              email: 'jennifer@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/investment/me')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 1,
+              userId: 7,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-19T00:00:00.000Z',
+              updatedAt: '2026-06-19T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 5000,
+              portfolioValue: 5400,
+              unrealizedPnL: 400,
+              totalReturnPercent: 8,
+            },
+            livePrices: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                currentPrice: 54000,
+              },
+            ],
+            pricesLastUpdatedAt: '2026-06-19T16:00:00.000Z',
+            holdings: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                quantity: 0.1,
+                invested: 5000,
+                averageCost: 50000,
+                currentPrice: 54000,
+                currentValue: 5400,
+                unrealizedPnL: 400,
+                allocationPercent: 100,
+              },
+            ],
+            transactions: [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /my investment/i });
+
+    expect(screen.getByText('Live Prices')).toBeInTheDocument();
+    expect(screen.getByText('Bitcoin')).toBeInTheDocument();
+    expect(screen.getAllByText('$54,000.00').length).toBeGreaterThan(0);
+    expect(screen.getByRole('columnheader', { name: /Current Price/i })).toBeInTheDocument();
+  });
+
+  it('refreshes the investor snapshot every 60 seconds without showing the first-load placeholder again', async () => {
+    window.history.replaceState({}, '', '/investment');
+
+    let portfolioFetchCount = 0;
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 7,
+              email: 'jennifer@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/investment/me')) {
+        portfolioFetchCount += 1;
+        const currentPrice = portfolioFetchCount === 1 ? 54000 : 55000;
+
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 1,
+              userId: 7,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-19T00:00:00.000Z',
+              updatedAt: '2026-06-19T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 5000,
+              portfolioValue: currentPrice * 0.1,
+              unrealizedPnL: currentPrice * 0.1 - 5000,
+              totalReturnPercent: currentPrice === 54000 ? 8 : 10,
+            },
+            livePrices: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                currentPrice,
+              },
+            ],
+            pricesLastUpdatedAt: '2026-06-19T16:00:00.000Z',
+            holdings: [
+              {
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                quantity: 0.1,
+                invested: 5000,
+                averageCost: 50000,
+                currentPrice,
+                currentValue: currentPrice * 0.1,
+                unrealizedPnL: currentPrice * 0.1 - 5000,
+                allocationPercent: 100,
+              },
+            ],
+            transactions: [],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    try {
+      render(<App />);
+
+      expect((await screen.findAllByText('$5,400.00')).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/Preparing your investment snapshot/i)).not.toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60000);
+      });
+
+      expect((await screen.findAllByText('$5,500.00')).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/Preparing your investment snapshot/i)).not.toBeInTheDocument();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
   });
 
   it('routes dancer users to my videos after login', async () => {

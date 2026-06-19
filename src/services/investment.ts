@@ -32,6 +32,12 @@ export interface InvestmentHolding {
   allocationPercent: number;
 }
 
+export interface InvestmentLivePrice {
+  assetSymbol: string;
+  assetName: string;
+  currentPrice: number;
+}
+
 export interface InvestmentTransaction {
   id: number;
   portfolioId: number;
@@ -61,6 +67,8 @@ export interface InvestmentPortfolioResponse {
   summary: InvestmentSummary;
   holdings: InvestmentHolding[];
   transactions: InvestmentTransaction[];
+  livePrices: InvestmentLivePrice[];
+  pricesLastUpdatedAt: string | null;
 }
 
 interface InvestmentPortfolioEnvelope {
@@ -72,6 +80,35 @@ interface AdminInvestmentTransactionEnvelope {
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+
+function normalizeInvestmentLivePrices(payload: unknown): InvestmentLivePrice[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const assetSymbol =
+      typeof entry.assetSymbol === 'string' ? entry.assetSymbol.trim() : '';
+    const assetName = typeof entry.assetName === 'string' ? entry.assetName.trim() : '';
+    const currentPrice = Number(entry.currentPrice);
+
+    if (!assetSymbol || !assetName || !Number.isFinite(currentPrice)) {
+      return [];
+    }
+
+    return [
+      {
+        assetSymbol,
+        assetName,
+        currentPrice,
+      },
+    ];
+  });
+}
 
 function normalizeInvestmentPortfolioResponse(
   payload: Partial<InvestmentPortfolioResponse> & {
@@ -88,6 +125,11 @@ function normalizeInvestmentPortfolioResponse(
     },
     holdings: Array.isArray(payload.holdings) ? payload.holdings : [],
     transactions: Array.isArray(payload.transactions) ? payload.transactions : [],
+    livePrices: normalizeInvestmentLivePrices(payload.livePrices),
+    pricesLastUpdatedAt:
+      typeof payload.pricesLastUpdatedAt === 'string' || payload.pricesLastUpdatedAt === null
+        ? payload.pricesLastUpdatedAt
+        : null,
   };
 }
 
