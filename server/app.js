@@ -39,6 +39,7 @@ const investmentAssetIdsBySymbol = {
   SOL: 'solana',
   DOGE: 'dogecoin',
 };
+const investmentPricingFetchTimeoutMs = 5000;
 
 function toSafeUser(user) {
   return {
@@ -187,10 +188,12 @@ function buildPortfolioSnapshot(transactions, livePricesBySymbol) {
   }
 
   const rawHoldings = Array.from(holdingsMap.values()).map((holding) => {
-    const currentPrice = Number(livePricesBySymbol[holding.assetSymbol] ?? 0);
-    const currentValue = holding.quantity * currentPrice;
     const averageCost = holding.quantity > 0 ? holding.invested / holding.quantity : 0;
-    const unrealizedPnL = currentValue - holding.invested;
+    const livePrice = Number(livePricesBySymbol[holding.assetSymbol]);
+    const hasLivePrice = Number.isFinite(livePrice);
+    const currentPrice = hasLivePrice ? livePrice : averageCost;
+    const currentValue = hasLivePrice ? holding.quantity * livePrice : holding.invested;
+    const unrealizedPnL = hasLivePrice ? currentValue - holding.invested : 0;
 
     return {
       assetSymbol: holding.assetSymbol,
@@ -253,7 +256,15 @@ function buildLivePrices(symbols, livePricesBySymbol) {
     .filter(Boolean);
 }
 
-async function defaultCoinGeckoPriceFetcher(symbols, fetchFn = fetch) {
+function isAbortError(error) {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+async function defaultCoinGeckoPriceFetcher(
+  symbols,
+  fetchFn = fetch,
+  timeoutMs = investmentPricingFetchTimeoutMs
+) {
   const normalizedSymbols = normalizeInvestmentSymbols(symbols);
 
   if (normalizedSymbols.length === 0) {
@@ -269,7 +280,23 @@ async function defaultCoinGeckoPriceFetcher(symbols, fetchFn = fetch) {
   url.searchParams.set('vs_currencies', 'usd');
   url.searchParams.set('include_last_updated_at', 'true');
 
-  const response = await fetchFn(url);
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    abortController.abort();
+  }, timeoutMs);
+  let response;
+
+  try {
+    response = await fetchFn(url, { signal: abortController.signal });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new Error(`CoinGecko pricing request timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
@@ -461,6 +488,7 @@ export function createApp({
   processUploadedVideoFn = processUploadedVideo,
   getInvestmentPrices: customGetInvestmentPrices,
   getInvestmentPricesLastUpdatedAt: customGetInvestmentPricesLastUpdatedAt,
+  investmentPriceFetchTimeoutMs = investmentPricingFetchTimeoutMs,
 }) {
   const investmentPricingRequestState = new AsyncLocalStorage();
   const runWithInvestmentPricingRequestState = (callback) =>
@@ -489,7 +517,11 @@ export function createApp({
     };
   } else {
     getInvestmentPrices = async (symbols) => {
-      const { pricesBySymbol, pricesLastUpdatedAt } = await defaultCoinGeckoPriceFetcher(symbols);
+      const { pricesBySymbol, pricesLastUpdatedAt } = await defaultCoinGeckoPriceFetcher(
+        symbols,
+        fetch,
+        investmentPriceFetchTimeoutMs
+      );
       setInvestmentPricingRequestTimestamp(pricesLastUpdatedAt);
       return pricesBySymbol;
     };

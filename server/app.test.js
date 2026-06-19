@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import { createHash } from 'crypto';
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from './app.js';
 import { createDatabase } from './db.js';
 
@@ -100,6 +100,11 @@ describe('auth and video backend foundation', () => {
   let config;
   let sentResetEmails;
   let currentTime;
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   beforeEach(() => {
     db = createDatabase(':memory:');
@@ -925,13 +930,107 @@ describe('auth and video backend foundation', () => {
     expect(response.status).toBe(200);
     expect(response.body.livePrices).toEqual([]);
     expect(response.body.pricesLastUpdatedAt).toBeNull();
+    expect(response.body.summary).toEqual({
+      totalInvested: 5000,
+      portfolioValue: 5000,
+      unrealizedPnL: 0,
+      totalReturnPercent: 0,
+    });
     expect(response.body.holdings).toEqual([
       expect.objectContaining({
         assetSymbol: 'BTC',
-        currentPrice: 0,
-        currentValue: 0,
+        currentPrice: 50000,
+        currentValue: 5000,
+        unrealizedPnL: 0,
+        allocationPercent: 100,
       }),
     ]);
+  });
+
+  it('times out hung CoinGecko requests and returns the investor snapshot without fake losses', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn((_url, options = {}) => {
+      const { signal } = options;
+
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener(
+          'abort',
+          () => {
+            const abortError = new Error('The operation was aborted.');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          },
+          { once: true }
+        );
+      });
+    });
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      investmentPriceFetchTimeoutMs: 20,
+    });
+
+    try {
+      const adminAgent = request.agent(app);
+      const investorAgent = request.agent(app);
+
+      await registerUser(adminAgent, 'admin@example.com');
+      promoteUserToAdmin(db, 'admin@example.com');
+      await loginUser(adminAgent, 'admin@example.com');
+
+      const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+      const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
+      await loginUser(investorAgent, 'jennifer@example.com');
+
+      const createPortfolioResponse = await adminAgent
+        .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
+        .send({ displayName: 'Jennifer Portfolio' });
+      expect(createPortfolioResponse.status).toBe(201);
+
+      const createTransactionResponse = await adminAgent
+        .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
+        .send({
+          assetSymbol: 'BTC',
+          amountInvested: 5000,
+          purchaseShares: 0.1,
+          purchaseDate: '2026-06-01',
+        });
+      expect(createTransactionResponse.status).toBe(201);
+
+      const response = await investorAgent.get('/api/investment/me');
+
+      expect(response.status).toBe(200);
+      expect(response.body.livePrices).toEqual([]);
+      expect(response.body.pricesLastUpdatedAt).toBeNull();
+      expect(response.body.summary).toEqual({
+        totalInvested: 5000,
+        portfolioValue: 5000,
+        unrealizedPnL: 0,
+        totalReturnPercent: 0,
+      });
+      expect(response.body.holdings).toEqual([
+        expect.objectContaining({
+          assetSymbol: 'BTC',
+          currentPrice: 50000,
+          currentValue: 5000,
+          unrealizedPnL: 0,
+        }),
+      ]);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch.mock.calls[0][1]).toEqual(
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+        })
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('rejects transaction mutation requests from investor users', async () => {
