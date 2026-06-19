@@ -890,9 +890,26 @@ export default function AdminPage() {
                       const portfolio = portfolioByInvestorId[user.id];
                       const isCreatingPortfolio = activePortfolioAction === `create-${user.id}`;
                       const isCreatingTransaction = activePortfolioAction === `transaction-${user.id}`;
+                      const safeSummary =
+                        portfolio && portfolio !== null
+                          ? portfolio.summary ?? {
+                              totalInvested: 0,
+                              portfolioValue: 0,
+                              unrealizedPnL: 0,
+                              totalReturnPercent: 0,
+                            }
+                          : null;
+                      const safeHoldings =
+                        portfolio && portfolio !== null && Array.isArray(portfolio.holdings)
+                          ? portfolio.holdings
+                          : [];
+                      const safeTransactions =
+                        portfolio && portfolio !== null && Array.isArray(portfolio.transactions)
+                          ? portfolio.transactions
+                          : [];
                       const editingTransaction =
                         portfolio && portfolio !== null
-                          ? portfolio.transactions.find(
+                          ? safeTransactions.find(
                               (transaction) => transaction.id === editingTransactionId
                             ) ?? null
                           : null;
@@ -948,11 +965,16 @@ export default function AdminPage() {
                                 <h4 className="mt-3 text-2xl text-[var(--text)]">
                                   {portfolio.portfolio.displayName || 'Investor Portfolio'}
                                 </h4>
-                                <PortfolioSummary summary={portfolio.summary} />
+                                <PortfolioSummary summary={safeSummary ?? {
+                                  totalInvested: 0,
+                                  portfolioValue: 0,
+                                  unrealizedPnL: 0,
+                                  totalReturnPercent: 0,
+                                }} />
                                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
                                   <div>
                                     <p className="text-sm text-[var(--text-muted)]">Holdings</p>
-                                    <HoldingsTable holdings={portfolio.holdings} />
+                                    <HoldingsTable holdings={safeHoldings} />
                                   </div>
                                   <div>
                                     <p className="text-sm text-[var(--text-muted)]">Transactions</p>
@@ -963,7 +985,7 @@ export default function AdminPage() {
                                         void handleDeleteInvestorTransaction(user, transaction)
                                       }
                                       onEdit={(transaction) => setEditingTransactionId(transaction.id)}
-                                      transactions={portfolio.transactions}
+                                      transactions={safeTransactions}
                                     />
                                     {editingTransaction ? (
                                       <div className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white p-5">
