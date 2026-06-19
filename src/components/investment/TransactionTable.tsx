@@ -8,16 +8,25 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(value: string) {
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(value));
+  }).format(new Date(normalizedValue));
 }
 
 export default function TransactionTable({
+  activeDeleteId,
+  activeEditId,
+  onDelete,
+  onEdit,
   transactions,
 }: {
+  activeDeleteId?: number | null;
+  activeEditId?: number | null;
+  onDelete?: (transaction: InvestmentTransaction) => void;
+  onEdit?: (transaction: InvestmentTransaction) => void;
   transactions: InvestmentTransaction[];
 }) {
   if (transactions.length === 0) {
@@ -38,6 +47,7 @@ export default function TransactionTable({
             <th>Invested</th>
             <th>Price</th>
             <th>Shares</th>
+            {onEdit || onDelete ? <th>Actions</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -47,6 +57,9 @@ export default function TransactionTable({
               <td className="px-3 py-4">
                 <div className="font-medium text-[var(--text)]">{transaction.assetSymbol}</div>
                 <div className="text-sm text-[var(--text-muted)]">{transaction.assetName}</div>
+                {transaction.notes ? (
+                  <div className="mt-1 text-sm text-[var(--text-muted)]">{transaction.notes}</div>
+                ) : null}
               </td>
               <td className="px-3 py-4 text-[var(--text)]">
                 {formatCurrency(transaction.amountInvested)}
@@ -57,6 +70,32 @@ export default function TransactionTable({
               <td className="px-3 py-4 text-[var(--text)]">
                 {transaction.purchaseShares.toFixed(8)}
               </td>
+              {onEdit || onDelete ? (
+                <td className="px-3 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    {onEdit ? (
+                      <button
+                        aria-label={`Edit ${transaction.assetSymbol} transaction from ${formatDate(transaction.purchaseDate)}`}
+                        className="rounded-full border border-[var(--line)] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)]"
+                        onClick={() => onEdit(transaction)}
+                        type="button"
+                      >
+                        {activeEditId === transaction.id ? 'Editing' : 'Edit'}
+                      </button>
+                    ) : null}
+                    {onDelete ? (
+                      <button
+                        aria-label={`Delete ${transaction.assetSymbol} transaction from ${formatDate(transaction.purchaseDate)}`}
+                        className="rounded-full border border-[rgba(255,107,107,0.24)] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)]"
+                        onClick={() => onDelete(transaction)}
+                        type="button"
+                      >
+                        {activeDeleteId === transaction.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    ) : null}
+                  </div>
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

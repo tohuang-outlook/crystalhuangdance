@@ -22,6 +22,14 @@ const allowedMimeTypes = new Set([
 ]);
 const inviteCodePattern = /^\d{6}$/;
 const allowedMemberTypes = new Set(['dancer', 'investor']);
+const investmentAssetNamesBySymbol = {
+  BTC: 'Bitcoin',
+  ETH: 'Ethereum',
+  ADA: 'Cardano',
+  XRP: 'XRP',
+  SOL: 'Solana',
+  DOGE: 'Dogecoin',
+};
 
 function toSafeUser(user) {
   return {
@@ -217,6 +225,48 @@ function buildPortfolioSnapshot(transactions, livePricesBySymbol) {
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseTransactionPayload(body) {
+  const assetSymbol = String(body?.assetSymbol ?? '')
+    .trim()
+    .toUpperCase();
+  const amountInvested = Number(body?.amountInvested);
+  const rawPurchasePrice = String(body?.purchasePrice ?? '').trim();
+  const rawPurchaseShares = String(body?.purchaseShares ?? '').trim();
+  const purchasePrice = rawPurchasePrice ? Number(rawPurchasePrice) : Number.NaN;
+  const purchaseShares = rawPurchaseShares ? Number(rawPurchaseShares) : Number.NaN;
+  const purchaseDate = String(body?.purchaseDate ?? '').trim();
+  const notes = trimOptionalString(body?.notes);
+  const assetName = investmentAssetNamesBySymbol[assetSymbol];
+
+  if (!assetName || !purchaseDate) {
+    return { error: 'A supported asset symbol and purchase date are required.' };
+  }
+
+  if (!Number.isFinite(amountInvested) || amountInvested <= 0) {
+    return { error: 'Amount invested must be a positive number.' };
+  }
+
+  const hasPurchasePrice = Number.isFinite(purchasePrice) && purchasePrice > 0;
+  const hasPurchaseShares = Number.isFinite(purchaseShares) && purchaseShares > 0;
+
+  if (!hasPurchasePrice && !hasPurchaseShares) {
+    return { error: 'Enter either purchase price or purchase shares.' };
+  }
+
+  const normalizedPurchasePrice = hasPurchasePrice ? purchasePrice : amountInvested / purchaseShares;
+  const normalizedPurchaseShares = hasPurchaseShares ? purchaseShares : amountInvested / purchasePrice;
+
+  return {
+    assetSymbol,
+    assetName,
+    amountInvested,
+    purchasePrice: normalizedPurchasePrice,
+    purchaseShares: normalizedPurchaseShares,
+    purchaseDate,
+    notes,
+  };
 }
 
 function findHydratedAdminVideo(db, videoId) {
@@ -574,7 +624,7 @@ export function createApp({
     return res.status(201).json({ portfolio: serializeInvestmentPortfolio(portfolio) });
   });
 
-  app.get('/api/admin/investors/:userId/portfolio', requireAdmin, (req, res) => {
+  app.get('/api/admin/investors/:userId/portfolio', requireAdmin, async (req, res) => {
     const userId = parseIdParam(req.params.userId);
 
     if (!userId) {
@@ -587,7 +637,16 @@ export function createApp({
       return res.status(404).json({ error: 'Portfolio not found.' });
     }
 
-    return res.json({ portfolio: serializeInvestmentPortfolio(portfolio) });
+    const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
+    const livePricesBySymbol = await getInvestmentPrices();
+    const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
+
+    return res.json({
+      portfolio: serializeInvestmentPortfolio(portfolio),
+      summary: snapshot.summary,
+      holdings: snapshot.holdings,
+      transactions: transactions.map(serializeInvestmentTransaction),
+    });
   });
 
   app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
@@ -603,45 +662,65 @@ export function createApp({
       return res.status(404).json({ error: 'Portfolio not found.' });
     }
 
-    const assetSymbol = String(req.body?.assetSymbol ?? '')
-      .trim()
-      .toUpperCase();
-    const assetName = String(req.body?.assetName ?? '').trim();
-    const amountInvested = Number(req.body?.amountInvested);
-    const purchasePrice = Number(req.body?.purchasePrice);
-    const purchaseShares = Number(req.body?.purchaseShares);
-    const purchaseDate = String(req.body?.purchaseDate ?? '').trim();
-    const notes = trimOptionalString(req.body?.notes);
+    const parsedPayload = parseTransactionPayload(req.body);
 
-    if (!assetSymbol || !assetName || !purchaseDate) {
-      return res.status(400).json({ error: 'Asset symbol, asset name, and purchase date are required.' });
-    }
-
-    if (
-      !Number.isFinite(amountInvested) ||
-      !Number.isFinite(purchasePrice) ||
-      !Number.isFinite(purchaseShares) ||
-      amountInvested <= 0 ||
-      purchasePrice <= 0 ||
-      purchaseShares <= 0
-    ) {
-      return res.status(400).json({ error: 'Valid positive transaction amounts are required.' });
+    if ('error' in parsedPayload) {
+      return res.status(400).json({ error: parsedPayload.error });
     }
 
     const transaction = db.createInvestmentTransaction({
       portfolioId: portfolio.id,
-      assetSymbol,
-      assetName,
-      amountInvested,
-      purchasePrice,
-      purchaseShares,
-      purchaseDate,
-      notes,
+      ...parsedPayload,
     });
 
     return res.status(201).json({
       transaction: serializeInvestmentTransaction(transaction),
     });
+  });
+
+  app.patch('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
+    const transactionId = parseIdParam(req.params.transactionId);
+
+    if (!transactionId) {
+      return res.status(400).json({ error: 'A valid transaction id is required.' });
+    }
+
+    const existingTransaction = db.findInvestmentTransactionById(transactionId);
+
+    if (!existingTransaction) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+
+    const parsedPayload = parseTransactionPayload(req.body);
+
+    if ('error' in parsedPayload) {
+      return res.status(400).json({ error: parsedPayload.error });
+    }
+
+    const transaction = db.updateInvestmentTransaction({
+      id: transactionId,
+      ...parsedPayload,
+    });
+
+    return res.json({
+      transaction: serializeInvestmentTransaction(transaction),
+    });
+  });
+
+  app.delete('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
+    const transactionId = parseIdParam(req.params.transactionId);
+
+    if (!transactionId) {
+      return res.status(400).json({ error: 'A valid transaction id is required.' });
+    }
+
+    const deletedTransaction = db.deleteInvestmentTransactionById(transactionId);
+
+    if (!deletedTransaction) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+
+    return res.json({ deletedTransactionId: deletedTransaction.id });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {

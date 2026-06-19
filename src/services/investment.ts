@@ -47,6 +47,15 @@ export interface InvestmentTransaction {
   updatedAt: string;
 }
 
+export const INVESTMENT_ASSET_OPTIONS = [
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'ADA', name: 'Cardano' },
+  { symbol: 'XRP', name: 'XRP' },
+  { symbol: 'SOL', name: 'Solana' },
+  { symbol: 'DOGE', name: 'Dogecoin' },
+] as const;
+
 export interface InvestmentPortfolioResponse {
   portfolio: InvestmentPortfolioRecord;
   summary: InvestmentSummary;
@@ -63,6 +72,24 @@ interface AdminInvestmentTransactionEnvelope {
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+
+function normalizeInvestmentPortfolioResponse(
+  payload: Partial<InvestmentPortfolioResponse> & {
+    portfolio: InvestmentPortfolioRecord;
+  }
+): InvestmentPortfolioResponse {
+  return {
+    portfolio: payload.portfolio,
+    summary: payload.summary ?? {
+      totalInvested: 0,
+      portfolioValue: 0,
+      unrealizedPnL: 0,
+      totalReturnPercent: 0,
+    },
+    holdings: Array.isArray(payload.holdings) ? payload.holdings : [],
+    transactions: Array.isArray(payload.transactions) ? payload.transactions : [],
+  };
+}
 
 async function parseError(response: Response) {
   let message = 'Request failed';
@@ -88,7 +115,11 @@ export async function fetchMyInvestmentPortfolio() {
     await parseError(response);
   }
 
-  return (await response.json()) as InvestmentPortfolioResponse;
+  return normalizeInvestmentPortfolioResponse(
+    (await response.json()) as Partial<InvestmentPortfolioResponse> & {
+      portfolio: InvestmentPortfolioRecord;
+    }
+  );
 }
 
 async function requestJson<T>(path: string, init?: RequestInit) {
@@ -109,9 +140,12 @@ async function requestJson<T>(path: string, init?: RequestInit) {
 }
 
 export function fetchAdminInvestmentPortfolio(userId: number) {
-  return requestJson<InvestmentPortfolioResponse>(`/api/admin/investors/${userId}/portfolio`, {
-    method: 'GET',
-  });
+  return requestJson<Partial<InvestmentPortfolioResponse> & { portfolio: InvestmentPortfolioRecord }>(
+    `/api/admin/investors/${userId}/portfolio`,
+    {
+      method: 'GET',
+    }
+  ).then(normalizeInvestmentPortfolioResponse);
 }
 
 export function createAdminInvestmentPortfolio(
@@ -128,7 +162,6 @@ export function createAdminInvestmentTransaction(
   userId: number,
   payload: {
     assetSymbol: string;
-    assetName: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;
@@ -141,6 +174,35 @@ export function createAdminInvestmentTransaction(
     {
       method: 'POST',
       body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function updateAdminInvestmentTransaction(
+  transactionId: number,
+  payload: {
+    assetSymbol: string;
+    amountInvested: number;
+    purchasePrice: number;
+    purchaseShares: number;
+    purchaseDate: string;
+    notes?: string | null;
+  }
+) {
+  return requestJson<AdminInvestmentTransactionEnvelope>(
+    `/api/admin/portfolio-transactions/${transactionId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function deleteAdminInvestmentTransaction(transactionId: number) {
+  return requestJson<{ deletedTransactionId: number }>(
+    `/api/admin/portfolio-transactions/${transactionId}`,
+    {
+      method: 'DELETE',
     }
   );
 }

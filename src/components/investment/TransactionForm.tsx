@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { INVESTMENT_ASSET_OPTIONS } from '../../services/investment';
 
 interface TransactionFormValues {
   assetSymbol: string;
-  assetName: string;
   amountInvested: string;
   purchasePrice: string;
   purchaseShares: string;
@@ -12,7 +12,6 @@ interface TransactionFormValues {
 
 const defaultValues: TransactionFormValues = {
   assetSymbol: '',
-  assetName: '',
   amountInvested: '',
   purchasePrice: '',
   purchaseShares: '',
@@ -20,27 +19,44 @@ const defaultValues: TransactionFormValues = {
   notes: '',
 };
 
+function normalizeInitialValues(values?: Partial<TransactionFormValues>): TransactionFormValues {
+  return {
+    ...defaultValues,
+    ...values,
+  };
+}
+
 export default function TransactionForm({
+  initialValues,
   isSubmitting,
+  onCancel,
   onSubmit,
+  submitLabel = 'Add transaction',
 }: {
+  initialValues?: Partial<TransactionFormValues>;
   isSubmitting: boolean;
+  onCancel?: () => void;
   onSubmit: (payload: {
     assetSymbol: string;
-    assetName: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;
     purchaseDate: string;
     notes: string | null;
   }) => Promise<void>;
+  submitLabel?: string;
 }) {
-  const [values, setValues] = useState<TransactionFormValues>(defaultValues);
+  const [values, setValues] = useState<TransactionFormValues>(normalizeInitialValues(initialValues));
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValues(normalizeInitialValues(initialValues));
+    setError(null);
+  }, [initialValues]);
 
   const handleChange =
     (field: keyof TransactionFormValues) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setValues((current) => ({
         ...current,
         [field]: event.target.value,
@@ -57,8 +73,8 @@ export default function TransactionForm({
     const purchasePrice = rawPurchasePrice ? Number(rawPurchasePrice) : NaN;
     const purchaseShares = rawPurchaseShares ? Number(rawPurchaseShares) : NaN;
 
-    if (!values.assetSymbol.trim() || !values.assetName.trim() || !values.purchaseDate.trim()) {
-      setError('Asset symbol, asset name, and purchase date are required.');
+    if (!values.assetSymbol.trim() || !values.purchaseDate.trim()) {
+      setError('Asset symbol and purchase date are required.');
       return;
     }
 
@@ -80,7 +96,6 @@ export default function TransactionForm({
 
     await onSubmit({
       assetSymbol: values.assetSymbol.trim().toUpperCase(),
-      assetName: values.assetName.trim(),
       amountInvested,
       purchasePrice: normalizedPurchasePrice,
       purchaseShares: normalizedPurchaseShares,
@@ -95,22 +110,19 @@ export default function TransactionForm({
     <form className="mt-5 grid gap-4 xl:grid-cols-3" onSubmit={(event) => void handleSubmit(event)}>
       <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
         <span className="eyebrow text-[10px]">Asset symbol</span>
-        <input
+        <select
+          aria-label="Asset symbol"
           className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
           onChange={handleChange('assetSymbol')}
-          placeholder="BTC"
           value={values.assetSymbol}
-        />
-      </label>
-
-      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-        <span className="eyebrow text-[10px]">Asset name</span>
-        <input
-          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-          onChange={handleChange('assetName')}
-          placeholder="Bitcoin"
-          value={values.assetName}
-        />
+        >
+          <option value="">Select asset</option>
+          {INVESTMENT_ASSET_OPTIONS.map((asset) => (
+            <option key={asset.symbol} value={asset.symbol}>
+              {asset.symbol}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
@@ -166,14 +178,24 @@ export default function TransactionForm({
         />
       </label>
 
-      <div className="flex items-end">
+      <div className="flex items-end gap-3">
         <button
           className="w-full rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}
           type="submit"
         >
-          {isSubmitting ? 'Saving...' : 'Add transaction'}
+          {isSubmitting ? 'Saving...' : submitLabel}
         </button>
+        {onCancel ? (
+          <button
+            className="w-full rounded-full border border-[var(--line)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting}
+            onClick={onCancel}
+            type="button"
+          >
+            Cancel
+          </button>
+        ) : null}
       </div>
 
       {error ? (
