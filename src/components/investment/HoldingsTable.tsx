@@ -25,6 +25,7 @@ export default function HoldingsTable({ holdings }: { holdings: InvestmentHoldin
             <th>Asset</th>
             <th>Quantity</th>
             <th>Invested</th>
+            <th>Current Price</th>
             <th>Value</th>
             <th>P&amp;L</th>
           </tr>
@@ -40,6 +41,9 @@ export default function HoldingsTable({ holdings }: { holdings: InvestmentHoldin
               </td>
               <td className="px-3 py-4 text-[var(--text)]">{formatQuantity(holding.quantity)}</td>
               <td className="px-3 py-4 text-[var(--text)]">{formatCurrency(holding.invested)}</td>
+              <td className="px-3 py-4 text-[var(--text)]">
+                {formatCurrency(holding.currentPrice)}
+              </td>
               <td className="px-3 py-4 text-[var(--text)]">{formatCurrency(holding.currentValue)}</td>
               <td
                 className={`px-3 py-4 ${
