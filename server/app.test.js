@@ -778,9 +778,7 @@ describe('auth and video backend foundation', () => {
       .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
       .send({
         assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
         amountInvested: 5000,
-        purchasePrice: 50000,
         purchaseShares: 0.1,
         purchaseDate: '2026-06-01',
         notes: 'Initial BTC position',
@@ -836,9 +834,7 @@ describe('auth and video backend foundation', () => {
       .post(`/api/admin/investors/${promotedTarget.id}/portfolio/transactions`)
       .send({
         assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
         amountInvested: 5000,
-        purchasePrice: 50000,
         purchaseShares: 0.1,
         purchaseDate: '2026-06-01',
       });
@@ -880,9 +876,7 @@ describe('auth and video backend foundation', () => {
       .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
       .send({
         assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
         amountInvested: 5000,
-        purchasePrice: 50000,
         purchaseShares: 0.1,
         purchaseDate: '2026-06-01',
         notes: 'Initial BTC position',
@@ -894,10 +888,8 @@ describe('auth and video backend foundation', () => {
       .patch(`/api/admin/portfolio-transactions/${transactionId}`)
       .send({
         assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
         amountInvested: 6000,
         purchasePrice: 60000,
-        purchaseShares: 0.1,
         purchaseDate: '2026-06-02',
         notes: 'Updated BTC position',
       });
@@ -964,9 +956,7 @@ describe('auth and video backend foundation', () => {
       .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
       .send({
         assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
         amountInvested: 5000,
-        purchasePrice: 50000,
         purchaseShares: 0.1,
         purchaseDate: '2026-06-01',
       });

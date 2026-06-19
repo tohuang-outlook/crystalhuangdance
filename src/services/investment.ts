@@ -47,6 +47,15 @@ export interface InvestmentTransaction {
   updatedAt: string;
 }
 
+export const INVESTMENT_ASSET_OPTIONS = [
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'ADA', name: 'Cardano' },
+  { symbol: 'XRP', name: 'XRP' },
+  { symbol: 'SOL', name: 'Solana' },
+  { symbol: 'DOGE', name: 'Dogecoin' },
+] as const;
+
 export interface InvestmentPortfolioResponse {
   portfolio: InvestmentPortfolioRecord;
   summary: InvestmentSummary;
@@ -128,7 +137,6 @@ export function createAdminInvestmentTransaction(
   userId: number,
   payload: {
     assetSymbol: string;
-    assetName: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;
@@ -149,7 +157,6 @@ export function updateAdminInvestmentTransaction(
   transactionId: number,
   payload: {
     assetSymbol: string;
-    assetName: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;

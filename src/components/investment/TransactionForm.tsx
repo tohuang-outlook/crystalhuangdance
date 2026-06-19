@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { INVESTMENT_ASSET_OPTIONS } from '../../services/investment';
 
 interface TransactionFormValues {
   assetSymbol: string;
-  assetName: string;
   amountInvested: string;
   purchasePrice: string;
   purchaseShares: string;
@@ -12,7 +12,6 @@ interface TransactionFormValues {
 
 const defaultValues: TransactionFormValues = {
   assetSymbol: '',
-  assetName: '',
   amountInvested: '',
   purchasePrice: '',
   purchaseShares: '',
@@ -39,7 +38,6 @@ export default function TransactionForm({
   onCancel?: () => void;
   onSubmit: (payload: {
     assetSymbol: string;
-    assetName: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;
@@ -58,7 +56,7 @@ export default function TransactionForm({
 
   const handleChange =
     (field: keyof TransactionFormValues) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setValues((current) => ({
         ...current,
         [field]: event.target.value,
@@ -75,8 +73,8 @@ export default function TransactionForm({
     const purchasePrice = rawPurchasePrice ? Number(rawPurchasePrice) : NaN;
     const purchaseShares = rawPurchaseShares ? Number(rawPurchaseShares) : NaN;
 
-    if (!values.assetSymbol.trim() || !values.assetName.trim() || !values.purchaseDate.trim()) {
-      setError('Asset symbol, asset name, and purchase date are required.');
+    if (!values.assetSymbol.trim() || !values.purchaseDate.trim()) {
+      setError('Asset symbol and purchase date are required.');
       return;
     }
 
@@ -98,7 +96,6 @@ export default function TransactionForm({
 
     await onSubmit({
       assetSymbol: values.assetSymbol.trim().toUpperCase(),
-      assetName: values.assetName.trim(),
       amountInvested,
       purchasePrice: normalizedPurchasePrice,
       purchaseShares: normalizedPurchaseShares,
@@ -113,22 +110,19 @@ export default function TransactionForm({
     <form className="mt-5 grid gap-4 xl:grid-cols-3" onSubmit={(event) => void handleSubmit(event)}>
       <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
         <span className="eyebrow text-[10px]">Asset symbol</span>
-        <input
+        <select
+          aria-label="Asset symbol"
           className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
           onChange={handleChange('assetSymbol')}
-          placeholder="BTC"
           value={values.assetSymbol}
-        />
-      </label>
-
-      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-        <span className="eyebrow text-[10px]">Asset name</span>
-        <input
-          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-          onChange={handleChange('assetName')}
-          placeholder="Bitcoin"
-          value={values.assetName}
-        />
+        >
+          <option value="">Select asset</option>
+          {INVESTMENT_ASSET_OPTIONS.map((asset) => (
+            <option key={asset.symbol} value={asset.symbol}>
+              {asset.symbol}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">

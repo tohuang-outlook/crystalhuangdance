@@ -22,6 +22,14 @@ const allowedMimeTypes = new Set([
 ]);
 const inviteCodePattern = /^\d{6}$/;
 const allowedMemberTypes = new Set(['dancer', 'investor']);
+const investmentAssetNamesBySymbol = {
+  BTC: 'Bitcoin',
+  ETH: 'Ethereum',
+  ADA: 'Cardano',
+  XRP: 'XRP',
+  SOL: 'Solana',
+  DOGE: 'Dogecoin',
+};
 
 function toSafeUser(user) {
   return {
@@ -223,34 +231,39 @@ function parseTransactionPayload(body) {
   const assetSymbol = String(body?.assetSymbol ?? '')
     .trim()
     .toUpperCase();
-  const assetName = String(body?.assetName ?? '').trim();
   const amountInvested = Number(body?.amountInvested);
-  const purchasePrice = Number(body?.purchasePrice);
-  const purchaseShares = Number(body?.purchaseShares);
+  const rawPurchasePrice = String(body?.purchasePrice ?? '').trim();
+  const rawPurchaseShares = String(body?.purchaseShares ?? '').trim();
+  const purchasePrice = rawPurchasePrice ? Number(rawPurchasePrice) : Number.NaN;
+  const purchaseShares = rawPurchaseShares ? Number(rawPurchaseShares) : Number.NaN;
   const purchaseDate = String(body?.purchaseDate ?? '').trim();
   const notes = trimOptionalString(body?.notes);
+  const assetName = investmentAssetNamesBySymbol[assetSymbol];
 
-  if (!assetSymbol || !assetName || !purchaseDate) {
-    return { error: 'Asset symbol, asset name, and purchase date are required.' };
+  if (!assetName || !purchaseDate) {
+    return { error: 'A supported asset symbol and purchase date are required.' };
   }
 
-  if (
-    !Number.isFinite(amountInvested) ||
-    !Number.isFinite(purchasePrice) ||
-    !Number.isFinite(purchaseShares) ||
-    amountInvested <= 0 ||
-    purchasePrice <= 0 ||
-    purchaseShares <= 0
-  ) {
-    return { error: 'Valid positive transaction amounts are required.' };
+  if (!Number.isFinite(amountInvested) || amountInvested <= 0) {
+    return { error: 'Amount invested must be a positive number.' };
   }
+
+  const hasPurchasePrice = Number.isFinite(purchasePrice) && purchasePrice > 0;
+  const hasPurchaseShares = Number.isFinite(purchaseShares) && purchaseShares > 0;
+
+  if (!hasPurchasePrice && !hasPurchaseShares) {
+    return { error: 'Enter either purchase price or purchase shares.' };
+  }
+
+  const normalizedPurchasePrice = hasPurchasePrice ? purchasePrice : amountInvested / purchaseShares;
+  const normalizedPurchaseShares = hasPurchaseShares ? purchaseShares : amountInvested / purchasePrice;
 
   return {
     assetSymbol,
     assetName,
     amountInvested,
-    purchasePrice,
-    purchaseShares,
+    purchasePrice: normalizedPurchasePrice,
+    purchaseShares: normalizedPurchaseShares,
     purchaseDate,
     notes,
   };

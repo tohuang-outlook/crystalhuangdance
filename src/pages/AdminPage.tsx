@@ -393,7 +393,6 @@ export default function AdminPage() {
     user: AdminUserRecord,
     payload: {
       assetSymbol: string;
-      assetName: string;
       amountInvested: number;
       purchasePrice: number;
       purchaseShares: number;
@@ -420,7 +419,6 @@ export default function AdminPage() {
     transactionId: number,
     payload: {
       assetSymbol: string;
-      assetName: string;
       amountInvested: number;
       purchasePrice: number;
       purchaseShares: number;
@@ -976,7 +974,6 @@ export default function AdminPage() {
                                         <TransactionForm
                                           initialValues={{
                                             assetSymbol: editingTransaction.assetSymbol,
-                                            assetName: editingTransaction.assetName,
                                             amountInvested: String(editingTransaction.amountInvested),
                                             purchasePrice: String(editingTransaction.purchasePrice),
                                             purchaseShares: String(editingTransaction.purchaseShares),

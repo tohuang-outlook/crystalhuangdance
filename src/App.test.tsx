@@ -699,10 +699,10 @@ describe('App dossier layout', () => {
 
         expect(payload).toMatchObject({
           assetSymbol: 'BTC',
-          assetName: 'Bitcoin',
           amountInvested: 5000,
           purchaseDate: '2026-06-01',
         });
+        expect(payload.assetName).toBeUndefined();
         expect(payload.purchaseShares).toBeCloseTo(0.1, 6);
         expect(payload.purchasePrice).toBeCloseTo(50000, 6);
 
@@ -813,8 +813,7 @@ describe('App dossier layout', () => {
 
     expect(await screen.findByRole('heading', { name: /Record a purchase/i })).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText('BTC'), 'btc');
-    await user.type(screen.getByPlaceholderText('Bitcoin'), 'Bitcoin');
+    await user.selectOptions(screen.getByLabelText(/asset symbol/i), 'BTC');
     await user.type(screen.getByPlaceholderText('5000'), '5000');
     await user.type(screen.getByPlaceholderText('0.1'), '0.1');
     await user.type(screen.getByLabelText(/purchase date/i), '2026-06-01');
@@ -958,6 +957,7 @@ describe('App dossier layout', () => {
         const payload = JSON.parse(String(init?.body));
         expect(payload.amountInvested).toBe(6000);
         expect(payload.purchasePrice).toBe(60000);
+        expect(payload.assetName).toBeUndefined();
         expect(payload.purchaseDate).toBe('2026-06-02');
 
         portfolioState = {
@@ -1033,6 +1033,9 @@ describe('App dossier layout', () => {
     const investedInputs = screen.getAllByDisplayValue('5000');
     await user.clear(investedInputs[investedInputs.length - 1]);
     await user.type(investedInputs[investedInputs.length - 1], '6000');
+
+    const shareInputs = screen.getAllByDisplayValue('0.1');
+    await user.clear(shareInputs[shareInputs.length - 1]);
 
     const priceInputs = screen.getAllByDisplayValue('50000');
     await user.clear(priceInputs[priceInputs.length - 1]);
