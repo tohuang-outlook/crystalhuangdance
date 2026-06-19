@@ -68,6 +68,19 @@ export function createDatabase(filename) {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS investment_monthly_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
+      month_key TEXT NOT NULL,
+      portfolio_value REAL NOT NULL,
+      snapshot_date TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (portfolio_id, month_key)
+    )
+  `);
+
   const statements = {
     createUser: db.prepare(
       `INSERT INTO users (email, password_hash, role, member_type)
@@ -217,6 +230,44 @@ export function createDatabase(filename) {
        FROM investment_transactions
        WHERE portfolio_id = ?
        ORDER BY date(purchase_date) DESC, id DESC`
+    ),
+    listInvestmentMonthlyHistoryByPortfolioId: db.prepare(
+      `SELECT
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS month,
+         portfolio_value AS portfolioValue,
+         snapshot_date AS snapshotDate,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_monthly_history
+       WHERE portfolio_id = ?
+       ORDER BY month_key ASC, id ASC`
+    ),
+    upsertInvestmentMonthlyHistory: db.prepare(
+      `INSERT INTO investment_monthly_history (
+         portfolio_id,
+         month_key,
+         portfolio_value,
+         snapshot_date
+       ) VALUES (
+         @portfolioId,
+         @month,
+         @portfolioValue,
+         @snapshotDate
+       )
+       ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
+         portfolio_value = excluded.portfolio_value,
+         snapshot_date = excluded.snapshot_date,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS month,
+         portfolio_value AS portfolioValue,
+         snapshot_date AS snapshotDate,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
     ),
     setUserRoleByEmail: db.prepare(
       `UPDATE users
@@ -505,6 +556,12 @@ export function createDatabase(filename) {
     },
     listInvestmentTransactionsByPortfolioId(portfolioId) {
       return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);
+    },
+    listInvestmentMonthlyHistoryByPortfolioId(portfolioId) {
+      return statements.listInvestmentMonthlyHistoryByPortfolioId.all(portfolioId);
+    },
+    upsertInvestmentMonthlyHistory(input) {
+      return statements.upsertInvestmentMonthlyHistory.get(input);
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
