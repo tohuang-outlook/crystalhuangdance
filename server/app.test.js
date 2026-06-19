@@ -820,6 +820,120 @@ describe('auth and video backend foundation', () => {
     ]);
   });
 
+  it('includes live prices and a last-updated timestamp in the investor snapshot', async () => {
+    const mockedPriceTime = '2026-06-19T16:00:00.000Z';
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => ({
+        BTC: 54000,
+        ETH: 2500,
+      }),
+      getInvestmentPricesLastUpdatedAt: () => mockedPriceTime,
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
+    await loginUser(investorAgent, 'jennifer@example.com');
+
+    const createPortfolioResponse = await adminAgent
+      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
+      .send({ displayName: 'Jennifer Portfolio' });
+    expect(createPortfolioResponse.status).toBe(201);
+
+    const createTransactionResponse = await adminAgent
+      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-06-01',
+      });
+    expect(createTransactionResponse.status).toBe(201);
+
+    const response = await investorAgent.get('/api/investment/me');
+
+    expect(response.status).toBe(200);
+    expect(response.body.livePrices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          assetSymbol: 'BTC',
+          assetName: 'Bitcoin',
+          currentPrice: 54000,
+        }),
+      ])
+    );
+    expect(response.body.pricesLastUpdatedAt).toBe(mockedPriceTime);
+  });
+
+  it('keeps the investor snapshot available when live price fetching fails', async () => {
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => {
+        throw new Error('CoinGecko unavailable');
+      },
+      getInvestmentPricesLastUpdatedAt: () => null,
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
+    await loginUser(investorAgent, 'jennifer@example.com');
+
+    const createPortfolioResponse = await adminAgent
+      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
+      .send({ displayName: 'Jennifer Portfolio' });
+    expect(createPortfolioResponse.status).toBe(201);
+
+    const createTransactionResponse = await adminAgent
+      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-06-01',
+      });
+    expect(createTransactionResponse.status).toBe(201);
+
+    const response = await investorAgent.get('/api/investment/me');
+
+    expect(response.status).toBe(200);
+    expect(response.body.livePrices).toEqual([]);
+    expect(response.body.pricesLastUpdatedAt).toBeNull();
+    expect(response.body.holdings).toEqual([
+      expect.objectContaining({
+        assetSymbol: 'BTC',
+        currentPrice: 0,
+        currentValue: 0,
+      }),
+    ]);
+  });
+
   it('rejects transaction mutation requests from investor users', async () => {
     const investorAgent = request.agent(app);
     const ownerAgent = request.agent(app);
