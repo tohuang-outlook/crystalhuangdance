@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import HoldingsTable from '../components/investment/HoldingsTable';
 import LivePricesCard from '../components/investment/LivePricesCard';
+import MonthlyPerformanceChart from '../components/investment/MonthlyPerformanceChart';
 import PortfolioSummary from '../components/investment/PortfolioSummary';
 import TransactionTable from '../components/investment/TransactionTable';
 import {
@@ -159,6 +160,16 @@ export default function MyInvestmentPage() {
                   </div>
                 </section>
               </div>
+
+              <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                <p className="eyebrow">Performance</p>
+                <h2 className="mt-4 text-3xl text-[var(--text)]">Monthly Portfolio Value</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+                  Month-end portfolio totals, seeded from your historical records and extended as
+                  new months close.
+                </p>
+                <MonthlyPerformanceChart monthlyPerformance={data.monthlyPerformance} />
+              </section>
 
               <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
                 <p className="eyebrow">Transactions</p>

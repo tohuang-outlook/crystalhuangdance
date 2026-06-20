@@ -39,6 +39,13 @@ const investmentAssetIdsBySymbol = {
   SOL: 'solana',
   DOGE: 'dogecoin',
 };
+const seededInvestmentMonthlyPerformance = [
+  { month: '2026-01', portfolioValue: 45283.78, snapshotDate: '2026-01-31' },
+  { month: '2026-02', portfolioValue: 36456.4, snapshotDate: '2026-02-28' },
+  { month: '2026-03', portfolioValue: 31754.3, snapshotDate: '2026-03-31' },
+  { month: '2026-04', portfolioValue: 32263.08, snapshotDate: '2026-04-30' },
+  { month: '2026-05', portfolioValue: 34855.04, snapshotDate: '2026-05-31' },
+];
 const investmentPricingFetchTimeoutMs = 5000;
 
 function toSafeUser(user) {
@@ -254,6 +261,86 @@ function buildLivePrices(symbols, livePricesBySymbol) {
       };
     })
     .filter(Boolean);
+}
+
+function formatMonthKeyFromDate(value) {
+  const year = value.getUTCFullYear();
+  const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function formatMonthLabel(monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
+}
+
+function getLastCompletedMonthKey(now = new Date()) {
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  date.setUTCMonth(date.getUTCMonth() - 1);
+  return formatMonthKeyFromDate(date);
+}
+
+function getMonthEndDate(monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month, 0));
+  return date.toISOString().slice(0, 10);
+}
+
+function ensureSeededInvestmentMonthlyHistory(db, portfolioId) {
+  const existing = db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
+
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  for (const seed of seededInvestmentMonthlyPerformance) {
+    db.upsertInvestmentMonthlyHistory({
+      portfolioId,
+      month: seed.month,
+      portfolioValue: seed.portfolioValue,
+      snapshotDate: seed.snapshotDate,
+    });
+  }
+
+  return db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
+}
+
+function appendLatestCompletedMonthSnapshot({
+  db,
+  portfolioId,
+  summary,
+  now = new Date(),
+}) {
+  const lastCompletedMonth = getLastCompletedMonthKey(now);
+  const existing = db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
+  const hasLatestCompletedMonth = existing.some((entry) => entry.month === lastCompletedMonth);
+
+  if (!lastCompletedMonth || hasLatestCompletedMonth) {
+    return existing;
+  }
+
+  db.upsertInvestmentMonthlyHistory({
+    portfolioId,
+    month: lastCompletedMonth,
+    portfolioValue: summary.portfolioValue,
+    snapshotDate: getMonthEndDate(lastCompletedMonth),
+  });
+
+  return db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
+}
+
+function serializeInvestmentMonthlyPerformance(history) {
+  return history.map((entry) => ({
+    month: entry.month,
+    label: formatMonthLabel(entry.month),
+    portfolioValue: roundCurrency(entry.portfolioValue),
+  }));
 }
 
 function isAbortError(error) {
@@ -738,6 +825,13 @@ export function createApp({
         loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
       );
     const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
+    ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
+    const monthlyHistory = appendLatestCompletedMonthSnapshot({
+      db,
+      portfolioId: portfolio.id,
+      summary: snapshot.summary,
+      now: now(),
+    });
 
     return res.json({
       portfolio: serializeInvestmentPortfolio(portfolio),
@@ -746,6 +840,7 @@ export function createApp({
       transactions: transactions.map(serializeInvestmentTransaction),
       livePrices,
       pricesLastUpdatedAt,
+      monthlyPerformance: serializeInvestmentMonthlyPerformance(monthlyHistory),
     });
   });
 
@@ -831,6 +926,13 @@ export function createApp({
         loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
       );
     const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
+    ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
+    const monthlyHistory = appendLatestCompletedMonthSnapshot({
+      db,
+      portfolioId: portfolio.id,
+      summary: snapshot.summary,
+      now: now(),
+    });
 
     return res.json({
       portfolio: serializeInvestmentPortfolio(portfolio),
@@ -839,6 +941,7 @@ export function createApp({
       transactions: transactions.map(serializeInvestmentTransaction),
       livePrices,
       pricesLastUpdatedAt,
+      monthlyPerformance: serializeInvestmentMonthlyPerformance(monthlyHistory),
     });
   });
 
