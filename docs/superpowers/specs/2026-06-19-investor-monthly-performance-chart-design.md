@@ -35,6 +35,14 @@ As an investor, when I open `My Investment`, I want to see how my portfolio valu
 
 The initial chart history should include these month-end portfolio values:
 
+- `2025-06`: `$50,004.88`
+- `2025-07`: `$49,345.13`
+- `2025-08`: `$61,851.85`
+- `2025-09`: `$68,851.62`
+- `2025-10`: `$69,919.95`
+- `2025-11`: `$60,918.19`
+- `2025-12`: `$44,607.51`
+
 - `2026-01`: `$45,283.78`
 - `2026-02`: `$36,456.40`
 - `2026-03`: `$31,754.30`
@@ -85,7 +93,7 @@ The system should support two ways monthly history exists:
 
 ### Seed Rules
 
-When an investor portfolio is loaded and no monthly history exists yet, the app should have a way to ensure the seeded history for `2026-01` through `2026-05` is available for that portfolio.
+When an investor portfolio is loaded and no monthly history exists yet, the app should have a way to ensure the seeded history for `2025-06` through `2026-05` is available for that portfolio.
 
 For this first version, seeding can happen lazily on the server the first time the portfolio history is requested, as long as duplicate seed rows are not created.
 
@@ -185,6 +193,6 @@ This feature is complete when:
 
 - investor users see a `Monthly Portfolio Value` chart on `My Investment`
 - the chart appears below `Current Holdings` and above `Purchase History`
-- the chart initially shows the five provided month-end values from January 2026 through May 2026
+- the chart initially shows the provided month-end values from June 2025 through May 2026
 - future months can be appended one time per month without duplicates
 - the investor page remains stable if chart data cannot be rendered

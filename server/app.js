@@ -40,6 +40,13 @@ const investmentAssetIdsBySymbol = {
   DOGE: 'dogecoin',
 };
 const seededInvestmentMonthlyPerformance = [
+  { month: '2025-06', portfolioValue: 50004.88, snapshotDate: '2025-06-30' },
+  { month: '2025-07', portfolioValue: 49345.13, snapshotDate: '2025-07-31' },
+  { month: '2025-08', portfolioValue: 61851.85, snapshotDate: '2025-08-31' },
+  { month: '2025-09', portfolioValue: 68851.62, snapshotDate: '2025-09-30' },
+  { month: '2025-10', portfolioValue: 69919.95, snapshotDate: '2025-10-31' },
+  { month: '2025-11', portfolioValue: 60918.19, snapshotDate: '2025-11-30' },
+  { month: '2025-12', portfolioValue: 44607.51, snapshotDate: '2025-12-31' },
   { month: '2026-01', portfolioValue: 45283.78, snapshotDate: '2026-01-31' },
   { month: '2026-02', portfolioValue: 36456.4, snapshotDate: '2026-02-28' },
   { month: '2026-03', portfolioValue: 31754.3, snapshotDate: '2026-03-31' },
