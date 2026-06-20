@@ -2,10 +2,24 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type {
   InvestmentHolding,
+  InvestmentLivePrice,
   InvestmentMonthlyPerformancePoint,
   InvestmentPortfolioResponse,
   InvestmentTransaction,
 } from '../services/investment';
+
+const PAGE_WIDTH = 210;
+const PAGE_HEIGHT = 297;
+const PAGE_MARGIN = 14;
+const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
+const SURFACE_FILL: [number, number, number] = [244, 248, 251];
+const SURFACE_BORDER: [number, number, number] = [222, 232, 238];
+const TEXT_PRIMARY: [number, number, number] = [28, 42, 54];
+const TEXT_MUTED: [number, number, number] = [90, 112, 126];
+const BRAND_DARK: [number, number, number] = [35, 74, 101];
+const BRAND_SOFT: [number, number, number] = [228, 238, 245];
+const POSITIVE: [number, number, number] = [22, 128, 110];
+const NEGATIVE: [number, number, number] = [189, 84, 58];
 
 const assetAccentBySymbol: Record<string, [number, number, number]> = {
   BTC: [42, 120, 132],
@@ -47,6 +61,26 @@ function formatDate(value: string) {
   }).format(new Date(normalizedValue));
 }
 
+function formatSnapshotTime(value: string | null) {
+  if (!value) {
+    return 'Unavailable';
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'Unavailable';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsedDate);
+}
+
 function getReportMonthLabel(monthlyPerformance: InvestmentMonthlyPerformancePoint[]) {
   if (monthlyPerformance.length > 0) {
     return monthlyPerformance[monthlyPerformance.length - 1].label;
@@ -58,6 +92,95 @@ function getReportMonthLabel(monthlyPerformance: InvestmentMonthlyPerformancePoi
   }).format(new Date());
 }
 
+function drawPageFrame(doc: jsPDF) {
+  doc.setFillColor(238, 246, 255);
+  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F');
+  doc.setDrawColor(230, 238, 243);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(8, 8, PAGE_WIDTH - 16, PAGE_HEIGHT - 16, 6, 6);
+}
+
+function drawPageFooter(doc: jsPDF, pageNumber: number) {
+  doc.setDrawColor(...SURFACE_BORDER);
+  doc.setLineWidth(0.2);
+  doc.line(PAGE_MARGIN, PAGE_HEIGHT - 14, PAGE_WIDTH - PAGE_MARGIN, PAGE_HEIGHT - 14);
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('Crystal Huang Investor Report', PAGE_MARGIN, PAGE_HEIGHT - 9);
+  doc.text(`Page ${pageNumber}`, PAGE_WIDTH - PAGE_MARGIN, PAGE_HEIGHT - 9, {
+    align: 'right',
+  });
+}
+
+function drawSectionCard(doc: jsPDF, x: number, y: number, width: number, height: number) {
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...SURFACE_BORDER);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, width, height, 5, 5, 'FD');
+}
+
+function drawSectionTitle(
+  doc: jsPDF,
+  eyebrow: string,
+  title: string,
+  subtitle: string | null,
+  x: number,
+  y: number
+) {
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(eyebrow.toUpperCase(), x, y);
+  doc.setFontSize(16);
+  doc.setTextColor(...TEXT_PRIMARY);
+  doc.text(title, x, y + 8);
+
+  if (subtitle) {
+    doc.setFontSize(9);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(subtitle, x, y + 14);
+  }
+}
+
+function addCoverHeader(
+  doc: jsPDF,
+  portfolio: InvestmentPortfolioResponse['portfolio'],
+  summary: InvestmentPortfolioResponse['summary'],
+  reportMonthLabel: string
+) {
+  doc.setFillColor(...BRAND_DARK);
+  doc.roundedRect(PAGE_MARGIN, 14, CONTENT_WIDTH, 32, 7, 7, 'F');
+
+  doc.setFontSize(9);
+  doc.setTextColor(218, 230, 238);
+  doc.text('CRYSTAL HUANG', PAGE_MARGIN + 6, 22);
+  doc.setFontSize(24);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Monthly Investment Report', PAGE_MARGIN + 6, 33);
+  doc.setFontSize(10);
+  doc.text(reportMonthLabel, PAGE_MARGIN + 6, 40);
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(PAGE_MARGIN + CONTENT_WIDTH - 62, 19, 56, 22, 5, 5, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('Report snapshot', PAGE_MARGIN + CONTENT_WIDTH - 56, 27);
+  doc.setFontSize(13);
+  doc.setTextColor(...TEXT_PRIMARY);
+  doc.text(formatCurrency(summary.portfolioValue), PAGE_MARGIN + CONTENT_WIDTH - 56, 35);
+
+  doc.setFontSize(10);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('Investor', PAGE_MARGIN, 55);
+  doc.text('Base currency', PAGE_MARGIN + 66, 55);
+  doc.text('Total return', PAGE_MARGIN + 126, 55);
+
+  doc.setFontSize(12);
+  doc.setTextColor(...TEXT_PRIMARY);
+  doc.text(portfolio.displayName || 'Investor Portfolio', PAGE_MARGIN, 62);
+  doc.text(portfolio.baseCurrency, PAGE_MARGIN + 66, 62);
+  doc.text(formatPercent(summary.totalReturnPercent), PAGE_MARGIN + 126, 62);
+}
+
 function addSummaryCards(
   doc: jsPDF,
   topY: number,
@@ -65,43 +188,89 @@ function addSummaryCards(
   summary: InvestmentPortfolioResponse['summary'],
   reportMonthLabel: string
 ) {
-  const cardWidth = 42;
-  const cardGap = 6;
-  const cardHeight = 24;
-  const startX = 14;
   const cards = [
-    ['Investor', portfolio.displayName || 'Investor Portfolio'],
-    ['Total Invested', formatCurrency(summary.totalInvested)],
-    ['Portfolio Value', formatCurrency(summary.portfolioValue)],
-    ['Unrealized P&L', formatCurrency(summary.unrealizedPnL)],
+    {
+      label: 'Portfolio Owner',
+      value: portfolio.displayName || 'Investor Portfolio',
+      accent: BRAND_DARK,
+    },
+    { label: 'Total Invested', value: formatCurrency(summary.totalInvested), accent: BRAND_DARK },
+    { label: 'Portfolio Value', value: formatCurrency(summary.portfolioValue), accent: POSITIVE },
+    {
+      label: 'Unrealized P&L',
+      value: formatCurrency(summary.unrealizedPnL),
+      accent: summary.unrealizedPnL >= 0 ? POSITIVE : NEGATIVE,
+    },
   ];
 
-  cards.forEach(([label, value], index) => {
-    const x = startX + index * (cardWidth + cardGap);
-    doc.setFillColor(245, 249, 252);
-    doc.roundedRect(x, topY, cardWidth, cardHeight, 4, 4, 'F');
+  cards.forEach((card, index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const x = PAGE_MARGIN + column * 91;
+    const y = topY + row * 28;
+
+    drawSectionCard(doc, x, y, 85, 22);
+    doc.setFillColor(...card.accent);
+    doc.roundedRect(x, y, 3, 22, 1.5, 1.5, 'F');
     doc.setFontSize(8);
-    doc.setTextColor(90, 112, 126);
-    doc.text(label, x + 4, topY + 7);
-    doc.setFontSize(label === 'Investor' ? 10 : 11);
-    doc.setTextColor(28, 42, 54);
-    doc.text(value, x + 4, topY + 15);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(card.label, x + 8, y + 8);
+    doc.setFontSize(12);
+    doc.setTextColor(...TEXT_PRIMARY);
+    doc.text(card.value, x + 8, y + 15);
   });
 
-  doc.setFontSize(10);
-  doc.setTextColor(90, 112, 126);
-  doc.text(`Report month: ${reportMonthLabel}`, 14, topY + cardHeight + 8);
-  doc.text(`Base currency: ${portfolio.baseCurrency}`, 78, topY + cardHeight + 8);
-  doc.text(`Total return: ${formatPercent(summary.totalReturnPercent)}`, 134, topY + cardHeight + 8);
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(`Report month: ${reportMonthLabel}`, PAGE_MARGIN, topY + 62);
+  if (portfolio.notes) {
+    doc.text(`Investor note: ${portfolio.notes}`, PAGE_MARGIN + 70, topY + 62);
+  }
+}
+
+function addLivePricesSnapshot(
+  doc: jsPDF,
+  livePrices: InvestmentLivePrice[],
+  pricesLastUpdatedAt: string | null,
+  startY: number
+) {
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 32);
+  drawSectionTitle(
+    doc,
+    'Market Snapshot',
+    'Live Prices',
+    `Last updated ${formatSnapshotTime(pricesLastUpdatedAt)}`,
+    PAGE_MARGIN + 5,
+    startY + 7
+  );
+
+  const pricesToShow = livePrices.slice(0, 6);
+  pricesToShow.forEach((price, index) => {
+    const x = PAGE_MARGIN + 5 + index * 31;
+    doc.setFillColor(...(assetAccentBySymbol[price.assetSymbol] ?? BRAND_DARK));
+    doc.circle(x + 1.5, startY + 22, 1.5, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(price.assetSymbol, x + 5, startY + 20);
+    doc.setFontSize(10);
+    doc.setTextColor(...TEXT_PRIMARY);
+    doc.text(formatCurrency(price.currentPrice), x + 5, startY + 26);
+  });
 }
 
 function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: number) {
-  doc.setFontSize(16);
-  doc.setTextColor(28, 42, 54);
-  doc.text('Holdings', 14, startY);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 62);
+  drawSectionTitle(
+    doc,
+    'Current Positions',
+    'Holdings',
+    'Asset weight, invested capital, current value, and unrealized performance.',
+    PAGE_MARGIN + 5,
+    startY + 7
+  );
 
   autoTable(doc, {
-    startY: startY + 4,
+    startY: startY + 20,
     head: [['Asset', 'Quantity', 'Invested', 'Value', 'P&L']],
     body: holdings.map((holding) => [
       `${holding.assetSymbol}\n${holding.assetName} - ${formatAllocationPercent(holding.allocationPercent)}`,
@@ -110,69 +279,79 @@ function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: num
       formatCurrency(holding.currentValue),
       formatCurrency(holding.unrealizedPnL),
     ]),
-    theme: 'grid',
+    theme: 'plain',
     headStyles: {
-      fillColor: [244, 248, 251],
-      textColor: [28, 42, 54],
-      lineColor: [220, 230, 237],
+      fillColor: SURFACE_FILL,
+      textColor: TEXT_PRIMARY,
+      fontStyle: 'bold',
     },
     bodyStyles: {
-      textColor: [44, 58, 70],
-      lineColor: [232, 239, 244],
+      textColor: TEXT_PRIMARY,
       cellPadding: 3,
       valign: 'middle',
     },
+    alternateRowStyles: {
+      fillColor: [248, 251, 253],
+    },
     columnStyles: {
-      0: { cellWidth: 44 },
-      1: { cellWidth: 34 },
-      2: { cellWidth: 34 },
-      3: { cellWidth: 34 },
+      0: { cellWidth: 46 },
+      1: { cellWidth: 33 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 30 },
       4: { cellWidth: 28 },
     },
     styles: {
-      fontSize: 9,
+      fontSize: 8.6,
       overflow: 'linebreak',
     },
-    margin: { left: 14, right: 14 },
+    margin: { left: PAGE_MARGIN + 4, right: PAGE_MARGIN + 4 },
     didParseCell: (hookData) => {
       if (hookData.section === 'body' && hookData.column.index === 4) {
         const value = holdings[hookData.row.index]?.unrealizedPnL ?? 0;
-        hookData.cell.styles.textColor = value >= 0 ? [22, 128, 110] : [189, 84, 58];
+        hookData.cell.styles.textColor = value >= 0 ? POSITIVE : NEGATIVE;
       }
     },
   });
 }
 
 function addAllocationSection(doc: jsPDF, holdings: InvestmentHolding[], startY: number) {
-  const sectionTop = startY;
-  doc.setFontSize(16);
-  doc.setTextColor(28, 42, 54);
-  doc.text('Allocation', 14, sectionTop);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 58);
+  drawSectionTitle(
+    doc,
+    'Portfolio Mix',
+    'Allocation',
+    'Weighting across active positions based on current market value.',
+    PAGE_MARGIN + 5,
+    startY + 7
+  );
 
-  const centerX = 42;
-  const centerY = sectionTop + 34;
-  const outerRadius = 20;
-  const innerRadius = 11;
+  const centerX = PAGE_MARGIN + 32;
+  const centerY = startY + 34;
+  const outerRadius = 18;
+  const innerRadius = 10;
   let currentAngle = -90;
 
   holdings.forEach((holding) => {
     const sweepAngle = (holding.allocationPercent / 100) * 360;
-    const color = assetAccentBySymbol[holding.assetSymbol] ?? [42, 120, 132];
+    const color = assetAccentBySymbol[holding.assetSymbol] ?? BRAND_DARK;
     drawDonutSegment(doc, centerX, centerY, outerRadius, innerRadius, currentAngle, sweepAngle, color);
     currentAngle += sweepAngle;
   });
 
   holdings.forEach((holding, index) => {
-    const y = sectionTop + 12 + index * 10;
-    const color = assetAccentBySymbol[holding.assetSymbol] ?? [42, 120, 132];
+    const column = index >= 3 ? 1 : 0;
+    const row = index % 3;
+    const x = PAGE_MARGIN + 64 + column * 63;
+    const y = startY + 24 + row * 10;
+    const color = assetAccentBySymbol[holding.assetSymbol] ?? BRAND_DARK;
     doc.setFillColor(...color);
-    doc.circle(82, y - 1.5, 1.5, 'F');
-    doc.setFontSize(10);
-    doc.setTextColor(28, 42, 54);
-    doc.text(holding.assetSymbol, 87, y);
+    doc.circle(x, y - 1.5, 1.4, 'F');
     doc.setFontSize(9);
-    doc.setTextColor(90, 112, 126);
-    doc.text(`${holding.assetName} - ${formatAllocationPercent(holding.allocationPercent)}`, 102, y);
+    doc.setTextColor(...TEXT_PRIMARY);
+    doc.text(holding.assetSymbol, x + 4, y);
+    doc.setFontSize(8);
+    doc.setTextColor(...TEXT_MUTED);
+    doc.text(`${holding.assetName} - ${formatAllocationPercent(holding.allocationPercent)}`, x + 18, y);
   });
 }
 
@@ -186,7 +365,6 @@ function drawDonutSegment(
   sweepAngle: number,
   color: [number, number, number]
 ) {
-  const endAngle = startAngle + sweepAngle;
   const points = [];
   const steps = Math.max(6, Math.ceil(Math.abs(sweepAngle) / 12));
 
@@ -226,15 +404,21 @@ function addPerformanceSection(
   monthlyPerformance: InvestmentMonthlyPerformancePoint[],
   startY: number
 ) {
-  doc.setFontSize(16);
-  doc.setTextColor(28, 42, 54);
-  doc.text('Monthly Portfolio Value', 14, startY);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 82);
+  drawSectionTitle(
+    doc,
+    'Performance',
+    'Monthly Portfolio Value',
+    'Month-end portfolio totals seeded from historical records and extended as new months close.',
+    PAGE_MARGIN + 5,
+    startY + 7
+  );
 
-  const chartX = 14;
-  const chartY = startY + 8;
-  const chartWidth = 182;
-  const chartHeight = 46;
-  doc.setFillColor(245, 249, 252);
+  const chartX = PAGE_MARGIN + 6;
+  const chartY = startY + 20;
+  const chartWidth = CONTENT_WIDTH - 12;
+  const chartHeight = 32;
+  doc.setFillColor(...SURFACE_FILL);
   doc.roundedRect(chartX, chartY, chartWidth, chartHeight, 4, 4, 'F');
 
   if (monthlyPerformance.length > 0) {
@@ -249,53 +433,63 @@ function addPerformanceSection(
           ? chartX + chartWidth / 2
           : chartX + 12 + (index * (chartWidth - 24)) / (monthlyPerformance.length - 1);
       const normalized = (point.portfolioValue - minValue) / range;
-      const y = chartY + chartHeight - 10 - normalized * (chartHeight - 18);
+      const y = chartY + chartHeight - 9 - normalized * (chartHeight - 15);
 
       return { x, y, ...point };
     });
 
-    doc.setDrawColor(42, 79, 110);
-    doc.setLineWidth(1.2);
+    doc.setDrawColor(...BRAND_DARK);
+    doc.setLineWidth(1.1);
     for (let index = 1; index < points.length; index += 1) {
       doc.line(points[index - 1].x, points[index - 1].y, points[index].x, points[index].y);
     }
 
     points.forEach((point) => {
       doc.setFillColor(19, 55, 78);
-      doc.circle(point.x, point.y, 1.2, 'F');
+      doc.circle(point.x, point.y, 1.1, 'F');
     });
   }
 
   autoTable(doc, {
-    startY: chartY + chartHeight + 6,
+    startY: startY + 56,
     head: [['Month', 'Portfolio Value']],
     body: monthlyPerformance.map((point) => [point.label, formatCurrency(point.portfolioValue)]),
-    theme: 'grid',
+    theme: 'plain',
     headStyles: {
-      fillColor: [244, 248, 251],
-      textColor: [28, 42, 54],
-      lineColor: [220, 230, 237],
+      fillColor: SURFACE_FILL,
+      textColor: TEXT_PRIMARY,
+      fontStyle: 'bold',
     },
     bodyStyles: {
-      textColor: [44, 58, 70],
-      lineColor: [232, 239, 244],
-      cellPadding: 3,
+      textColor: TEXT_PRIMARY,
+      cellPadding: 2.4,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 251, 253],
     },
     styles: {
-      fontSize: 9,
+      fontSize: 8.5,
     },
-    margin: { left: 14, right: 14 },
+    columnStyles: {
+      0: { cellWidth: 54 },
+      1: { cellWidth: 38 },
+    },
+    margin: { left: PAGE_MARGIN + 4, right: PAGE_MARGIN + 92 },
   });
 }
 
-function addTransactionsSection(doc: jsPDF, transactions: InvestmentTransaction[]) {
-  doc.addPage();
-  doc.setFontSize(18);
-  doc.setTextColor(28, 42, 54);
-  doc.text('Purchase History', 14, 18);
+function addTransactionsTable(doc: jsPDF, transactions: InvestmentTransaction[], startY: number) {
+  drawSectionTitle(
+    doc,
+    'Transaction Archive',
+    'Purchase History',
+    'Executed buy transactions recorded in the investor portfolio.',
+    PAGE_MARGIN,
+    startY
+  );
 
   autoTable(doc, {
-    startY: 24,
+    startY: startY + 12,
     head: [['Date', 'Asset', 'Invested', 'Price', 'Shares', 'Notes']],
     body: transactions.map((transaction) => [
       formatDate(transaction.purchaseDate),
@@ -307,30 +501,39 @@ function addTransactionsSection(doc: jsPDF, transactions: InvestmentTransaction[
     ]),
     theme: 'grid',
     headStyles: {
-      fillColor: [244, 248, 251],
-      textColor: [28, 42, 54],
-      lineColor: [220, 230, 237],
+      fillColor: SURFACE_FILL,
+      textColor: TEXT_PRIMARY,
+      lineColor: SURFACE_BORDER,
+      fontStyle: 'bold',
     },
     bodyStyles: {
-      textColor: [44, 58, 70],
-      lineColor: [232, 239, 244],
+      textColor: TEXT_PRIMARY,
+      lineColor: [235, 241, 245],
       cellPadding: 3,
       valign: 'middle',
     },
+    alternateRowStyles: {
+      fillColor: [250, 252, 254],
+    },
     styles: {
-      fontSize: 9,
+      fontSize: 8.5,
       overflow: 'linebreak',
     },
     columnStyles: {
-      0: { cellWidth: 28 },
+      0: { cellWidth: 26 },
       1: { cellWidth: 34 },
-      2: { cellWidth: 28 },
-      3: { cellWidth: 28 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 44 },
+      2: { cellWidth: 27 },
+      3: { cellWidth: 27 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 42 },
     },
-    margin: { left: 14, right: 14 },
+    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
   });
+
+  const finalY =
+    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? startY + 40;
+
+  return finalY;
 }
 
 export function buildInvestmentReportFilename(portfolioName: string, reportMonthLabel: string) {
@@ -343,7 +546,7 @@ export function buildInvestmentReportFilename(portfolioName: string, reportMonth
   return `${slug || 'investor-portfolio'}-${monthSlug || 'monthly-report'}.pdf`;
 }
 
-export function downloadInvestmentReportPdf(data: InvestmentPortfolioResponse) {
+export function createInvestmentReportPdfDocument(data: InvestmentPortfolioResponse) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -352,24 +555,41 @@ export function downloadInvestmentReportPdf(data: InvestmentPortfolioResponse) {
 
   const reportMonthLabel = getReportMonthLabel(data.monthlyPerformance);
 
-  doc.setFillColor(238, 246, 255);
-  doc.rect(0, 0, 210, 297, 'F');
-  doc.setFontSize(10);
-  doc.setTextColor(82, 112, 126);
-  doc.text('CRYSTAL HUANG', 14, 16);
-  doc.setFontSize(24);
-  doc.setTextColor(28, 42, 54);
-  doc.text('Monthly Investment Report', 14, 27);
-  doc.setFontSize(11);
-  doc.setTextColor(90, 112, 126);
-  doc.text(reportMonthLabel, 14, 34);
+  drawPageFrame(doc);
+  addCoverHeader(doc, data.portfolio, data.summary, reportMonthLabel);
+  addSummaryCards(doc, 68, data.portfolio, data.summary, reportMonthLabel);
+  addLivePricesSnapshot(doc, data.livePrices, data.pricesLastUpdatedAt, 136);
+  addAllocationSection(doc, data.holdings, 174);
+  drawPageFooter(doc, 1);
 
-  addSummaryCards(doc, 42, data.portfolio, data.summary, reportMonthLabel);
-  addHoldingsTable(doc, data.holdings, 78);
-  const afterHoldingsY = ((doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 120) + 10;
-  addAllocationSection(doc, data.holdings, afterHoldingsY);
-  addPerformanceSection(doc, data.monthlyPerformance, afterHoldingsY + 62);
-  addTransactionsSection(doc, data.transactions);
+  doc.addPage();
+  drawPageFrame(doc);
+  addPerformanceSection(doc, data.monthlyPerformance, 20);
+  const performanceEndY =
+    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 110;
+  addHoldingsTable(doc, data.holdings, performanceEndY + 16);
+  const holdingsEndY =
+    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ??
+    performanceEndY + 70;
+  const transactionEndY = addTransactionsTable(doc, data.transactions, holdingsEndY + 16);
+  doc.setFontSize(8);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(
+    'Prepared for investor review. Values reflect the latest dashboard snapshot available at the time of export.',
+    PAGE_MARGIN,
+    Math.min(transactionEndY + 10, PAGE_HEIGHT - 18)
+  );
+  drawPageFooter(doc, 2);
 
-  doc.save(buildInvestmentReportFilename(data.portfolio.displayName || 'investor-portfolio', reportMonthLabel));
+  return {
+    doc,
+    reportMonthLabel,
+  };
+}
+
+export function downloadInvestmentReportPdf(data: InvestmentPortfolioResponse) {
+  const { doc, reportMonthLabel } = createInvestmentReportPdfDocument(data);
+  doc.save(
+    buildInvestmentReportFilename(data.portfolio.displayName || 'investor-portfolio', reportMonthLabel)
+  );
 }
