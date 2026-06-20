@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import AllocationChart from '../components/investment/AllocationChart';
 import HoldingsTable from '../components/investment/HoldingsTable';
 import LivePricesCard from '../components/investment/LivePricesCard';
 import MonthlyPerformanceChart from '../components/investment/MonthlyPerformanceChart';
@@ -140,26 +141,17 @@ export default function MyInvestmentPage() {
                 pricesLastUpdatedAt={data.pricesLastUpdatedAt}
               />
 
-              <div className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
-                <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
-                  <p className="eyebrow">Portfolio Overview</p>
-                  <h2 className="mt-4 text-3xl text-[var(--text)]">Current Holdings</h2>
-                  <HoldingsTable holdings={data.holdings} />
-                </section>
+              <section className="mt-10 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                <p className="eyebrow">Current Positions</p>
+                <h2 className="mt-4 text-3xl text-[var(--text)]">Holdings</h2>
+                <HoldingsTable holdings={data.holdings} />
+              </section>
 
-                <section className="rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
-                  <p className="eyebrow">Account</p>
-                  <h2 className="mt-4 text-3xl text-[var(--text)]">
-                    {data.portfolio.displayName || 'Investor Portfolio'}
-                  </h2>
-                  <div className="mt-6 space-y-3 text-sm text-[var(--text-muted)]">
-                    <p>Base currency: {data.portfolio.baseCurrency}</p>
-                    <p>Holdings: {data.holdings.length}</p>
-                    <p>Transactions: {data.transactions.length}</p>
-                    {data.portfolio.notes ? <p>Notes: {data.portfolio.notes}</p> : null}
-                  </div>
-                </section>
-              </div>
+              <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                <p className="eyebrow">Portfolio Mix</p>
+                <h2 className="mt-4 text-3xl text-[var(--text)]">Allocation</h2>
+                <AllocationChart holdings={data.holdings} />
+              </section>
 
               <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
                 <p className="eyebrow">Performance</p>
