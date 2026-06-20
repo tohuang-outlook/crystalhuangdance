@@ -9,12 +9,14 @@ import {
   fetchMyInvestmentPortfolio,
   type InvestmentPortfolioResponse,
 } from '../services/investment';
+import { downloadInvestmentReportPdf } from '../utils/investmentReportPdf';
 
 export default function MyInvestmentPage() {
   const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const hasLoadedOnceRef = useRef(false);
   const isRefreshInFlightRef = useRef(false);
 
@@ -90,6 +92,24 @@ export default function MyInvestmentPage() {
     };
   }, []);
 
+  const handleDownloadReport = async () => {
+    if (!data || isDownloadingReport) {
+      return;
+    }
+
+    setIsDownloadingReport(true);
+
+    try {
+      downloadInvestmentReportPdf(data);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unable to generate the monthly report right now.';
+      setRefreshError(message);
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-6xl">
@@ -104,8 +124,13 @@ export default function MyInvestmentPage() {
                 Review your portfolio, monthly reports, and investor notes in one calm dashboard.
               </p>
             </div>
-            <button className="inline-flex items-center justify-center rounded-full bg-[var(--text)] px-5 py-3 text-sm uppercase tracking-[0.22em] text-white transition hover:bg-[var(--text-muted)]">
-              Download Monthly Report
+            <button
+              className="inline-flex items-center justify-center rounded-full bg-[var(--text)] px-5 py-3 text-sm uppercase tracking-[0.22em] text-white transition hover:bg-[var(--text-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!data || isDownloadingReport}
+              onClick={() => void handleDownloadReport()}
+              type="button"
+            >
+              {isDownloadingReport ? 'Preparing Report...' : 'Download Monthly Report'}
             </button>
           </div>
 
