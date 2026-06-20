@@ -28,19 +28,32 @@ export default function MonthlyPerformanceChart({
 
   const width = 760;
   const height = 260;
-  const paddingX = 28;
+  const paddingLeft = 92;
+  const paddingRight = 28;
   const paddingTop = 24;
   const paddingBottom = 42;
   const values = monthlyPerformance.map((point) => point.portfolioValue);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
   const range = maxValue - minValue || 1;
+  const tickCount = 4;
+  const yAxisTicks = Array.from({ length: tickCount }, (_value, index) => {
+    const ratio = index / (tickCount - 1);
+    const tickValue = maxValue - range * ratio;
+    const y = paddingTop + (height - paddingTop - paddingBottom) * ratio;
+
+    return {
+      label: formatCurrency(tickValue),
+      y,
+    };
+  });
 
   const points = monthlyPerformance.map((point, index) => {
     const x =
       monthlyPerformance.length === 1
         ? width / 2
-        : paddingX + (index * (width - paddingX * 2)) / (monthlyPerformance.length - 1);
+        : paddingLeft +
+          (index * (width - paddingLeft - paddingRight)) / (monthlyPerformance.length - 1);
     const normalized = (point.portfolioValue - minValue) / range;
     const y = height - paddingBottom - normalized * (height - paddingTop - paddingBottom);
 
@@ -58,6 +71,27 @@ export default function MonthlyPerformanceChart({
           role="img"
           viewBox={`0 0 ${width} ${height}`}
         >
+          {yAxisTicks.map((tick) => (
+            <g key={tick.label}>
+              <line
+                stroke="rgba(112, 140, 166, 0.18)"
+                strokeWidth="1"
+                x1={paddingLeft}
+                x2={width - paddingRight}
+                y1={tick.y}
+                y2={tick.y}
+              />
+              <text
+                fill="rgba(90, 112, 126, 1)"
+                fontSize="11"
+                textAnchor="start"
+                x={18}
+                y={tick.y + 4}
+              >
+                {tick.label}
+              </text>
+            </g>
+          ))}
           <path
             d={path}
             fill="none"
