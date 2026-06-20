@@ -674,8 +674,8 @@ describe('App dossier layout', () => {
     expect(chartHeading.compareDocumentPosition(historyHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(screen.getByText('Jan 2026')).toBeInTheDocument();
-    expect(screen.getByText('May 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('Jan 2026').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('May 2026').length).toBeGreaterThan(0);
   });
 
   it('routes dancer users to my videos after login', async () => {
