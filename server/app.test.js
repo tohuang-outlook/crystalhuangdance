@@ -1008,6 +1008,80 @@ describe('auth and video backend foundation', () => {
     expect(secondResponse.body.monthlyPerformance).toEqual(firstResponse.body.monthlyPerformance);
   });
 
+  it('backfills missing seeded months for portfolios that were initialized before the 2025 history was added', async () => {
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => ({
+        BTC: 54000,
+      }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
+    await loginUser(investorAgent, 'jennifer@example.com');
+
+    const portfolio = db.createInvestmentPortfolio({
+      userId: promotedUser.id,
+      displayName: 'Jennifer Portfolio',
+    });
+
+    for (const seed of [
+      { month: '2026-01', portfolioValue: 45283.78, snapshotDate: '2026-01-31' },
+      { month: '2026-02', portfolioValue: 36456.4, snapshotDate: '2026-02-28' },
+      { month: '2026-03', portfolioValue: 31754.3, snapshotDate: '2026-03-31' },
+      { month: '2026-04', portfolioValue: 32263.08, snapshotDate: '2026-04-30' },
+      { month: '2026-05', portfolioValue: 34855.04, snapshotDate: '2026-05-31' },
+    ]) {
+      db.upsertInvestmentMonthlyHistory({
+        portfolioId: portfolio.id,
+        month: seed.month,
+        portfolioValue: seed.portfolioValue,
+        snapshotDate: seed.snapshotDate,
+      });
+    }
+
+    const createTransactionResponse = await adminAgent
+      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      });
+    expect(createTransactionResponse.status).toBe(201);
+
+    const response = await investorAgent.get('/api/investment/me');
+
+    expect(response.status).toBe(200);
+    expect(response.body.monthlyPerformance).toEqual([
+      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
+      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
+      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
+      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
+      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
+      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
+      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
+      { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
+      { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
+      { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
+      { month: '2026-04', label: 'Apr 2026', portfolioValue: 32263.08 },
+      { month: '2026-05', label: 'May 2026', portfolioValue: 34855.04 },
+    ]);
+  });
+
   it('keeps the investor snapshot available when live price fetching fails', async () => {
     app = createApp({
       db,

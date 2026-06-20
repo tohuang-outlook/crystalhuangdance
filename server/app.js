@@ -301,12 +301,13 @@ function getMonthEndDate(monthKey) {
 
 function ensureSeededInvestmentMonthlyHistory(db, portfolioId) {
   const existing = db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
-
-  if (existing.length > 0) {
-    return existing;
-  }
+  const existingMonths = new Set(existing.map((entry) => entry.month));
 
   for (const seed of seededInvestmentMonthlyPerformance) {
+    if (existingMonths.has(seed.month)) {
+      continue;
+    }
+
     db.upsertInvestmentMonthlyHistory({
       portfolioId,
       month: seed.month,
