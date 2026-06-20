@@ -928,6 +928,13 @@ describe('auth and video backend foundation', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.monthlyPerformance).toEqual([
+      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
+      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
+      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
+      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
+      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
+      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
+      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
       { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
       { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
       { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
@@ -984,6 +991,13 @@ describe('auth and video backend foundation', () => {
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);
     expect(firstResponse.body.monthlyPerformance).toEqual([
+      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
+      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
+      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
+      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
+      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
+      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
+      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
       { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
       { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
       { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
