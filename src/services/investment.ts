@@ -38,6 +38,12 @@ export interface InvestmentLivePrice {
   currentPrice: number;
 }
 
+export interface InvestmentMonthlyPerformancePoint {
+  month: string;
+  label: string;
+  portfolioValue: number;
+}
+
 export interface InvestmentTransaction {
   id: number;
   portfolioId: number;
@@ -69,6 +75,7 @@ export interface InvestmentPortfolioResponse {
   transactions: InvestmentTransaction[];
   livePrices: InvestmentLivePrice[];
   pricesLastUpdatedAt: string | null;
+  monthlyPerformance: InvestmentMonthlyPerformancePoint[];
 }
 
 interface InvestmentPortfolioEnvelope {
@@ -110,6 +117,30 @@ function normalizeInvestmentLivePrices(payload: unknown): InvestmentLivePrice[] 
   });
 }
 
+function normalizeInvestmentMonthlyPerformance(
+  payload: unknown
+): InvestmentMonthlyPerformancePoint[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const month = typeof entry.month === 'string' ? entry.month.trim() : '';
+    const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+    const portfolioValue = Number(entry.portfolioValue);
+
+    if (!month || !label || !Number.isFinite(portfolioValue)) {
+      return [];
+    }
+
+    return [{ month, label, portfolioValue }];
+  });
+}
+
 function normalizeInvestmentPortfolioResponse(
   payload: Partial<InvestmentPortfolioResponse> & {
     portfolio: InvestmentPortfolioRecord;
@@ -130,6 +161,7 @@ function normalizeInvestmentPortfolioResponse(
       typeof payload.pricesLastUpdatedAt === 'string' || payload.pricesLastUpdatedAt === null
         ? payload.pricesLastUpdatedAt
         : null,
+    monthlyPerformance: normalizeInvestmentMonthlyPerformance(payload.monthlyPerformance),
   };
 }
 

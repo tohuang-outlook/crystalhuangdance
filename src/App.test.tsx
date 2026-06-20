@@ -576,6 +576,108 @@ describe('App dossier layout', () => {
     }
   });
 
+  it('renders the monthly portfolio value chart between holdings and purchase history', async () => {
+    window.history.replaceState({}, '', '/investment');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 11,
+              email: 'investor@example.com',
+              role: 'user',
+              memberType: 'investor',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/investment/me')) {
+        return new Response(
+          JSON.stringify({
+            portfolio: {
+              id: 7,
+              userId: 11,
+              baseCurrency: 'USD',
+              displayName: 'Jennifer Portfolio',
+              notes: null,
+              createdAt: '2026-06-18T00:00:00.000Z',
+              updatedAt: '2026-06-18T00:00:00.000Z',
+            },
+            summary: {
+              totalInvested: 50000,
+              portfolioValue: 34855.04,
+              unrealizedPnL: -15144.96,
+              totalReturnPercent: -30.29,
+            },
+            holdings: [],
+            transactions: [
+              {
+                id: 1,
+                portfolioId: 7,
+                assetSymbol: 'BTC',
+                assetName: 'Bitcoin',
+                transactionType: 'buy',
+                amountInvested: 5000,
+                purchasePrice: 50000,
+                purchaseShares: 0.1,
+                purchaseDate: '2026-05-12',
+                notes: null,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+            livePrices: [],
+            pricesLastUpdatedAt: '2026-06-19T16:00:00.000Z',
+            monthlyPerformance: [
+              { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
+              { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
+              { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
+              { month: '2026-04', label: 'Apr 2026', portfolioValue: 32263.08 },
+              { month: '2026-05', label: 'May 2026', portfolioValue: 34855.04 },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url}`);
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Monthly Portfolio Value' })
+    ).toBeInTheDocument();
+
+    const holdingsHeading = screen.getByRole('heading', { name: 'Current Holdings' });
+    const chartHeading = screen.getByRole('heading', { name: 'Monthly Portfolio Value' });
+    const historyHeading = screen.getByRole('heading', { name: 'Purchase History' });
+
+    expect(holdingsHeading.compareDocumentPosition(chartHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(chartHeading.compareDocumentPosition(historyHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.getByText('Jan 2026')).toBeInTheDocument();
+    expect(screen.getByText('May 2026')).toBeInTheDocument();
+  });
+
   it('routes dancer users to my videos after login', async () => {
     const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
       user: userEvent.setup(),
