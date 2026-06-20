@@ -13,6 +13,8 @@ function buildLinePath(points: { x: number; y: number }[]) {
     .join(' ');
 }
 
+const Y_AXIS_STEP = 5000;
+
 export default function MonthlyPerformanceChart({
   monthlyPerformance,
 }: {
@@ -35,18 +37,24 @@ export default function MonthlyPerformanceChart({
   const values = monthlyPerformance.map((point) => point.portfolioValue);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const range = maxValue - minValue || 1;
-  const tickCount = 4;
-  const yAxisTicks = Array.from({ length: tickCount }, (_value, index) => {
-    const ratio = index / (tickCount - 1);
-    const tickValue = maxValue - range * ratio;
-    const y = paddingTop + (height - paddingTop - paddingBottom) * ratio;
+  const axisMinValue = Math.max(0, Math.floor(minValue / Y_AXIS_STEP) * Y_AXIS_STEP);
+  const roundedAxisMaxValue = Math.ceil(maxValue / Y_AXIS_STEP) * Y_AXIS_STEP;
+  const axisMaxValue =
+    roundedAxisMaxValue === axisMinValue ? axisMinValue + Y_AXIS_STEP : roundedAxisMaxValue;
+  const axisRange = axisMaxValue - axisMinValue;
+  const yAxisTicks = Array.from(
+    { length: Math.floor(axisRange / Y_AXIS_STEP) + 1 },
+    (_value, index) => {
+      const tickValue = axisMaxValue - index * Y_AXIS_STEP;
+      const ratio = (tickValue - axisMinValue) / axisRange;
+      const y = height - paddingBottom - ratio * (height - paddingTop - paddingBottom);
 
-    return {
-      label: formatCurrency(tickValue),
-      y,
-    };
-  });
+      return {
+        label: formatCurrency(tickValue),
+        y,
+      };
+    }
+  );
 
   const points = monthlyPerformance.map((point, index) => {
     const x =
@@ -54,7 +62,7 @@ export default function MonthlyPerformanceChart({
         ? width / 2
         : paddingLeft +
           (index * (width - paddingLeft - paddingRight)) / (monthlyPerformance.length - 1);
-    const normalized = (point.portfolioValue - minValue) / range;
+    const normalized = (point.portfolioValue - axisMinValue) / axisRange;
     const y = height - paddingBottom - normalized * (height - paddingTop - paddingBottom);
 
     return { x, y, ...point };
