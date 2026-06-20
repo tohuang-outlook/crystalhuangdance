@@ -57,7 +57,8 @@ describe('investmentReportPdf', () => {
     downloadInvestmentReportPdf(samplePortfolioResponse);
 
     expect(saveMock).toHaveBeenCalledWith('jennifer-portfolio-may-2026.pdf');
-    expect(textMock).toHaveBeenCalledWith('Monthly Investment Report', 14, 27);
+    expect(textMock).toHaveBeenCalledWith('Monthly Investment Report', 20, 33);
+    expect(textMock).toHaveBeenCalledWith('Live Prices', 19, 151);
   });
 });
 
