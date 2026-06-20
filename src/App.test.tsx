@@ -382,7 +382,7 @@ describe('App dossier layout', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('BTC')).toBeInTheDocument();
+    expect((await screen.findAllByText('BTC')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('$5,400.00').length).toBeGreaterThan(0);
   });
 
@@ -469,9 +469,9 @@ describe('App dossier layout', () => {
     await screen.findByRole('heading', { name: /my investment/i });
 
     expect(screen.getByText('Live Prices')).toBeInTheDocument();
-    expect(screen.getByText('Bitcoin')).toBeInTheDocument();
+    expect(screen.getAllByText('Bitcoin').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$54,000.00').length).toBeGreaterThan(0);
-    expect(screen.getByRole('columnheader', { name: /Current Price/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Value/i })).toBeInTheDocument();
   });
 
   it('refreshes the investor snapshot every 60 seconds without showing the first-load placeholder again', async () => {
@@ -664,11 +664,15 @@ describe('App dossier layout', () => {
       await screen.findByRole('heading', { name: 'Monthly Portfolio Value' })
     ).toBeInTheDocument();
 
-    const holdingsHeading = screen.getByRole('heading', { name: 'Current Holdings' });
+    const holdingsHeading = screen.getByRole('heading', { name: 'Holdings' });
+    const allocationHeading = screen.getByRole('heading', { name: 'Allocation' });
     const chartHeading = screen.getByRole('heading', { name: 'Monthly Portfolio Value' });
     const historyHeading = screen.getByRole('heading', { name: 'Purchase History' });
 
-    expect(holdingsHeading.compareDocumentPosition(chartHeading)).toBe(
+    expect(holdingsHeading.compareDocumentPosition(allocationHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(allocationHeading.compareDocumentPosition(chartHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(chartHeading.compareDocumentPosition(historyHeading)).toBe(
@@ -676,6 +680,7 @@ describe('App dossier layout', () => {
     );
     expect(screen.getAllByText('Jan 2026').length).toBeGreaterThan(0);
     expect(screen.getAllByText('May 2026').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Allocation' })).toBeInTheDocument();
   });
 
   it('routes dancer users to my videos after login', async () => {
