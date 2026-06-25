@@ -70,7 +70,7 @@ describe('investmentReportPdf', () => {
     expect(textMock).toHaveBeenCalledWith('Monthly Portfolio Value', 19, 35);
     expect(
       textMock.mock.calls.some(
-        ([text, x, y]) => text === 'Holdings' && x === 19 && typeof y === 'number' && y > 126
+        ([text, x, y]) => text === 'Holdings' && x === 19 && typeof y === 'number' && y > 130
       )
     ).toBe(true);
     expect(textMock.mock.calls.some(([text]) => text === 'Apr 2026')).toBe(true);

@@ -259,7 +259,7 @@ function addLivePricesSnapshot(
 }
 
 function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: number) {
-  const sectionHeight = Math.max(62, 22 + holdings.length * 19);
+  const sectionHeight = Math.max(70, 30 + holdings.length * 19);
   drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, sectionHeight);
   drawSectionTitle(
     doc,
@@ -271,7 +271,7 @@ function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: num
   );
 
   autoTable(doc, {
-    startY: startY + 20,
+    startY: startY + 28,
     head: [['Asset', 'Quantity', 'Invested', 'Value', 'P&L']],
     body: holdings.map((holding) => [
       `${holding.assetSymbol}\n${holding.assetName} - ${formatAllocationPercent(holding.allocationPercent)}`,
