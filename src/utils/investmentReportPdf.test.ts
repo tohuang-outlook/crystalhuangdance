@@ -19,7 +19,7 @@ const linesMock = vi.fn();
 const lineMock = vi.fn();
 const addPageMock = vi.fn();
 const setPageMock = vi.fn();
-const getNumberOfPagesMock = vi.fn(() => 3);
+const getNumberOfPagesMock = vi.fn(() => 2);
 
 vi.mock('jspdf', () => ({
   jsPDF: vi.fn().mockImplementation(() => ({
@@ -49,7 +49,7 @@ vi.mock('jspdf-autotable', () => ({
 describe('investmentReportPdf', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getNumberOfPagesMock.mockReturnValue(3);
+    getNumberOfPagesMock.mockReturnValue(2);
   });
 
   it('builds a stable filename from the portfolio name and report month', () => {
@@ -64,9 +64,14 @@ describe('investmentReportPdf', () => {
     expect(saveMock).toHaveBeenCalledWith('jennifer-portfolio-may-2026.pdf');
     expect(textMock).toHaveBeenCalledWith('Monthly Investment Report', 20, 33);
     expect(textMock).toHaveBeenCalledWith('Live Prices', 19, 151);
-    expect(addPageMock).toHaveBeenCalledTimes(2);
-    expect(setPageMock).toHaveBeenCalledWith(3);
-    expect(textMock).toHaveBeenCalledWith('Page 3', 196, 288, { align: 'right' });
+    expect(addPageMock).toHaveBeenCalledTimes(1);
+    expect(setPageMock).toHaveBeenCalledWith(2);
+    expect(textMock).toHaveBeenCalledWith('Page 2', 196, 288, { align: 'right' });
+    expect(textMock).toHaveBeenCalledWith('Monthly Portfolio Value', 19, 35);
+    expect(
+      textMock.mock.calls.some(([text, x]) => text === 'Holdings' && x === 19)
+    ).toBe(true);
+    expect(textMock.mock.calls.some(([text]) => text === 'Purchase History')).toBe(false);
     expect(
       textMock.mock.calls.some(
         ([text, x, y]) =>
