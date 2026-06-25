@@ -141,6 +141,26 @@ function drawSectionTitle(
   }
 }
 
+function drawValueChip(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  label: string,
+  value: string
+) {
+  doc.setFillColor(249, 252, 255);
+  doc.setDrawColor(...SURFACE_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(x, y, width, 15, 3, 3, 'FD');
+  doc.setFontSize(7);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(label.toUpperCase(), x + 3, y + 5);
+  doc.setFontSize(10);
+  doc.setTextColor(...TEXT_PRIMARY);
+  doc.text(value, x + 3, y + 11);
+}
+
 function addCoverHeader(
   doc: jsPDF,
   portfolio: InvestmentPortfolioResponse['portfolio'],
@@ -255,7 +275,8 @@ function addLivePricesSnapshot(
 }
 
 function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: number) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 62);
+  const sectionHeight = Math.max(62, 22 + holdings.length * 19);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, sectionHeight);
   drawSectionTitle(
     doc,
     'Current Positions',
@@ -300,6 +321,8 @@ function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: num
       fontSize: 8.6,
       overflow: 'linebreak',
     },
+    pageBreak: 'avoid',
+    rowPageBreak: 'avoid',
     margin: { left: PAGE_MARGIN + 4, right: PAGE_MARGIN + 4 },
     didParseCell: (hookData) => {
       if (hookData.section === 'body' && hookData.column.index === 4) {
@@ -400,7 +423,7 @@ function addPerformanceSection(
   monthlyPerformance: InvestmentMonthlyPerformancePoint[],
   startY: number
 ) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 82);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 118);
   drawSectionTitle(
     doc,
     'Performance',
@@ -413,7 +436,7 @@ function addPerformanceSection(
   const chartX = PAGE_MARGIN + 6;
   const chartY = startY + 20;
   const chartWidth = CONTENT_WIDTH - 12;
-  const chartHeight = 32;
+  const chartHeight = 34;
   doc.setFillColor(...SURFACE_FILL);
   doc.roundedRect(chartX, chartY, chartWidth, chartHeight, 4, 4, 'F');
 
@@ -446,32 +469,20 @@ function addPerformanceSection(
     });
   }
 
-  autoTable(doc, {
-    startY: startY + 56,
-    head: [['Month', 'Portfolio Value']],
-    body: monthlyPerformance.map((point) => [point.label, formatCurrency(point.portfolioValue)]),
-    theme: 'plain',
-    headStyles: {
-      fillColor: SURFACE_FILL,
-      textColor: TEXT_PRIMARY,
-      fontStyle: 'bold',
-    },
-    bodyStyles: {
-      textColor: TEXT_PRIMARY,
-      cellPadding: 2.4,
-    },
-    alternateRowStyles: {
-      fillColor: [248, 251, 253],
-    },
-    styles: {
-      fontSize: 8.5,
-    },
-    columnStyles: {
-      0: { cellWidth: 54 },
-      1: { cellWidth: 38 },
-    },
-    margin: { left: PAGE_MARGIN + 4, right: PAGE_MARGIN + 92 },
+  const chipStartY = startY + 58;
+  const chipWidth = 56;
+  const chipGap = 6;
+  const columns = 3;
+
+  monthlyPerformance.forEach((point, index) => {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const x = PAGE_MARGIN + 6 + column * (chipWidth + chipGap);
+    const y = chipStartY + row * 19;
+    drawValueChip(doc, x, y, chipWidth, point.label, formatCurrency(point.portfolioValue));
   });
+
+  return chipStartY + Math.ceil(monthlyPerformance.length / columns) * 19;
 }
 
 function addTransactionsTable(doc: jsPDF, transactions: InvestmentTransaction[], startY: number) {
@@ -556,17 +567,16 @@ export function createInvestmentReportPdfDocument(data: InvestmentPortfolioRespo
   addSummaryCards(doc, 68, data.portfolio, data.summary, reportMonthLabel);
   addLivePricesSnapshot(doc, data.livePrices, data.pricesLastUpdatedAt, 136);
   addAllocationSection(doc, data.holdings, 182);
-  drawPageFooter(doc, 1);
 
   doc.addPage();
   drawPageFrame(doc);
   addPerformanceSection(doc, data.monthlyPerformance, 20);
-  const performanceEndY =
-    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 110;
-  addHoldingsTable(doc, data.holdings, performanceEndY + 16);
+
+  doc.addPage();
+  drawPageFrame(doc);
+  addHoldingsTable(doc, data.holdings, 20);
   const holdingsEndY =
-    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ??
-    performanceEndY + 70;
+    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 90;
   const transactionEndY = addTransactionsTable(doc, data.transactions, holdingsEndY + 16);
   doc.setFontSize(8);
   doc.setTextColor(...TEXT_MUTED);
@@ -575,7 +585,12 @@ export function createInvestmentReportPdfDocument(data: InvestmentPortfolioRespo
     PAGE_MARGIN,
     Math.min(transactionEndY + 10, PAGE_HEIGHT - 18)
   );
-  drawPageFooter(doc, 2);
+
+  const totalPages = doc.getNumberOfPages();
+  for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+    doc.setPage(pageNumber);
+    drawPageFooter(doc, pageNumber);
+  }
 
   return {
     doc,
