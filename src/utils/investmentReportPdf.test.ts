@@ -59,6 +59,15 @@ describe('investmentReportPdf', () => {
     expect(saveMock).toHaveBeenCalledWith('jennifer-portfolio-may-2026.pdf');
     expect(textMock).toHaveBeenCalledWith('Monthly Investment Report', 20, 33);
     expect(textMock).toHaveBeenCalledWith('Live Prices', 19, 151);
+    expect(
+      textMock.mock.calls.some(
+        ([text, x, y]) =>
+          typeof text === 'string' &&
+          text.startsWith('Last updated Jun 20, 2026') &&
+          x === 19 &&
+          y === 157
+      )
+    ).toBe(true);
   });
 });
 
