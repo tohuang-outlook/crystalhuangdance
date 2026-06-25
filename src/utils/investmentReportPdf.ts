@@ -38,6 +38,10 @@ function formatCurrency(value: number) {
   })}`;
 }
 
+function formatRoundedCurrency(value: number) {
+  return `$${Math.round(value).toLocaleString('en-US')}`;
+}
+
 function formatPercent(value: number) {
   const sign = value > 0 ? '+' : value < 0 ? '-' : '';
   return `${sign}${Math.abs(value).toFixed(2)}%`;
@@ -403,7 +407,7 @@ function addPerformanceSection(
   monthlyPerformance: InvestmentMonthlyPerformancePoint[],
   startY: number
 ) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 76);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 84);
   drawSectionTitle(
     doc,
     'Performance',
@@ -414,7 +418,7 @@ function addPerformanceSection(
   );
 
   const chartX = PAGE_MARGIN + 6;
-  const chartY = startY + 20;
+  const chartY = startY + 26;
   const chartWidth = CONTENT_WIDTH - 12;
   const chartHeight = 48;
   doc.setFillColor(...SURFACE_FILL);
@@ -424,15 +428,41 @@ function addPerformanceSection(
     const values = monthlyPerformance.map((point) => point.portfolioValue);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const range = maxValue - minValue || 1;
+    const rawRange = maxValue - minValue || 1;
+    const paddedMin = Math.floor((minValue - rawRange * 0.08) / 5000) * 5000;
+    const paddedMax = Math.ceil((maxValue + rawRange * 0.08) / 5000) * 5000;
+    const chartMin = Math.max(0, paddedMin);
+    const chartMax = Math.max(chartMin + 5000, paddedMax);
+    const range = chartMax - chartMin;
+    const tickCount = 5;
+    const plotLeft = chartX + 22;
+    const plotRight = chartX + chartWidth - 8;
+    const plotTop = chartY + 8;
+    const plotBottom = chartY + chartHeight - 10;
+
+    for (let tickIndex = 0; tickIndex <= tickCount; tickIndex += 1) {
+      const ratio = tickIndex / tickCount;
+      const y = plotBottom - ratio * (plotBottom - plotTop);
+      const tickValue = chartMin + ratio * range;
+
+      doc.setDrawColor(210, 224, 236);
+      doc.setLineWidth(0.25);
+      doc.line(plotLeft, y, plotRight, y);
+
+      doc.setFontSize(8);
+      doc.setTextColor(...TEXT_MUTED);
+      doc.text(formatRoundedCurrency(tickValue), plotLeft - 8, y + 1, {
+        align: 'right',
+      });
+    }
 
     const points = monthlyPerformance.map((point, index) => {
       const x =
         monthlyPerformance.length === 1
-          ? chartX + chartWidth / 2
-          : chartX + 12 + (index * (chartWidth - 24)) / (monthlyPerformance.length - 1);
-      const normalized = (point.portfolioValue - minValue) / range;
-      const y = chartY + chartHeight - 9 - normalized * (chartHeight - 15);
+          ? (plotLeft + plotRight) / 2
+          : plotLeft + (index * (plotRight - plotLeft)) / (monthlyPerformance.length - 1);
+      const normalized = (point.portfolioValue - chartMin) / range;
+      const y = plotBottom - normalized * (plotBottom - plotTop);
 
       return { x, y, ...point };
     });
@@ -446,10 +476,16 @@ function addPerformanceSection(
     points.forEach((point) => {
       doc.setFillColor(19, 55, 78);
       doc.circle(point.x, point.y, 1.1, 'F');
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(...TEXT_MUTED);
+      doc.text(point.label, point.x, plotBottom + 5, {
+        align: 'center',
+      });
     });
   }
 
-  return startY + 76;
+  return startY + 84;
 }
 
 function addTransactionsTable(doc: jsPDF, transactions: InvestmentTransaction[], startY: number) {

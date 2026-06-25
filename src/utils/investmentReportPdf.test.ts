@@ -71,8 +71,8 @@ describe('investmentReportPdf', () => {
     expect(
       textMock.mock.calls.some(([text, x]) => text === 'Holdings' && x === 19)
     ).toBe(true);
-    expect(textMock.mock.calls.some(([text]) => text === 'APR 2026')).toBe(false);
-    expect(textMock.mock.calls.some(([text]) => text === '$34,855.04')).toBe(false);
+    expect(textMock.mock.calls.some(([text]) => text === 'Apr 2026')).toBe(true);
+    expect(textMock.mock.calls.some(([text]) => text === '$30,000')).toBe(true);
     expect(textMock.mock.calls.some(([text]) => text === 'Purchase History')).toBe(false);
     expect(
       textMock.mock.calls.some(
