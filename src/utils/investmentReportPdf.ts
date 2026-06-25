@@ -574,7 +574,7 @@ export function createInvestmentReportPdfDocument(data: InvestmentPortfolioRespo
   doc.addPage();
   drawPageFrame(doc);
   const performanceEndY = addPerformanceSection(doc, data.monthlyPerformance, 20);
-  addHoldingsTable(doc, data.holdings, performanceEndY + 8);
+  addHoldingsTable(doc, data.holdings, performanceEndY + 12);
 
   const totalPages = doc.getNumberOfPages();
   for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
