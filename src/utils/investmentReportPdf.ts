@@ -570,21 +570,8 @@ export function createInvestmentReportPdfDocument(data: InvestmentPortfolioRespo
 
   doc.addPage();
   drawPageFrame(doc);
-  addPerformanceSection(doc, data.monthlyPerformance, 20);
-
-  doc.addPage();
-  drawPageFrame(doc);
-  addHoldingsTable(doc, data.holdings, 20);
-  const holdingsEndY =
-    (doc as jsPDF & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 90;
-  const transactionEndY = addTransactionsTable(doc, data.transactions, holdingsEndY + 16);
-  doc.setFontSize(8);
-  doc.setTextColor(...TEXT_MUTED);
-  doc.text(
-    'Prepared for investor review. Values reflect the latest dashboard snapshot available at the time of export.',
-    PAGE_MARGIN,
-    Math.min(transactionEndY + 10, PAGE_HEIGHT - 18)
-  );
+  const performanceEndY = addPerformanceSection(doc, data.monthlyPerformance, 20);
+  addHoldingsTable(doc, data.holdings, performanceEndY + 8);
 
   const totalPages = doc.getNumberOfPages();
   for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
