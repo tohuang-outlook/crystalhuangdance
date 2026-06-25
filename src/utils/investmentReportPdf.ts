@@ -141,26 +141,6 @@ function drawSectionTitle(
   }
 }
 
-function drawValueChip(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  width: number,
-  label: string,
-  value: string
-) {
-  doc.setFillColor(249, 252, 255);
-  doc.setDrawColor(...SURFACE_BORDER);
-  doc.setLineWidth(0.2);
-  doc.roundedRect(x, y, width, 15, 3, 3, 'FD');
-  doc.setFontSize(7);
-  doc.setTextColor(...TEXT_MUTED);
-  doc.text(label.toUpperCase(), x + 3, y + 5);
-  doc.setFontSize(10);
-  doc.setTextColor(...TEXT_PRIMARY);
-  doc.text(value, x + 3, y + 11);
-}
-
 function addCoverHeader(
   doc: jsPDF,
   portfolio: InvestmentPortfolioResponse['portfolio'],
@@ -423,7 +403,7 @@ function addPerformanceSection(
   monthlyPerformance: InvestmentMonthlyPerformancePoint[],
   startY: number
 ) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 118);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 76);
   drawSectionTitle(
     doc,
     'Performance',
@@ -436,7 +416,7 @@ function addPerformanceSection(
   const chartX = PAGE_MARGIN + 6;
   const chartY = startY + 20;
   const chartWidth = CONTENT_WIDTH - 12;
-  const chartHeight = 34;
+  const chartHeight = 48;
   doc.setFillColor(...SURFACE_FILL);
   doc.roundedRect(chartX, chartY, chartWidth, chartHeight, 4, 4, 'F');
 
@@ -469,20 +449,7 @@ function addPerformanceSection(
     });
   }
 
-  const chipStartY = startY + 58;
-  const chipWidth = 56;
-  const chipGap = 6;
-  const columns = 3;
-
-  monthlyPerformance.forEach((point, index) => {
-    const column = index % columns;
-    const row = Math.floor(index / columns);
-    const x = PAGE_MARGIN + 6 + column * (chipWidth + chipGap);
-    const y = chipStartY + row * 19;
-    drawValueChip(doc, x, y, chipWidth, point.label, formatCurrency(point.portfolioValue));
-  });
-
-  return chipStartY + Math.ceil(monthlyPerformance.length / columns) * 19;
+  return startY + 76;
 }
 
 function addTransactionsTable(doc: jsPDF, transactions: InvestmentTransaction[], startY: number) {
