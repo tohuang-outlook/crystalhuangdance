@@ -6,6 +6,7 @@ import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
+import { buildInvestmentReportFilename, createInvestmentReportPdfDocument } from './investment-report-pdf.js';
 import { processUploadedVideo } from './video-processing.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -351,6 +352,150 @@ function serializeInvestmentMonthlyPerformance(history) {
   }));
 }
 
+function serializeInvestmentMonthlyReport(report) {
+  return {
+    monthKey: report.monthKey,
+    label: formatMonthLabel(report.monthKey),
+    snapshotDate: report.snapshotDate,
+    status: report.status,
+    generatedAt: report.generatedAt,
+    fileName: report.fileName,
+  };
+}
+
+async function writeInvestmentMonthlyReportPdf({ outputPath, reportData }) {
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  const { doc } = createInvestmentReportPdfDocument(reportData);
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  await fs.writeFile(outputPath, pdfBuffer);
+}
+
+async function generateInvestmentMonthlyReport({
+  db,
+  portfolio,
+  monthKey,
+  currentDate,
+  reportStorageRoot,
+  getInvestmentPrices,
+  getInvestmentPricesLastUpdatedAt,
+  runWithInvestmentPricingRequestState,
+}) {
+  const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
+
+  if (transactions.length === 0) {
+    return { status: 'skipped', reason: 'no-transactions' };
+  }
+
+  const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
+  const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
+    await runWithInvestmentPricingRequestState(() =>
+      loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
+    );
+  const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
+  ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
+  const monthlyHistory = appendLatestCompletedMonthSnapshot({
+    db,
+    portfolioId: portfolio.id,
+    summary: snapshot.summary,
+    now: currentDate,
+  });
+  const filteredHistory = monthlyHistory.filter((entry) => entry.month <= monthKey);
+  const reportMonthEntry = filteredHistory.find((entry) => entry.month === monthKey);
+
+  if (!reportMonthEntry) {
+    return { status: 'skipped', reason: 'missing-month-history' };
+  }
+
+  const reportMonthLabel = formatMonthLabel(monthKey);
+  const fileName = buildInvestmentReportFilename(
+    portfolio.displayName || 'investor-portfolio',
+    reportMonthLabel
+  );
+  const relativePath = path.join(String(portfolio.id), fileName);
+  const outputPath = path.join(reportStorageRoot, relativePath);
+
+  await writeInvestmentMonthlyReportPdf({
+    outputPath,
+    reportData: {
+      portfolio: serializeInvestmentPortfolio(portfolio),
+      summary: snapshot.summary,
+      holdings: snapshot.holdings,
+      transactions: [],
+      livePrices,
+      pricesLastUpdatedAt,
+      monthlyPerformance: serializeInvestmentMonthlyPerformance(filteredHistory),
+    },
+  });
+
+  const report = db.upsertInvestmentMonthlyReport({
+    portfolioId: portfolio.id,
+    monthKey,
+    snapshotDate: reportMonthEntry.snapshotDate,
+    fileName,
+    filePath: relativePath,
+    status: 'ready',
+    errorMessage: null,
+  });
+
+  return { status: 'ready', report };
+}
+
+async function generateLatestCompletedInvestmentReports({
+  db,
+  currentDate,
+  reportStorageRoot,
+  getInvestmentPrices,
+  getInvestmentPricesLastUpdatedAt,
+  runWithInvestmentPricingRequestState,
+}) {
+  const monthKey = getLastCompletedMonthKey(currentDate);
+  const portfolios = db.listInvestmentPortfoliosForInvestors();
+  let generated = 0;
+  let updated = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const portfolio of portfolios) {
+    const existing = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
+
+    try {
+      const result = await generateInvestmentMonthlyReport({
+        db,
+        portfolio,
+        monthKey,
+        currentDate,
+        reportStorageRoot,
+        getInvestmentPrices,
+        getInvestmentPricesLastUpdatedAt,
+        runWithInvestmentPricingRequestState,
+      });
+
+      if (result.status === 'ready') {
+        if (existing) {
+          updated += 1;
+        } else {
+          generated += 1;
+        }
+      } else {
+        skipped += 1;
+      }
+    } catch (error) {
+      failed += 1;
+      db.upsertInvestmentMonthlyReport({
+        portfolioId: portfolio.id,
+        monthKey,
+        snapshotDate: getMonthEndDate(monthKey),
+        fileName: `${monthKey}-failed.pdf`,
+        filePath: path.join(String(portfolio.id), `${monthKey}-failed.pdf`),
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Unknown generation error.',
+      });
+    }
+  }
+
+  return { monthKey, summary: { generated, updated, skipped, failed } };
+}
+
 function isAbortError(error) {
   return error instanceof Error && error.name === 'AbortError';
 }
@@ -624,6 +769,7 @@ export function createApp({
 
   const getInvestmentPricesLastUpdatedAt =
     customGetInvestmentPricesLastUpdatedAt ?? getInvestmentPricingRequestTimestamp;
+  const reportStorageRoot = config.reportStorageDirectory;
 
   if (config.requireInviteCode && config.inviteCodes.length === 0) {
     throw new Error(
@@ -852,6 +998,48 @@ export function createApp({
     });
   });
 
+  app.get('/api/investment/me/reports', requireInvestor, (req, res) => {
+    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    return res.json({
+      reports: db
+        .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
+        .map(serializeInvestmentMonthlyReport),
+    });
+  });
+
+  app.get('/api/investment/me/reports/:monthKey/download', requireInvestor, async (req, res) => {
+    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    const monthKey = String(req.params.monthKey ?? '').trim();
+    if (!/^\d{4}-\d{2}$/.test(monthKey)) {
+      return res.status(400).json({ error: 'A valid report month is required.' });
+    }
+
+    const report = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
+    if (!report || report.status !== 'ready') {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const absolutePath = path.join(reportStorageRoot, report.filePath);
+
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      return res.status(404).json({ error: 'Report file is missing.' });
+    }
+
+    return res.download(absolutePath, report.fileName);
+  });
+
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
@@ -951,6 +1139,19 @@ export function createApp({
       pricesLastUpdatedAt,
       monthlyPerformance: serializeInvestmentMonthlyPerformance(monthlyHistory),
     });
+  });
+
+  app.post('/api/admin/investment/reports/generate-latest', requireAdmin, async (_req, res) => {
+    const result = await generateLatestCompletedInvestmentReports({
+      db,
+      currentDate: now(),
+      reportStorageRoot,
+      getInvestmentPrices,
+      getInvestmentPricesLastUpdatedAt,
+      runWithInvestmentPricingRequestState,
+    });
+
+    return res.json(result);
   });
 
   app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
@@ -1273,6 +1474,23 @@ export function createApp({
         await fs.rm(file.path, { force: true }).catch(() => {});
       }
     });
+  });
+
+  app.post('/internal/jobs/investment-reports/generate-latest', async (req, res) => {
+    if (!config.cronSecret || req.get('x-cron-secret') !== config.cronSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const result = await generateLatestCompletedInvestmentReports({
+      db,
+      currentDate: now(),
+      reportStorageRoot,
+      getInvestmentPrices,
+      getInvestmentPricesLastUpdatedAt,
+      runWithInvestmentPricingRequestState,
+    });
+
+    return res.json(result);
   });
 
   app.use(express.static(config.frontendDistDirectory));

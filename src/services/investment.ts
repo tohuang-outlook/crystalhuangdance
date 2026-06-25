@@ -44,6 +44,15 @@ export interface InvestmentMonthlyPerformancePoint {
   portfolioValue: number;
 }
 
+export interface InvestmentMonthlyReportRecord {
+  monthKey: string;
+  label: string;
+  snapshotDate: string;
+  status: 'ready' | 'failed';
+  generatedAt: string;
+  fileName: string;
+}
+
 export interface InvestmentTransaction {
   id: number;
   portfolioId: number;
@@ -84,6 +93,20 @@ interface InvestmentPortfolioEnvelope {
 
 interface AdminInvestmentTransactionEnvelope {
   transaction: InvestmentTransaction;
+}
+
+interface InvestmentReportsEnvelope {
+  reports: InvestmentMonthlyReportRecord[];
+}
+
+interface AdminInvestmentReportGenerationResponse {
+  monthKey: string;
+  summary: {
+    generated: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+  };
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -165,6 +188,42 @@ function normalizeInvestmentPortfolioResponse(
   };
 }
 
+function normalizeInvestmentMonthlyReports(payload: unknown): InvestmentMonthlyReportRecord[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const monthKey = typeof entry.monthKey === 'string' ? entry.monthKey.trim() : '';
+    const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+    const snapshotDate =
+      typeof entry.snapshotDate === 'string' ? entry.snapshotDate.trim() : '';
+    const status = entry.status === 'failed' ? 'failed' : entry.status === 'ready' ? 'ready' : '';
+    const generatedAt =
+      typeof entry.generatedAt === 'string' ? entry.generatedAt.trim() : '';
+    const fileName = typeof entry.fileName === 'string' ? entry.fileName.trim() : '';
+
+    if (!monthKey || !label || !snapshotDate || !status || !generatedAt || !fileName) {
+      return [];
+    }
+
+    return [
+      {
+        monthKey,
+        label,
+        snapshotDate,
+        status,
+        generatedAt,
+        fileName,
+      },
+    ];
+  });
+}
+
 async function parseError(response: Response) {
   let message = 'Request failed';
 
@@ -194,6 +253,23 @@ export async function fetchMyInvestmentPortfolio() {
       portfolio: InvestmentPortfolioRecord;
     }
   );
+}
+
+export async function fetchMyInvestmentReports() {
+  const response = await fetch(`${apiBaseUrl}/api/investment/me/reports`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    await parseError(response);
+  }
+
+  const payload = (await response.json()) as InvestmentReportsEnvelope;
+  return normalizeInvestmentMonthlyReports(payload.reports);
+}
+
+export function getMyInvestmentReportDownloadUrl(monthKey: string) {
+  return `${apiBaseUrl}/api/investment/me/reports/${monthKey}/download`;
 }
 
 async function requestJson<T>(path: string, init?: RequestInit) {
@@ -277,6 +353,16 @@ export function deleteAdminInvestmentTransaction(transactionId: number) {
     `/api/admin/portfolio-transactions/${transactionId}`,
     {
       method: 'DELETE',
+    }
+  );
+}
+
+export function generateAdminInvestmentReports() {
+  return requestJson<AdminInvestmentReportGenerationResponse>(
+    '/api/admin/investment/reports/generate-latest',
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
     }
   );
 }
