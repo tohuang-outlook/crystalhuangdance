@@ -234,27 +234,23 @@ function addLivePricesSnapshot(
   pricesLastUpdatedAt: string | null,
   startY: number
 ) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 32);
-  drawSectionTitle(
-    doc,
-    'Market Snapshot',
-    'Live Prices',
-    `Last updated ${formatSnapshotTime(pricesLastUpdatedAt)}`,
-    PAGE_MARGIN + 5,
-    startY + 7
-  );
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 40);
+  drawSectionTitle(doc, 'Market Snapshot', 'Live Prices', null, PAGE_MARGIN + 5, startY + 7);
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(`Last updated ${formatSnapshotTime(pricesLastUpdatedAt)}`, PAGE_MARGIN + 5, startY + 21);
 
   const pricesToShow = livePrices.slice(0, 6);
   pricesToShow.forEach((price, index) => {
     const x = PAGE_MARGIN + 5 + index * 31;
     doc.setFillColor(...(assetAccentBySymbol[price.assetSymbol] ?? BRAND_DARK));
-    doc.circle(x + 1.5, startY + 22, 1.5, 'F');
+    doc.circle(x + 1.5, startY + 30, 1.5, 'F');
     doc.setFontSize(8);
     doc.setTextColor(...TEXT_MUTED);
-    doc.text(price.assetSymbol, x + 5, startY + 20);
+    doc.text(price.assetSymbol, x + 5, startY + 28);
     doc.setFontSize(10);
     doc.setTextColor(...TEXT_PRIMARY);
-    doc.text(formatCurrency(price.currentPrice), x + 5, startY + 26);
+    doc.text(formatCurrency(price.currentPrice), x + 5, startY + 34);
   });
 }
 
@@ -315,7 +311,7 @@ function addHoldingsTable(doc: jsPDF, holdings: InvestmentHolding[], startY: num
 }
 
 function addAllocationSection(doc: jsPDF, holdings: InvestmentHolding[], startY: number) {
-  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 58);
+  drawSectionCard(doc, PAGE_MARGIN, startY, CONTENT_WIDTH, 68);
   drawSectionTitle(
     doc,
     'Portfolio Mix',
@@ -326,7 +322,7 @@ function addAllocationSection(doc: jsPDF, holdings: InvestmentHolding[], startY:
   );
 
   const centerX = PAGE_MARGIN + 32;
-  const centerY = startY + 34;
+  const centerY = startY + 43;
   const outerRadius = 18;
   const innerRadius = 10;
   let currentAngle = -90;
@@ -342,7 +338,7 @@ function addAllocationSection(doc: jsPDF, holdings: InvestmentHolding[], startY:
     const column = index >= 3 ? 1 : 0;
     const row = index % 3;
     const x = PAGE_MARGIN + 64 + column * 63;
-    const y = startY + 24 + row * 10;
+    const y = startY + 34 + row * 10;
     const color = assetAccentBySymbol[holding.assetSymbol] ?? BRAND_DARK;
     doc.setFillColor(...color);
     doc.circle(x, y - 1.5, 1.4, 'F');
@@ -559,7 +555,7 @@ export function createInvestmentReportPdfDocument(data: InvestmentPortfolioRespo
   addCoverHeader(doc, data.portfolio, data.summary, reportMonthLabel);
   addSummaryCards(doc, 68, data.portfolio, data.summary, reportMonthLabel);
   addLivePricesSnapshot(doc, data.livePrices, data.pricesLastUpdatedAt, 136);
-  addAllocationSection(doc, data.holdings, 174);
+  addAllocationSection(doc, data.holdings, 182);
   drawPageFooter(doc, 1);
 
   doc.addPage();
