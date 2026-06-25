@@ -6,13 +6,24 @@ import MonthlyPerformanceChart from '../components/investment/MonthlyPerformance
 import PortfolioSummary from '../components/investment/PortfolioSummary';
 import TransactionTable from '../components/investment/TransactionTable';
 import {
+  fetchMyInvestmentReports,
   fetchMyInvestmentPortfolio,
+  getMyInvestmentReportDownloadUrl,
+  type InvestmentMonthlyReportRecord,
   type InvestmentPortfolioResponse,
 } from '../services/investment';
-import { downloadInvestmentReportPdf } from '../utils/investmentReportPdf';
+
+function formatReportDate(value: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(`${value}T12:00:00`));
+}
 
 export default function MyInvestmentPage() {
   const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
+  const [reports, setReports] = useState<InvestmentMonthlyReportRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +53,25 @@ export default function MyInvestmentPage() {
       }
 
       try {
-        const response = await fetchMyInvestmentPortfolio();
+        const [portfolioResponse, reportsResponse] = await Promise.all([
+          fetchMyInvestmentPortfolio(),
+          fetchMyInvestmentReports().catch((err) => {
+            const message =
+              err instanceof Error ? err.message : 'Unable to load saved reports.';
+
+            if (message.toLowerCase().includes('portfolio not found')) {
+              return [];
+            }
+
+            throw err;
+          }),
+        ]);
         if (!isMounted) {
           return;
         }
 
-        setData(response);
+        setData(portfolioResponse);
+        setReports(reportsResponse);
         setError(null);
         setRefreshError(null);
         hasLoadedOnceRef.current = true;
@@ -63,6 +87,7 @@ export default function MyInvestmentPage() {
           if (message.toLowerCase().includes('portfolio not found')) {
             hasLoadedOnceRef.current = true;
             setData(null);
+            setReports([]);
             setError(null);
           } else {
             setError(message);
@@ -93,17 +118,17 @@ export default function MyInvestmentPage() {
   }, []);
 
   const handleDownloadReport = async () => {
-    if (!data || isDownloadingReport) {
+    if (!data || isDownloadingReport || reports.length === 0) {
       return;
     }
 
     setIsDownloadingReport(true);
 
     try {
-      downloadInvestmentReportPdf(data);
+      window.location.assign(getMyInvestmentReportDownloadUrl(reports[0].monthKey));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Unable to generate the monthly report right now.';
+        err instanceof Error ? err.message : 'Unable to download the monthly report right now.';
       setRefreshError(message);
     } finally {
       setIsDownloadingReport(false);
@@ -126,11 +151,11 @@ export default function MyInvestmentPage() {
             </div>
             <button
               className="inline-flex items-center justify-center rounded-full bg-[var(--text)] px-5 py-3 text-sm uppercase tracking-[0.22em] text-white transition hover:bg-[var(--text-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={!data || isDownloadingReport}
+              disabled={!data || isDownloadingReport || reports.length === 0}
               onClick={() => void handleDownloadReport()}
               type="button"
             >
-              {isDownloadingReport ? 'Preparing Report...' : 'Download Monthly Report'}
+              {isDownloadingReport ? 'Preparing Report...' : 'Download Latest Report'}
             </button>
           </div>
 
@@ -186,6 +211,53 @@ export default function MyInvestmentPage() {
                   new months close.
                 </p>
                 <MonthlyPerformanceChart monthlyPerformance={data.monthlyPerformance} />
+              </section>
+
+              <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="eyebrow">Saved Reports</p>
+                    <h2 className="mt-4 text-3xl text-[var(--text)]">Monthly PDFs</h2>
+                  </div>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {reports.length === 0
+                      ? 'Monthly reports appear here after month-end closes.'
+                      : `${reports.length} saved report${reports.length === 1 ? '' : 's'}`}
+                  </p>
+                </div>
+
+                {reports.length === 0 ? (
+                  <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                    No saved monthly reports yet. Your administrator can generate the latest month-end report,
+                    and future reports can be created automatically on schedule.
+                  </div>
+                ) : (
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                    {reports.map((report) => (
+                      <article
+                        key={report.monthKey}
+                        className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.72)] p-5"
+                      >
+                        <p className="eyebrow text-[10px]">{report.label}</p>
+                        <h3 className="mt-3 text-2xl text-[var(--text)]">{report.fileName}</h3>
+                        <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                          Snapshot date: {formatReportDate(report.snapshotDate)}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+                          Status: {report.status === 'ready' ? 'Ready to download' : 'Generation failed'}
+                        </p>
+                        <div className="mt-5">
+                          <a
+                            className="inline-flex items-center justify-center rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)]"
+                            href={getMyInvestmentReportDownloadUrl(report.monthKey)}
+                          >
+                            Download PDF
+                          </a>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </section>
 
               <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">

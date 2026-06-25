@@ -5,6 +5,7 @@ import { createDatabase } from './db.js';
 import { createResendPasswordResetSender } from './resend.js';
 
 const config = getServerConfig();
+fs.mkdirSync(config.reportStorageDirectory, { recursive: true });
 fs.mkdirSync(config.uploadTempDirectory, { recursive: true });
 fs.mkdirSync(config.processedVideosDirectory, { recursive: true });
 

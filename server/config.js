@@ -47,6 +47,7 @@ export function getServerConfig() {
     sessionSecret: process.env.SESSION_SECRET ?? 'dev-session-secret-change-me',
     dbFile: explicitDbFile ?? path.join(dataDirectory, 'crystalhuangdance.sqlite'),
     dataDirectory,
+    reportStorageDirectory: path.join(dataDirectory, 'investment-reports'),
     uploadTempDirectory: path.join(uploadsDirectory, 'tmp'),
     processedVideosDirectory: path.join(uploadsDirectory, 'videos'),
     publicVideosBasePath: '/uploads/videos',
@@ -65,6 +66,7 @@ export function getServerConfig() {
     resetPasswordUrlBase,
     resendApiKey: process.env.RESEND_API_KEY ?? null,
     emailFromAddress: process.env.RESET_EMAIL_FROM ?? 'noreply@crystalhuangdance.org',
+    cronSecret: process.env.CRON_SECRET ?? null,
     requireInviteCode,
     inviteCodes,
   };

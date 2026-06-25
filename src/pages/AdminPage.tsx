@@ -5,6 +5,7 @@ import TransactionForm from '../components/investment/TransactionForm';
 import TransactionTable from '../components/investment/TransactionTable';
 import {
   createAdminInvestmentPortfolio,
+  generateAdminInvestmentReports,
   createAdminInvestmentTransaction,
   deleteAdminInvestmentTransaction,
   fetchAdminInvestmentPortfolio,
@@ -90,6 +91,7 @@ export default function AdminPage() {
   >({});
   const [activePortfolioAction, setActivePortfolioAction] = useState<string | null>(null);
   const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
+  const [reportGenerationMessage, setReportGenerationMessage] = useState<string | null>(null);
 
   const stats = useMemo(
     () => ({
@@ -264,6 +266,26 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Unable to delete user.');
     } finally {
       setActiveDeleteKey(null);
+    }
+  };
+
+  const handleGenerateLatestReports = async () => {
+    setActivePortfolioAction('generate-reports');
+    setError(null);
+    setReportGenerationMessage(null);
+
+    try {
+      const response = await generateAdminInvestmentReports();
+      await loadDashboard();
+      setReportGenerationMessage(
+        `Saved ${response.summary.generated + response.summary.updated} investor report${
+          response.summary.generated + response.summary.updated === 1 ? '' : 's'
+        } for ${response.monthKey}. Skipped ${response.summary.skipped}, failed ${response.summary.failed}.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to generate investor reports.');
+    } finally {
+      setActivePortfolioAction(null);
     }
   };
 
@@ -875,10 +897,28 @@ export default function AdminPage() {
                       Investor Portfolios
                     </h2>
                   </div>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    {investorUsers.length} account{investorUsers.length === 1 ? '' : 's'}
-                  </p>
+                  <div className="flex flex-col items-start gap-3 sm:items-end">
+                    <button
+                      className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={investorUsers.length === 0 || activePortfolioAction === 'generate-reports'}
+                      onClick={() => void handleGenerateLatestReports()}
+                      type="button"
+                    >
+                      {activePortfolioAction === 'generate-reports'
+                        ? 'Generating reports...'
+                        : 'Generate latest reports'}
+                    </button>
+                    <p className="text-sm text-[var(--text-muted)]">
+                      {investorUsers.length} account{investorUsers.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
                 </div>
+
+                {reportGenerationMessage ? (
+                  <p className="mt-4 rounded-2xl border border-[rgba(74,155,127,0.24)] bg-[rgba(74,155,127,0.10)] px-4 py-3 text-sm text-[var(--text)]">
+                    {reportGenerationMessage}
+                  </p>
+                ) : null}
 
                 {investorUsers.length === 0 ? (
                   <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">

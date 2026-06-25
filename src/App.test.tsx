@@ -256,6 +256,15 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
       if (url.endsWith('/api/investment/me')) {
         return new Response(
           JSON.stringify({
@@ -335,6 +344,15 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
       if (url.endsWith('/api/investment/me')) {
         return new Response(
           JSON.stringify({
@@ -411,6 +429,29 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(
+          JSON.stringify({
+            reports: [
+              {
+                monthKey: '2026-05',
+                label: 'May 2026',
+                snapshotDate: '2026-05-31',
+                status: 'ready',
+                generatedAt: '2026-06-01T00:00:00.000Z',
+                fileName: 'jennifer-portfolio-may-2026.pdf',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
       if (url.endsWith('/api/investment/me')) {
         return new Response(
           JSON.stringify({
@@ -472,6 +513,8 @@ describe('App dossier layout', () => {
     expect(screen.getAllByText('Bitcoin').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$54,000.00').length).toBeGreaterThan(0);
     expect(screen.getByRole('columnheader', { name: /Value/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Monthly PDFs/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Download PDF/i })).toBeInTheDocument();
   });
 
   it('refreshes the investor snapshot every 60 seconds without showing the first-load placeholder again', async () => {
@@ -500,6 +543,15 @@ describe('App dossier layout', () => {
             },
           }
         );
+      }
+
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
       }
 
       if (url.endsWith('/api/investment/me')) {
@@ -599,6 +651,15 @@ describe('App dossier layout', () => {
             },
           }
         );
+      }
+
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
       }
 
       if (url.endsWith('/api/investment/me')) {
@@ -764,6 +825,15 @@ describe('App dossier layout', () => {
         );
       }
 
+      if (url.endsWith('/api/investment/me/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
       if (url.endsWith('/api/investment/me')) {
         return new Response(
           JSON.stringify({
@@ -888,6 +958,120 @@ describe('App dossier layout', () => {
     expect(await screen.findByRole('heading', { name: /Investor Portfolios/i })).toBeInTheDocument();
     expect(screen.getByText('jennifer@example.com')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Create portfolio/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Generate latest reports/i })).toBeInTheDocument();
+  });
+
+  it('lets admins trigger the latest investor monthly reports from the admin console', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/admin');
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio') && (!init?.method || init.method === 'GET')) {
+        return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports/generate-latest')) {
+        return new Response(
+          JSON.stringify({
+            monthKey: '2026-06',
+            summary: {
+              generated: 1,
+              updated: 0,
+              skipped: 0,
+              failed: 0,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url} (${init?.method ?? 'GET'})`);
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /Investor Portfolios/i });
+    await user.click(screen.getByRole('button', { name: /Generate latest reports/i }));
+
+    expect(
+      await screen.findByText(/Saved 1 investor report for 2026-06/i)
+    ).toBeInTheDocument();
   });
 
   it('keeps the admin page stable when an investor portfolio response is missing snapshot fields', async () => {

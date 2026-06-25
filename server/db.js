@@ -81,6 +81,23 @@ export function createDatabase(filename) {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS investment_monthly_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
+      month_key TEXT NOT NULL,
+      snapshot_date TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ready',
+      generated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      error_message TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (portfolio_id, month_key)
+    )
+  `);
+
   const statements = {
     createUser: db.prepare(
       `INSERT INTO users (email, password_hash, role, member_type)
@@ -116,6 +133,20 @@ export function createDatabase(filename) {
          updated_at AS updatedAt
        FROM investment_portfolios
        WHERE user_id = ?`
+    ),
+    listInvestmentPortfoliosForInvestors: db.prepare(
+      `SELECT
+         portfolios.id,
+         portfolios.user_id AS userId,
+         portfolios.base_currency AS baseCurrency,
+         portfolios.display_name AS displayName,
+         portfolios.notes,
+         portfolios.created_at AS createdAt,
+         portfolios.updated_at AS updatedAt
+       FROM investment_portfolios portfolios
+       INNER JOIN users ON users.id = portfolios.user_id
+       WHERE users.member_type = 'investor'
+       ORDER BY portfolios.id ASC`
     ),
     createInvestmentTransaction: db.prepare(
       `INSERT INTO investment_transactions (
@@ -266,6 +297,78 @@ export function createDatabase(filename) {
          month_key AS month,
          portfolio_value AS portfolioValue,
          snapshot_date AS snapshotDate,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    listInvestmentMonthlyReportsByPortfolioId: db.prepare(
+      `SELECT
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS monthKey,
+         snapshot_date AS snapshotDate,
+         file_name AS fileName,
+         file_path AS filePath,
+         status,
+         generated_at AS generatedAt,
+         error_message AS errorMessage,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_monthly_reports
+       WHERE portfolio_id = ?
+       ORDER BY month_key DESC, id DESC`
+    ),
+    findInvestmentMonthlyReportByPortfolioIdAndMonth: db.prepare(
+      `SELECT
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS monthKey,
+         snapshot_date AS snapshotDate,
+         file_name AS fileName,
+         file_path AS filePath,
+         status,
+         generated_at AS generatedAt,
+         error_message AS errorMessage,
+         created_at AS createdAt,
+         updated_at AS updatedAt
+       FROM investment_monthly_reports
+       WHERE portfolio_id = ? AND month_key = ?`
+    ),
+    upsertInvestmentMonthlyReport: db.prepare(
+      `INSERT INTO investment_monthly_reports (
+         portfolio_id,
+         month_key,
+         snapshot_date,
+         file_name,
+         file_path,
+         status,
+         error_message
+       ) VALUES (
+         @portfolioId,
+         @monthKey,
+         @snapshotDate,
+         @fileName,
+         @filePath,
+         @status,
+         @errorMessage
+       )
+       ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
+         snapshot_date = excluded.snapshot_date,
+         file_name = excluded.file_name,
+         file_path = excluded.file_path,
+         status = excluded.status,
+         error_message = excluded.error_message,
+         generated_at = CURRENT_TIMESTAMP,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS monthKey,
+         snapshot_date AS snapshotDate,
+         file_name AS fileName,
+         file_path AS filePath,
+         status,
+         generated_at AS generatedAt,
+         error_message AS errorMessage,
          created_at AS createdAt,
          updated_at AS updatedAt`
     ),
@@ -502,6 +605,9 @@ export function createDatabase(filename) {
     findInvestmentPortfolioByUserId(userId) {
       return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
     },
+    listInvestmentPortfoliosForInvestors() {
+      return statements.listInvestmentPortfoliosForInvestors.all();
+    },
     createInvestmentTransaction({
       portfolioId,
       assetSymbol,
@@ -562,6 +668,15 @@ export function createDatabase(filename) {
     },
     upsertInvestmentMonthlyHistory(input) {
       return statements.upsertInvestmentMonthlyHistory.get(input);
+    },
+    listInvestmentMonthlyReportsByPortfolioId(portfolioId) {
+      return statements.listInvestmentMonthlyReportsByPortfolioId.all(portfolioId);
+    },
+    findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolioId, monthKey) {
+      return statements.findInvestmentMonthlyReportByPortfolioIdAndMonth.get(portfolioId, monthKey) ?? null;
+    },
+    upsertInvestmentMonthlyReport(input) {
+      return statements.upsertInvestmentMonthlyReport.get(input);
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;

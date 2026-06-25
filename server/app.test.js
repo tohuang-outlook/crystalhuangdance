@@ -13,6 +13,7 @@ function createTestConfig() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'crystal-auth-test-'));
 
   return {
+    reportStorageDirectory: path.join(root, 'investment-reports'),
     uploadTempDirectory: path.join(root, 'tmp'),
     processedVideosDirectory: path.join(root, 'videos'),
     publicVideosBasePath: '/uploads/videos',
@@ -22,6 +23,7 @@ function createTestConfig() {
     resetPasswordUrlBase: 'https://www.crystalhuangdance.org/reset-password',
     emailFromAddress: 'noreply@crystalhuangdance.org',
     resendApiKey: 'test-resend-api-key',
+    cronSecret: 'test-cron-secret',
     maxVideoDurationSeconds: 300,
     targetVideoSizeBytes: 19 * 1024 * 1024,
     maxAllowedVideoSizeBytes: 20 * 1024 * 1024,
@@ -112,6 +114,7 @@ describe('auth and video backend foundation', () => {
     sentResetEmails = [];
     currentTime = new Date('2026-06-06T19:00:00.000Z');
     fs.mkdirSync(config.uploadTempDirectory, { recursive: true });
+    fs.mkdirSync(config.reportStorageDirectory, { recursive: true });
     fs.mkdirSync(config.processedVideosDirectory, { recursive: true });
     fs.mkdirSync(config.frontendDistDirectory, { recursive: true });
     fs.writeFileSync(
@@ -1006,6 +1009,172 @@ describe('auth and video backend foundation', () => {
       { month: '2026-06', label: 'Jun 2026', portfolioValue: 6000 },
     ]);
     expect(secondResponse.body.monthlyPerformance).toEqual(firstResponse.body.monthlyPerformance);
+  });
+
+  it('lists and downloads saved monthly reports for the logged-in investor', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => ({
+        BTC: 60000,
+      }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'investor@example.com');
+    db.setUserMemberTypeById(createdUser.id, 'investor');
+    await loginUser(investorAgent, 'investor@example.com');
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
+      .send({ displayName: 'Investor Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    const generateResponse = await adminAgent
+      .post('/api/admin/investment/reports/generate-latest')
+      .send({});
+
+    expect(generateResponse.status).toBe(200);
+    expect(generateResponse.body.monthKey).toBe('2026-06');
+
+    const listResponse = await investorAgent.get('/api/investment/me/reports');
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.reports).toEqual([
+      expect.objectContaining({
+        monthKey: '2026-06',
+        label: 'Jun 2026',
+        status: 'ready',
+      }),
+    ]);
+
+    const downloadResponse = await investorAgent.get('/api/investment/me/reports/2026-06/download');
+    expect(downloadResponse.status).toBe(200);
+    expect(downloadResponse.headers['content-type']).toContain('application/pdf');
+    expect(downloadResponse.headers['content-disposition']).toContain('.pdf');
+  });
+
+  it('regenerates the latest completed month report idempotently', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => ({
+        BTC: 60000,
+      }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'investor@example.com');
+    db.setUserMemberTypeById(createdUser.id, 'investor');
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
+      .send({ displayName: 'Investor Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    const firstRun = await adminAgent.post('/api/admin/investment/reports/generate-latest').send({});
+    const secondRun = await adminAgent.post('/api/admin/investment/reports/generate-latest').send({});
+
+    expect(firstRun.status).toBe(200);
+    expect(secondRun.status).toBe(200);
+    expect(secondRun.body.summary.updated + secondRun.body.summary.generated).toBeGreaterThanOrEqual(1);
+  });
+
+  it('allows the internal cron endpoint to generate the latest reports with the shared secret', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+      getInvestmentPrices: async () => ({
+        BTC: 60000,
+      }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'investor@example.com');
+    db.setUserMemberTypeById(createdUser.id, 'investor');
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
+      .send({ displayName: 'Investor Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    await request(app)
+      .post('/internal/jobs/investment-reports/generate-latest')
+      .set('x-cron-secret', 'test-cron-secret')
+      .send({})
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.monthKey).toBe('2026-06');
+        expect(body.summary.generated + body.summary.updated).toBeGreaterThanOrEqual(1);
+      });
   });
 
   it('backfills missing seeded months for portfolios that were initialized before the 2025 history was added', async () => {
