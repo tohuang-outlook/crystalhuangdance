@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AdminReportCenter from '../components/investment/AdminReportCenter';
 import HoldingsTable from '../components/investment/HoldingsTable';
 import PortfolioSummary from '../components/investment/PortfolioSummary';
 import TransactionForm from '../components/investment/TransactionForm';
@@ -17,10 +18,14 @@ import {
   createAdminYoutubeVideo,
   deleteAdminUser,
   deleteAdminVideo,
+  fetchAdminInvestmentReports,
   fetchAdminUsers,
   fetchAdminVideos,
+  regenerateAdminInvestmentReport,
+  type AdminInvestmentReportRecord,
   type AdminUserRecord,
   type AdminVideoRecord,
+  updateAdminInvestmentReportNotes,
   updateAdminUserMemberType,
   uploadAdminVideoFile,
 } from '../services/admin';
@@ -92,6 +97,13 @@ export default function AdminPage() {
   const [activePortfolioAction, setActivePortfolioAction] = useState<string | null>(null);
   const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
   const [reportGenerationMessage, setReportGenerationMessage] = useState<string | null>(null);
+  const [reportCenterReports, setReportCenterReports] = useState<AdminInvestmentReportRecord[]>([]);
+  const [isReportCenterLoading, setIsReportCenterLoading] = useState(true);
+  const [activeReportSaveKey, setActiveReportSaveKey] = useState<string | null>(null);
+  const [activeReportRegenerateKey, setActiveReportRegenerateKey] = useState<string | null>(null);
+
+  const createReportActionKey = (report: Pick<AdminInvestmentReportRecord, 'id' | 'monthKey'>) =>
+    `${report.monthKey}:${report.id}`;
 
   const stats = useMemo(
     () => ({
@@ -143,16 +155,19 @@ export default function AdminPage() {
     setError(null);
 
     try {
-      const [usersResponse, videosResponse] = await Promise.all([
+      const [usersResponse, videosResponse, reportsResponse] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
+        fetchAdminInvestmentReports(),
       ]);
 
       setUsers(usersResponse.users);
       setVideos(videosResponse.videos);
+      setReportCenterReports(reportsResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
+      setIsReportCenterLoading(false);
       if (keepLoadingState) {
         setIsLoading(false);
       }
@@ -286,6 +301,56 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Unable to generate investor reports.');
     } finally {
       setActivePortfolioAction(null);
+    }
+  };
+
+  const handleSaveReportNotes = async (
+    report: AdminInvestmentReportRecord,
+    notes: {
+      investorNote: string | null;
+      adminNote: string | null;
+    }
+  ) => {
+    const actionKey = createReportActionKey(report);
+    setActiveReportSaveKey(actionKey);
+    setError(null);
+    setReportGenerationMessage(null);
+
+    try {
+      const savedReport = await updateAdminInvestmentReportNotes(report.monthKey, report.id, notes);
+      setReportCenterReports((current) =>
+        current.map((entry) => (entry.id === savedReport.id ? savedReport : entry))
+      );
+      setReportGenerationMessage(
+        `Saved notes for ${savedReport.investorEmail} (${savedReport.label}).`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save report notes.');
+      throw err;
+    } finally {
+      setActiveReportSaveKey(null);
+    }
+  };
+
+  const handleRegenerateReport = async (report: AdminInvestmentReportRecord) => {
+    const actionKey = createReportActionKey(report);
+    setActiveReportRegenerateKey(actionKey);
+    setError(null);
+    setReportGenerationMessage(null);
+
+    try {
+      const refreshedReport = await regenerateAdminInvestmentReport(report.monthKey, report.id);
+      setReportCenterReports((current) =>
+        current.map((entry) => (entry.id === refreshedReport.id ? refreshedReport : entry))
+      );
+      setReportGenerationMessage(
+        `Regenerated ${refreshedReport.label} for ${refreshedReport.investorEmail}.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to regenerate this saved report.');
+      throw err;
+    } finally {
+      setActiveReportRegenerateKey(null);
     }
   };
 
@@ -919,6 +984,15 @@ export default function AdminPage() {
                     {reportGenerationMessage}
                   </p>
                 ) : null}
+
+                <AdminReportCenter
+                  activeRegenerateKey={activeReportRegenerateKey}
+                  activeSaveKey={activeReportSaveKey}
+                  isLoading={isReportCenterLoading}
+                  onRegenerate={handleRegenerateReport}
+                  onSave={handleSaveReportNotes}
+                  reports={reportCenterReports}
+                />
 
                 {investorUsers.length === 0 ? (
                   <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">

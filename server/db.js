@@ -98,6 +98,9 @@ export function createDatabase(filename) {
     )
   `);
 
+  ensureColumn(db, 'investment_monthly_reports', 'investor_note', 'TEXT');
+  ensureColumn(db, 'investment_monthly_reports', 'admin_note', 'TEXT');
+
   const statements = {
     createUser: db.prepare(
       `INSERT INTO users (email, password_hash, role, member_type)
@@ -311,6 +314,8 @@ export function createDatabase(filename) {
          status,
          generated_at AS generatedAt,
          error_message AS errorMessage,
+         investor_note AS investorNote,
+         admin_note AS adminNote,
          created_at AS createdAt,
          updated_at AS updatedAt
        FROM investment_monthly_reports
@@ -328,6 +333,8 @@ export function createDatabase(filename) {
          status,
          generated_at AS generatedAt,
          error_message AS errorMessage,
+         investor_note AS investorNote,
+         admin_note AS adminNote,
          created_at AS createdAt,
          updated_at AS updatedAt
        FROM investment_monthly_reports
@@ -341,7 +348,9 @@ export function createDatabase(filename) {
          file_name,
          file_path,
          status,
-         error_message
+         error_message,
+         investor_note,
+         admin_note
        ) VALUES (
          @portfolioId,
          @monthKey,
@@ -349,7 +358,9 @@ export function createDatabase(filename) {
          @fileName,
          @filePath,
          @status,
-         @errorMessage
+         @errorMessage,
+         @investorNote,
+         @adminNote
        )
        ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
          snapshot_date = excluded.snapshot_date,
@@ -357,6 +368,8 @@ export function createDatabase(filename) {
          file_path = excluded.file_path,
          status = excluded.status,
          error_message = excluded.error_message,
+         investor_note = COALESCE(excluded.investor_note, investment_monthly_reports.investor_note),
+         admin_note = COALESCE(excluded.admin_note, investment_monthly_reports.admin_note),
          generated_at = CURRENT_TIMESTAMP,
          updated_at = CURRENT_TIMESTAMP
        RETURNING
@@ -369,6 +382,52 @@ export function createDatabase(filename) {
          status,
          generated_at AS generatedAt,
          error_message AS errorMessage,
+         investor_note AS investorNote,
+         admin_note AS adminNote,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    listInvestmentMonthlyReportsForAdmin: db.prepare(
+      `SELECT
+         reports.id,
+         reports.portfolio_id AS portfolioId,
+         reports.month_key AS monthKey,
+         reports.snapshot_date AS snapshotDate,
+         reports.file_name AS fileName,
+         reports.file_path AS filePath,
+         reports.status,
+         reports.generated_at AS generatedAt,
+         reports.error_message AS errorMessage,
+         reports.investor_note AS investorNote,
+         reports.admin_note AS adminNote,
+         reports.created_at AS createdAt,
+         reports.updated_at AS updatedAt,
+         portfolios.user_id AS investorUserId,
+         portfolios.display_name AS portfolioDisplayName,
+         users.email AS investorEmail
+       FROM investment_monthly_reports reports
+       INNER JOIN investment_portfolios portfolios ON portfolios.id = reports.portfolio_id
+       INNER JOIN users ON users.id = portfolios.user_id
+       ORDER BY reports.month_key DESC, users.email ASC, reports.id DESC`
+    ),
+    updateInvestmentMonthlyReportNotes: db.prepare(
+      `UPDATE investment_monthly_reports
+       SET investor_note = @investorNote,
+           admin_note = @adminNote,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @reportId AND month_key = @monthKey
+       RETURNING
+         id,
+         portfolio_id AS portfolioId,
+         month_key AS monthKey,
+         snapshot_date AS snapshotDate,
+         file_name AS fileName,
+         file_path AS filePath,
+         status,
+         generated_at AS generatedAt,
+         error_message AS errorMessage,
+         investor_note AS investorNote,
+         admin_note AS adminNote,
          created_at AS createdAt,
          updated_at AS updatedAt`
     ),
@@ -676,7 +735,24 @@ export function createDatabase(filename) {
       return statements.findInvestmentMonthlyReportByPortfolioIdAndMonth.get(portfolioId, monthKey) ?? null;
     },
     upsertInvestmentMonthlyReport(input) {
-      return statements.upsertInvestmentMonthlyReport.get(input);
+      return statements.upsertInvestmentMonthlyReport.get({
+        investorNote: null,
+        adminNote: null,
+        ...input,
+      });
+    },
+    listInvestmentMonthlyReportsForAdmin() {
+      return statements.listInvestmentMonthlyReportsForAdmin.all();
+    },
+    updateInvestmentMonthlyReportNotes(reportId, monthKey, investorNote, adminNote) {
+      return (
+        statements.updateInvestmentMonthlyReportNotes.get({
+          reportId,
+          monthKey,
+          investorNote,
+          adminNote,
+        }) ?? null
+      );
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;

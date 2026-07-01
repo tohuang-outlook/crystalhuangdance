@@ -352,15 +352,86 @@ function serializeInvestmentMonthlyPerformance(history) {
   }));
 }
 
-function serializeInvestmentMonthlyReport(report) {
-  return {
+function serializeInvestmentMonthlyReport(report, { includeAdminFields = false } = {}) {
+  const serialized = {
+    id: report.id,
     monthKey: report.monthKey,
     label: formatMonthLabel(report.monthKey),
     snapshotDate: report.snapshotDate,
     status: report.status,
     generatedAt: report.generatedAt,
     fileName: report.fileName,
+    investorNote: report.investorNote ?? null,
   };
+
+  if (includeAdminFields) {
+    serialized.adminNote = report.adminNote ?? null;
+    serialized.portfolioId = report.portfolioId;
+  }
+
+  return serialized;
+}
+
+function serializeAdminInvestmentMonthlyReport(report) {
+  return {
+    ...serializeInvestmentMonthlyReport(report, { includeAdminFields: true }),
+    investorEmail: report.investorEmail,
+    investorUserId: report.investorUserId,
+    portfolioDisplayName: report.portfolioDisplayName,
+  };
+}
+
+function findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey) {
+  return (
+    db.raw
+      .prepare(
+        `SELECT
+           reports.id,
+           reports.portfolio_id AS portfolioId,
+           reports.month_key AS monthKey,
+           reports.snapshot_date AS snapshotDate,
+           reports.file_name AS fileName,
+           reports.file_path AS filePath,
+           reports.status,
+           reports.generated_at AS generatedAt,
+           reports.error_message AS errorMessage,
+           reports.investor_note AS investorNote,
+           reports.admin_note AS adminNote,
+           reports.created_at AS createdAt,
+           reports.updated_at AS updatedAt,
+           portfolios.user_id AS investorUserId,
+           portfolios.display_name AS portfolioDisplayName,
+           portfolios.base_currency AS baseCurrency,
+           portfolios.notes,
+           portfolios.created_at AS portfolioCreatedAt,
+           portfolios.updated_at AS portfolioUpdatedAt,
+           users.email AS investorEmail
+         FROM investment_monthly_reports reports
+         INNER JOIN investment_portfolios portfolios ON portfolios.id = reports.portfolio_id
+         INNER JOIN users ON users.id = portfolios.user_id
+         WHERE reports.id = ? AND reports.month_key = ?`
+      )
+      .get(reportId, monthKey) ?? null
+  );
+}
+
+function findInvestmentPortfolioById(db, portfolioId) {
+  return (
+    db.raw
+      .prepare(
+        `SELECT
+           id,
+           user_id AS userId,
+           base_currency AS baseCurrency,
+           display_name AS displayName,
+           notes,
+           created_at AS createdAt,
+           updated_at AS updatedAt
+         FROM investment_portfolios
+         WHERE id = ?`
+      )
+      .get(portfolioId) ?? null
+  );
 }
 
 async function writeInvestmentMonthlyReportPdf({ outputPath, reportData }) {
@@ -380,6 +451,7 @@ async function generateInvestmentMonthlyReport({
   getInvestmentPricesLastUpdatedAt,
   runWithInvestmentPricingRequestState,
 }) {
+  const existingReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
   const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
 
   if (transactions.length === 0) {
@@ -424,6 +496,7 @@ async function generateInvestmentMonthlyReport({
       livePrices,
       pricesLastUpdatedAt,
       monthlyPerformance: serializeInvestmentMonthlyPerformance(filteredHistory),
+      investorNote: existingReport?.investorNote ?? null,
     },
   });
 
@@ -435,6 +508,8 @@ async function generateInvestmentMonthlyReport({
     filePath: relativePath,
     status: 'ready',
     errorMessage: null,
+    investorNote: existingReport?.investorNote ?? null,
+    adminNote: existingReport?.adminNote ?? null,
   });
 
   return { status: 'ready', report };
@@ -489,6 +564,8 @@ async function generateLatestCompletedInvestmentReports({
         filePath: path.join(String(portfolio.id), `${monthKey}-failed.pdf`),
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : 'Unknown generation error.',
+        investorNote: existing?.investorNote ?? null,
+        adminNote: existing?.adminNote ?? null,
       });
     }
   }
@@ -1012,6 +1089,66 @@ export function createApp({
     });
   });
 
+  app.get('/api/admin/investment/reports', requireAdmin, (_req, res) => {
+    const reports = db
+      .listInvestmentMonthlyReportsForAdmin()
+      .map(serializeAdminInvestmentMonthlyReport);
+
+    return res.json({ reports });
+  });
+
+  app.patch('/api/admin/investment/reports/:monthKey/:reportId', requireAdmin, (req, res) => {
+    const reportId = parseIdParam(req.params.reportId);
+    const monthKey = String(req.params.monthKey ?? '').trim();
+    const investorNote = trimOptionalString(req.body?.investorNote);
+    const adminNote = trimOptionalString(req.body?.adminNote);
+
+    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      return res.status(400).json({ error: 'A valid report id and month are required.' });
+    }
+
+    const report = db.updateInvestmentMonthlyReportNotes(reportId, monthKey, investorNote, adminNote);
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const adminReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
+
+    if (!adminReport) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    return res.json({
+      report: serializeAdminInvestmentMonthlyReport(adminReport),
+    });
+  });
+
+  app.get('/api/admin/investment/reports/:monthKey/:reportId/download', requireAdmin, async (req, res) => {
+    const reportId = parseIdParam(req.params.reportId);
+    const monthKey = String(req.params.monthKey ?? '').trim();
+
+    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      return res.status(400).json({ error: 'A valid report id and month are required.' });
+    }
+
+    const report = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
+
+    if (!report || report.status !== 'ready') {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const absolutePath = path.join(reportStorageRoot, report.filePath);
+
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      return res.status(404).json({ error: 'Report file is missing.' });
+    }
+
+    return res.download(absolutePath, report.fileName);
+  });
+
   app.get('/api/investment/me/reports/:monthKey/download', requireInvestor, async (req, res) => {
     const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
 
@@ -1152,6 +1289,52 @@ export function createApp({
     });
 
     return res.json(result);
+  });
+
+  app.post('/api/admin/investment/reports/:monthKey/:reportId/regenerate', requireAdmin, async (req, res) => {
+    const reportId = parseIdParam(req.params.reportId);
+    const monthKey = String(req.params.monthKey ?? '').trim();
+
+    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      return res.status(400).json({ error: 'A valid report id and month are required.' });
+    }
+
+    const existingReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
+
+    if (!existingReport) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    const portfolio = findInvestmentPortfolioById(db, existingReport.portfolioId);
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    const result = await generateInvestmentMonthlyReport({
+      db,
+      portfolio,
+      monthKey,
+      currentDate: now(),
+      reportStorageRoot,
+      getInvestmentPrices,
+      getInvestmentPricesLastUpdatedAt,
+      runWithInvestmentPricingRequestState,
+    });
+
+    if (result.status !== 'ready') {
+      return res.status(409).json({ error: 'Report could not be generated for that month.' });
+    }
+
+    const refreshedReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
+
+    if (!refreshedReport) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+
+    return res.json({
+      report: serializeAdminInvestmentMonthlyReport(refreshedReport),
+    });
   });
 
   app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
