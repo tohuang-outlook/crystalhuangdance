@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
 import { siteConfig } from './data/siteData';
 
@@ -434,12 +434,14 @@ describe('App dossier layout', () => {
           JSON.stringify({
             reports: [
               {
+                id: 5,
                 monthKey: '2026-05',
                 label: 'May 2026',
                 snapshotDate: '2026-05-31',
                 status: 'ready',
                 generatedAt: '2026-06-01T00:00:00.000Z',
                 fileName: 'jennifer-portfolio-may-2026.pdf',
+                investorNote: 'Stayed patient through the month and kept sizing disciplined.',
               },
             ],
           }),
@@ -513,6 +515,10 @@ describe('App dossier layout', () => {
     expect(screen.getAllByText('Bitcoin').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$54,000.00').length).toBeGreaterThan(0);
     expect(screen.getByRole('columnheader', { name: /Value/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /May 2026 Update/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Stayed patient through the month and kept sizing disciplined\./i)
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Monthly PDFs/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Download PDF/i })).toBeInTheDocument();
   });
@@ -874,7 +880,7 @@ describe('App dossier layout', () => {
     expect(screen.queryByRole('link', { name: 'Upload' })).not.toBeInTheDocument();
   });
 
-  it('shows investor portfolio management controls for admins', async () => {
+  it('shows investor portfolio management controls and the report center for admins', async () => {
     window.history.replaceState({}, '', '/admin');
 
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -941,6 +947,36 @@ describe('App dossier layout', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/investment/reports')) {
+        return new Response(
+          JSON.stringify({
+            reports: [
+              {
+                id: 7,
+                portfolioId: 21,
+                monthKey: '2026-06',
+                label: 'June 2026',
+                snapshotDate: '2026-06-30',
+                status: 'ready',
+                generatedAt: '2026-07-01T08:30:00.000Z',
+                fileName: '2026-06-jennifer-portfolio.pdf',
+                investorNote: 'Stayed patient during June volatility.',
+                adminNote: 'Follow up on July cash deployment.',
+                investorEmail: 'jennifer@example.com',
+                investorUserId: 11,
+                portfolioDisplayName: 'Jennifer Portfolio',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
       if (url.endsWith('/api/admin/investors/11/portfolio')) {
         return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
           status: 404,
@@ -956,9 +992,12 @@ describe('App dossier layout', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /Investor Portfolios/i })).toBeInTheDocument();
-    expect(screen.getByText('jennifer@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Create portfolio/i })).toBeInTheDocument();
+    expect(screen.getAllByText('jennifer@example.com').length).toBeGreaterThan(0);
+    expect(await screen.findByRole('button', { name: /Create portfolio/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generate latest reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Saved monthly reports/i })).toBeInTheDocument();
+    expect(screen.getByText('2026-06-jennifer-portfolio.pdf')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Stayed patient during June volatility.')).toBeInTheDocument();
   });
 
   it('lets admins trigger the latest investor monthly reports from the admin console', async () => {
@@ -1032,6 +1071,15 @@ describe('App dossier layout', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/investment/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
       if (url.endsWith('/api/admin/investors/11/portfolio') && (!init?.method || init.method === 'GET')) {
         return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
           status: 404,
@@ -1072,6 +1120,156 @@ describe('App dossier layout', () => {
     expect(
       await screen.findByText(/Saved 1 investor report for 2026-06/i)
     ).toBeInTheDocument();
+  });
+
+  it('lets admins save report-center investor and admin notes', async () => {
+    const { user } = await import('@testing-library/user-event').then(({ default: userEvent }) => ({
+      user: userEvent.setup(),
+    }));
+
+    window.history.replaceState({}, '', '/admin');
+
+    let savedReport = {
+      id: 7,
+      portfolioId: 21,
+      monthKey: '2026-06',
+      label: 'June 2026',
+      snapshotDate: '2026-06-30',
+      status: 'ready',
+      generatedAt: '2026-07-01T08:30:00.000Z',
+      fileName: '2026-06-jennifer-portfolio.pdf',
+      investorNote: 'Stayed patient during June volatility.',
+      adminNote: 'Follow up on July cash deployment.',
+      investorEmail: 'jennifer@example.com',
+      investorUserId: 11,
+      portfolioDisplayName: 'Jennifer Portfolio',
+    };
+
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/api/auth/me')) {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 1,
+              email: 'admin@example.com',
+              role: 'admin',
+              memberType: 'dancer',
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/users')) {
+        return new Response(
+          JSON.stringify({
+            users: [
+              {
+                id: 1,
+                email: 'admin@example.com',
+                role: 'admin',
+                memberType: 'dancer',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+              {
+                id: 11,
+                email: 'jennifer@example.com',
+                role: 'user',
+                memberType: 'investor',
+                uploadCount: 0,
+                createdAt: '2026-06-18T00:00:00.000Z',
+                updatedAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (url.endsWith('/api/admin/videos')) {
+        return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports') && (!init?.method || init.method === 'GET')) {
+        return new Response(JSON.stringify({ reports: [savedReport] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports/2026-06/7') && init?.method === 'PATCH') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          investorNote: 'Shared a steadier month-end outlook.',
+          adminNote: 'Review August rebalance notes.',
+        });
+
+        savedReport = {
+          ...savedReport,
+          investorNote: 'Shared a steadier month-end outlook.',
+          adminNote: 'Review August rebalance notes.',
+        };
+
+        return new Response(JSON.stringify({ report: savedReport }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investors/11/portfolio')) {
+        return new Response(JSON.stringify({ error: 'Portfolio not found.' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      throw new Error(`Unhandled fetch request in App tests: ${url} (${init?.method ?? 'GET'})`);
+    });
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /Saved monthly reports/i });
+
+    const investorNote = screen.getByLabelText(/Investor-facing note/i);
+    const adminNote = screen.getByLabelText(/Admin-only note/i);
+
+    await user.clear(investorNote);
+    await user.type(investorNote, 'Shared a steadier month-end outlook.');
+    await user.clear(adminNote);
+    await user.type(adminNote, 'Review August rebalance notes.');
+    await user.click(screen.getByRole('button', { name: /Save notes/i }));
+
+    expect(
+      await screen.findByText(/Saved notes for jennifer@example.com/i)
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Shared a steadier month-end outlook.')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Review August rebalance notes.')).toBeInTheDocument();
+    });
   });
 
   it('keeps the admin page stable when an investor portfolio response is missing snapshot fields', async () => {
@@ -1134,6 +1332,15 @@ describe('App dossier layout', () => {
 
       if (url.endsWith('/api/admin/videos')) {
         return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
@@ -1241,6 +1448,15 @@ describe('App dossier layout', () => {
 
       if (url.endsWith('/api/admin/videos')) {
         return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
@@ -1518,6 +1734,15 @@ describe('App dossier layout', () => {
 
       if (url.endsWith('/api/admin/videos')) {
         return new Response(JSON.stringify({ videos: [] }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
+      if (url.endsWith('/api/admin/investment/reports')) {
+        return new Response(JSON.stringify({ reports: [] }), {
           status: 200,
           headers: {
             'Content-Type': 'application/json',

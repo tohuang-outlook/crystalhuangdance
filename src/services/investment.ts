@@ -45,12 +45,14 @@ export interface InvestmentMonthlyPerformancePoint {
 }
 
 export interface InvestmentMonthlyReportRecord {
+  id: number;
   monthKey: string;
   label: string;
   snapshotDate: string;
   status: 'ready' | 'failed';
   generatedAt: string;
   fileName: string;
+  investorNote: string | null;
 }
 
 export interface InvestmentTransaction {
@@ -199,6 +201,7 @@ function normalizeInvestmentMonthlyReports(payload: unknown): InvestmentMonthlyR
     }
 
     const monthKey = typeof entry.monthKey === 'string' ? entry.monthKey.trim() : '';
+    const id = Number(entry.id);
     const label = typeof entry.label === 'string' ? entry.label.trim() : '';
     const snapshotDate =
       typeof entry.snapshotDate === 'string' ? entry.snapshotDate.trim() : '';
@@ -206,19 +209,31 @@ function normalizeInvestmentMonthlyReports(payload: unknown): InvestmentMonthlyR
     const generatedAt =
       typeof entry.generatedAt === 'string' ? entry.generatedAt.trim() : '';
     const fileName = typeof entry.fileName === 'string' ? entry.fileName.trim() : '';
+    const investorNote =
+      typeof entry.investorNote === 'string' ? entry.investorNote : entry.investorNote === null ? null : null;
 
-    if (!monthKey || !label || !snapshotDate || !status || !generatedAt || !fileName) {
+    if (
+      !Number.isInteger(id) ||
+      !monthKey ||
+      !label ||
+      !snapshotDate ||
+      !status ||
+      !generatedAt ||
+      !fileName
+    ) {
       return [];
     }
 
     return [
       {
+        id,
         monthKey,
         label,
         snapshotDate,
         status,
         generatedAt,
         fileName,
+        investorNote,
       },
     ];
   });

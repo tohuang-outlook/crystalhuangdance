@@ -28,6 +28,22 @@ export interface AdminVideoRecord {
   };
 }
 
+export interface AdminInvestmentReportRecord {
+  id: number;
+  portfolioId: number;
+  monthKey: string;
+  label: string;
+  snapshotDate: string;
+  status: 'ready' | 'failed';
+  generatedAt: string;
+  fileName: string;
+  investorNote: string | null;
+  adminNote: string | null;
+  investorEmail: string;
+  investorUserId: number;
+  portfolioDisplayName: string | null;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -42,6 +58,14 @@ interface AdminVideoEnvelope {
 
 interface AdminUserEnvelope {
   user: AdminUserRecord;
+}
+
+interface AdminInvestmentReportsEnvelope {
+  reports: AdminInvestmentReportRecord[];
+}
+
+interface AdminInvestmentReportEnvelope {
+  report: AdminInvestmentReportRecord;
 }
 
 interface ApiErrorPayload {
@@ -80,6 +104,71 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+function normalizeAdminInvestmentReports(payload: unknown): AdminInvestmentReportRecord[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const id = Number(entry.id);
+    const portfolioId = Number(entry.portfolioId);
+    const monthKey = typeof entry.monthKey === 'string' ? entry.monthKey.trim() : '';
+    const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+    const snapshotDate =
+      typeof entry.snapshotDate === 'string' ? entry.snapshotDate.trim() : '';
+    const status = entry.status === 'failed' ? 'failed' : entry.status === 'ready' ? 'ready' : '';
+    const generatedAt =
+      typeof entry.generatedAt === 'string' ? entry.generatedAt.trim() : '';
+    const fileName = typeof entry.fileName === 'string' ? entry.fileName.trim() : '';
+    const investorEmail =
+      typeof entry.investorEmail === 'string' ? entry.investorEmail.trim() : '';
+    const investorUserId = Number(entry.investorUserId);
+    const portfolioDisplayName =
+      typeof entry.portfolioDisplayName === 'string' ? entry.portfolioDisplayName : null;
+    const investorNote =
+      typeof entry.investorNote === 'string' ? entry.investorNote : entry.investorNote === null ? null : null;
+    const adminNote =
+      typeof entry.adminNote === 'string' ? entry.adminNote : entry.adminNote === null ? null : null;
+
+    if (
+      !Number.isInteger(id) ||
+      !Number.isInteger(portfolioId) ||
+      !monthKey ||
+      !label ||
+      !snapshotDate ||
+      !status ||
+      !generatedAt ||
+      !fileName ||
+      !investorEmail ||
+      !Number.isInteger(investorUserId)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        portfolioId,
+        monthKey,
+        label,
+        snapshotDate,
+        status,
+        generatedAt,
+        fileName,
+        investorNote,
+        adminNote,
+        investorEmail,
+        investorUserId,
+        portfolioDisplayName,
+      },
+    ];
+  });
 }
 
 export function fetchAdminUsers() {
@@ -131,4 +220,59 @@ export function uploadAdminVideoFile(userId: number, payload: { title: string; f
     method: 'POST',
     body: formData,
   });
+}
+
+export async function fetchAdminInvestmentReports() {
+  const payload = await request<AdminInvestmentReportsEnvelope>('/api/admin/investment/reports', {
+    method: 'GET',
+  });
+
+  return normalizeAdminInvestmentReports(payload.reports);
+}
+
+export async function updateAdminInvestmentReportNotes(
+  monthKey: string,
+  reportId: number,
+  payload: {
+    investorNote: string | null;
+    adminNote: string | null;
+  }
+) {
+  const response = await request<AdminInvestmentReportEnvelope>(
+    `/api/admin/investment/reports/${monthKey}/${reportId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const [report] = normalizeAdminInvestmentReports([response.report]);
+
+  if (!report) {
+    throw new Error('Unable to parse saved report response.');
+  }
+
+  return report;
+}
+
+export async function regenerateAdminInvestmentReport(monthKey: string, reportId: number) {
+  const response = await request<AdminInvestmentReportEnvelope>(
+    `/api/admin/investment/reports/${monthKey}/${reportId}/regenerate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }
+  );
+
+  const [report] = normalizeAdminInvestmentReports([response.report]);
+
+  if (!report) {
+    throw new Error('Unable to parse regenerated report response.');
+  }
+
+  return report;
+}
+
+export function getAdminInvestmentReportDownloadUrl(monthKey: string, reportId: number) {
+  return `${apiBaseUrl}/api/admin/investment/reports/${monthKey}/${reportId}/download`;
 }

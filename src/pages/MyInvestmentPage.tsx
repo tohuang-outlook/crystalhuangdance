@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AllocationChart from '../components/investment/AllocationChart';
 import HoldingsTable from '../components/investment/HoldingsTable';
+import InvestorReportNoteCard from '../components/investment/InvestorReportNoteCard';
 import LivePricesCard from '../components/investment/LivePricesCard';
 import MonthlyPerformanceChart from '../components/investment/MonthlyPerformanceChart';
 import PortfolioSummary from '../components/investment/PortfolioSummary';
@@ -135,6 +136,9 @@ export default function MyInvestmentPage() {
     }
   };
 
+  const latestInvestorNoteReport =
+    reports.find((report) => report.investorNote && report.investorNote.trim().length > 0) ?? null;
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-6xl">
@@ -212,6 +216,10 @@ export default function MyInvestmentPage() {
                 </p>
                 <MonthlyPerformanceChart monthlyPerformance={data.monthlyPerformance} />
               </section>
+
+              {latestInvestorNoteReport ? (
+                <InvestorReportNoteCard report={latestInvestorNoteReport} />
+              ) : null}
 
               <section className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
