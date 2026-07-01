@@ -1076,6 +1076,218 @@ describe('auth and video backend foundation', () => {
     expect(downloadResponse.headers['content-disposition']).toContain('.pdf');
   });
 
+  it('lists saved investor reports for admins across multiple portfolios', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async () => {},
+      getInvestmentPrices: async () => ({ BTC: 60000 }),
+    });
+
+    const adminAgent = request.agent(app);
+    const firstInvestorAgent = request.agent(app);
+    const secondInvestorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const firstCreatedUser = await registerUser(firstInvestorAgent, 'jennifer@example.com');
+    db.setUserMemberTypeById(firstCreatedUser.id, 'investor');
+    const secondCreatedUser = await registerUser(secondInvestorAgent, 'marco@example.com');
+    db.setUserMemberTypeById(secondCreatedUser.id, 'investor');
+
+    await adminAgent
+      .post(`/api/admin/investors/${firstCreatedUser.id}/portfolio`)
+      .send({ displayName: 'Jennifer Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${firstCreatedUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${secondCreatedUser.id}/portfolio`)
+      .send({ displayName: 'Marco Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${secondCreatedUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'ETH',
+        amountInvested: 7000,
+        purchaseShares: 2,
+        purchaseDate: '2026-05-18',
+      })
+      .expect(201);
+
+    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
+
+    const response = await adminAgent.get('/api/admin/investment/reports').expect(200);
+
+    expect(response.body.reports).toHaveLength(2);
+    expect(response.body.reports).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          investorEmail: 'jennifer@example.com',
+          portfolioDisplayName: 'Jennifer Portfolio',
+          monthKey: '2026-06',
+          status: 'ready',
+        }),
+        expect.objectContaining({
+          investorEmail: 'marco@example.com',
+          portfolioDisplayName: 'Marco Portfolio',
+          monthKey: '2026-06',
+          status: 'ready',
+        }),
+      ])
+    );
+  });
+
+  it('lets admins save investor-facing and admin-only notes on a monthly report', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async () => {},
+      getInvestmentPrices: async () => ({ BTC: 60000 }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+    db.setUserMemberTypeById(createdUser.id, 'investor');
+    await loginUser(investorAgent, 'jennifer@example.com');
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
+      .send({ displayName: 'Jennifer Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
+    const adminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
+    const savedReport = adminReportList.body.reports.find((report) => report.monthKey === '2026-06');
+    expect(savedReport).toBeDefined();
+
+    const updateResponse = await adminAgent
+      .patch(`/api/admin/investment/reports/2026-06/${savedReport.id}`)
+      .send({
+        investorNote: 'Stayed patient during June volatility.',
+        adminNote: 'Review ETH sizing before next rebalance.',
+      })
+      .expect(200);
+
+    expect(updateResponse.body.report).toEqual(
+      expect.objectContaining({
+        investorNote: 'Stayed patient during June volatility.',
+        adminNote: 'Review ETH sizing before next rebalance.',
+      })
+    );
+
+    const refreshedAdminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
+    expect(refreshedAdminReportList.body.reports).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: savedReport.id,
+          monthKey: '2026-06',
+          investorNote: 'Stayed patient during June volatility.',
+          adminNote: 'Review ETH sizing before next rebalance.',
+        }),
+      ])
+    );
+
+    const investorReportList = await investorAgent.get('/api/investment/me/reports').expect(200);
+    expect(investorReportList.body.reports).toEqual([
+      expect.objectContaining({
+        investorNote: 'Stayed patient during June volatility.',
+      }),
+    ]);
+    expect(investorReportList.body.reports[0].adminNote).toBeUndefined();
+  });
+
+  it('lets admins regenerate a specific saved month report', async () => {
+    currentTime = new Date('2026-07-10T12:00:00.000Z');
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async () => {},
+      getInvestmentPrices: async () => ({ BTC: 60000 }),
+    });
+
+    const adminAgent = request.agent(app);
+    const investorAgent = request.agent(app);
+
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
+    db.setUserMemberTypeById(createdUser.id, 'investor');
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
+      .send({ displayName: 'Jennifer Portfolio' })
+      .expect(201);
+
+    await adminAgent
+      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        amountInvested: 5000,
+        purchaseShares: 0.1,
+        purchaseDate: '2026-05-12',
+      })
+      .expect(201);
+
+    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
+    const adminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
+    const savedReport = adminReportList.body.reports.find((report) => report.monthKey === '2026-06');
+    expect(savedReport).toBeDefined();
+
+    const response = await adminAgent
+      .post(`/api/admin/investment/reports/2026-06/${savedReport.id}/regenerate`)
+      .send({})
+      .expect(200);
+
+    expect(response.body.report).toEqual(
+      expect.objectContaining({
+        monthKey: '2026-06',
+        status: 'ready',
+      })
+    );
+  });
+
   it('regenerates the latest completed month report idempotently', async () => {
     currentTime = new Date('2026-07-10T12:00:00.000Z');
 
