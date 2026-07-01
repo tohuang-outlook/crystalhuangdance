@@ -153,7 +153,7 @@ function addCoverHeader(doc, portfolio, summary, reportMonthLabel) {
   doc.text(formatPercent(summary.totalReturnPercent), PAGE_MARGIN + 126, 62);
 }
 
-function addSummaryCards(doc, topY, portfolio, summary, reportMonthLabel) {
+function addSummaryCards(doc, topY, portfolio, summary, reportMonthLabel, investorNote) {
   const cards = [
     { label: 'Portfolio Owner', value: portfolio.displayName || 'Investor Portfolio', accent: BRAND_DARK },
     { label: 'Total Invested', value: formatCurrency(summary.totalInvested), accent: BRAND_DARK },
@@ -185,8 +185,8 @@ function addSummaryCards(doc, topY, portfolio, summary, reportMonthLabel) {
   doc.setFontSize(9);
   doc.setTextColor(...TEXT_MUTED);
   doc.text(`Report month: ${reportMonthLabel}`, PAGE_MARGIN, topY + 62);
-  if (portfolio.notes) {
-    doc.text(`Investor note: ${portfolio.notes}`, PAGE_MARGIN + 70, topY + 62);
+  if (investorNote) {
+    doc.text(`Investor note: ${investorNote}`, PAGE_MARGIN + 70, topY + 62);
   }
 }
 
@@ -415,7 +415,14 @@ export function createInvestmentReportPdfDocument(data) {
 
   drawPageFrame(doc);
   addCoverHeader(doc, data.portfolio, data.summary, reportMonthLabel);
-  addSummaryCards(doc, 68, data.portfolio, data.summary, reportMonthLabel);
+  addSummaryCards(
+    doc,
+    68,
+    data.portfolio,
+    data.summary,
+    reportMonthLabel,
+    data.investorNote ?? null
+  );
   addLivePricesSnapshot(doc, data.livePrices, data.pricesLastUpdatedAt, 136);
   addAllocationSection(doc, data.holdings, 182);
 
