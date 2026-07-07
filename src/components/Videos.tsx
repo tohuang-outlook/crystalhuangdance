@@ -28,6 +28,18 @@ const featuredVideos: Video[] = [
     thumbnail: '/crystal-press-moscow-vx.png',
   },
   {
+    id: 'UsRpfGIM3zw',
+    metaLabel: 'XV Moscow Ballet Competition Gala · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽晚會演出 · 2026年7月',
+    title: '2026 XV Moscow International Ballet Competition Gala Performance',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽晚會演出',
+    description:
+      'Crystal Huang performs in the 2026 XV Moscow International Ballet Competition gala presentation.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽晚會演出中登台演出。',
+    thumbnail: '/crystal-press-moscow-gala.png',
+  },
+  {
     id: 'e2Z9UXevvIg',
     videoSrc: '/crystal-prix-de-lausanne.mp4',
     metaLabel: 'Prix de Lausanne · 2024',
@@ -40,6 +52,9 @@ const featuredVideos: Video[] = [
       '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
     thumbnail: '/crystal-contemporary.jpg',
   },
+];
+
+const supportingVideos: Video[] = [
   {
     id: 'ckEaotosfqs',
     metaLabel: 'The Dance Awards · 2023',
@@ -52,9 +67,6 @@ const featuredVideos: Video[] = [
       '「Grasping Intentions」——讓 Crystal 奪得 2023 年美國舞蹈大獎賽青少年女子最佳舞者的獨舞。',
     thumbnail: '/Grasping_intentions.jpg',
   },
-];
-
-const supportingVideos: Video[] = [
   {
     id: 'LCSPksYxP6U',
     metaLabel: 'YAGP Finals · 2023',
