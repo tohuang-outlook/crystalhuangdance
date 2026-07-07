@@ -94,8 +94,8 @@ const pressHighlights = [
 
 export default function PressHighlight() {
   const { t } = useLanguage();
-  const [featuredHighlight, ...supportingHighlights] = pressHighlights;
-  const secondaryHighlights = supportingHighlights.slice(0, 3);
+  const recentHighlights = pressHighlights.slice(0, 3);
+  const archiveHighlights = pressHighlights.slice(3);
 
   return (
     <section id="press" className="section-padding section-divider relative">
@@ -114,46 +114,53 @@ export default function PressHighlight() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:flex lg:items-start">
-          <article className="hover-float-card rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8 sm:py-8 lg:w-[57%] lg:flex-none">
-            <p className="eyebrow">{t('Featured Article', '焦點文章')}</p>
-            <p className="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-              {t(featuredHighlight.source, featuredHighlight.sourceZh)}
-            </p>
-            <p className="mt-3 text-sm text-[var(--text-muted)]">
-              {t(featuredHighlight.date, featuredHighlight.dateZh)}
-            </p>
-            <h3 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
-              {t(featuredHighlight.title, featuredHighlight.titleZh)}
-            </h3>
-            <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
-              {t(featuredHighlight.description, featuredHighlight.descriptionZh)}
-            </p>
-            <a
-              href={featuredHighlight.href}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-8 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-5 py-3 text-sm uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
-            >
-              {t('Read the feature', '閱讀專訪')}
-            </a>
-            <a
-              href={featuredHighlight.imageHref ?? featuredHighlight.href}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-8 block aspect-[3/2] overflow-hidden rounded-[1.5rem] border border-[var(--line)] transition-transform hover:scale-[1.01]"
-              aria-label={t('Watch interview video', '觀看訪談影片')}
-            >
-              <img
-                src={featuredHighlight.imageSrc}
-                alt={featuredHighlight.imageAlt}
-                className="h-full w-full object-cover object-center"
-              />
-            </a>
-          </article>
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+          <div className="grid gap-5">
+            {recentHighlights.map((item, index) => (
+              <article
+                key={item.href}
+                className="hover-float-card rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8 sm:py-8"
+              >
+                <p className="eyebrow">
+                  {index === 0 ? t('Featured Article', '焦點文章') : t('Recent Press Highlight', '最新媒體焦點')}
+                </p>
+                <p className="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+                  {t(item.source, item.sourceZh)}
+                </p>
+                <p className="mt-3 text-sm text-[var(--text-muted)]">{t(item.date, item.dateZh)}</p>
+                <h3 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
+                  {t(item.title, item.titleZh)}
+                </h3>
+                <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--text-muted)]">
+                  {t(item.description, item.descriptionZh)}
+                </p>
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-8 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-5 py-3 text-sm uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
+                >
+                  {t('Read the feature', '閱讀專訪')}
+                </a>
+                <a
+                  href={item.imageHref ?? item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-8 block aspect-[3/2] overflow-hidden rounded-[1.5rem] border border-[var(--line)] transition-transform hover:scale-[1.01]"
+                  aria-label={t('Watch interview video', '觀看訪談影片')}
+                >
+                  <img
+                    src={item.imageSrc}
+                    alt={item.imageAlt}
+                    className="h-full w-full object-cover object-center"
+                  />
+                </a>
+              </article>
+            ))}
+          </div>
 
-          <div className="grid gap-5 lg:w-[43%] lg:flex-none">
-            {secondaryHighlights.map((item) => (
+          <div className="grid gap-5">
+            {archiveHighlights.map((item) => (
               <article
                 key={item.href}
                 className="hover-float-card overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)]"
