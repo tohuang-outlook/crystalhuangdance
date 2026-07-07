@@ -17,6 +17,31 @@ function VideosHarness() {
 }
 
 describe('Videos modal', () => {
+  it('opens a non-first featured reel dialog and uses local video playback for Prix de Lausanne', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <LanguageProvider>
+        <Videos />
+      </LanguageProvider>
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i,
+      })
+    );
+
+    expect(
+      screen.getByRole('dialog', {
+        name: /Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle(/Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i).tagName
+    ).toBe('VIDEO');
+  });
+
   it('opens and closes the featured reel dialog in English', async () => {
     const user = userEvent.setup();
 
@@ -46,7 +71,7 @@ describe('Videos modal', () => {
     });
   });
 
-  it('localizes the close control in Chinese mode', async () => {
+  it('opens a supporting reel dialog and localizes the close control in Chinese mode', async () => {
     const user = userEvent.setup();
 
     render(
@@ -56,12 +81,18 @@ describe('Videos modal', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /switch to chinese/i }));
+    expect(screen.getByAltText('2024 YoungArts — 芭蕾傑出得獎者')).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
-        name: /2024 洛桑國際芭蕾舞比賽/i,
+        name: /2024 YoungArts — 芭蕾傑出得獎者/i,
       })
     );
 
+    expect(
+      screen.getByRole('dialog', {
+        name: /2024 YoungArts — 芭蕾傑出得獎者/i,
+      })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '關閉' })).toBeInTheDocument();
   });
 });

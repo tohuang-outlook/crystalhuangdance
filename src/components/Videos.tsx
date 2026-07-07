@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, X } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface Video {
@@ -12,10 +12,9 @@ interface Video {
   description: string;
   descriptionZh: string;
   thumbnail: string;
-  featured?: boolean;
 }
 
-const videos: Video[] = [
+const featuredVideos: Video[] = [
   {
     id: '_1p3Udn_SZY',
     metaLabel: 'XV Moscow Ballet Competition · July 2026',
@@ -27,7 +26,6 @@ const videos: Video[] = [
     descriptionZh:
       'Crystal Huang 於 2026 年 7 月在第十五屆莫斯科國際芭蕾舞大賽演出第二輪當代舞作品。',
     thumbnail: '/crystal-press-moscow-vx.png',
-    featured: true,
   },
   {
     id: 'e2Z9UXevvIg',
@@ -54,6 +52,9 @@ const videos: Video[] = [
       '「Grasping Intentions」——讓 Crystal 奪得 2023 年美國舞蹈大獎賽青少年女子最佳舞者的獨舞。',
     thumbnail: '/Grasping_intentions.jpg',
   },
+];
+
+const supportingVideos: Video[] = [
   {
     id: 'LCSPksYxP6U',
     metaLabel: 'YAGP Finals · 2023',
@@ -134,9 +135,8 @@ export default function Videos() {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const featuredVideo = videos.find((video) => video.featured) ?? videos[0];
-  const supportingVideos = videos.filter((video) => video.id !== featuredVideo.id);
-  const activeVideoData = videos.find((video) => video.id === activeVideo) ?? null;
+  const allVideos = [...featuredVideos, ...supportingVideos];
+  const activeVideoData = allVideos.find((video) => video.id === activeVideo) ?? null;
 
   useEffect(() => {
     if (!activeVideo) return;
@@ -190,36 +190,39 @@ export default function Videos() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <button
-            type="button"
-            className="group relative overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
-            onClick={() => setActiveVideo(featuredVideo.id)}
-          >
-            <div className="absolute left-6 top-6 z-10 rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.78)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              {t('Featured Reel', '精選主片')}
-            </div>
-            <div className="relative aspect-video overflow-hidden">
-              <img
-                src={featuredVideo.thumbnail}
-                alt={featuredVideo.title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[rgba(250,247,242,0.48)] bg-[rgba(74,55,40,0.48)] text-[var(--bg)] transition-transform duration-300 group-hover:scale-105">
-                  <Play size={30} className="ml-1 fill-current" />
+          <div className="space-y-6">
+            {featuredVideos.map((video) => (
+              <button
+                key={video.id}
+                type="button"
+                className="group relative overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
+                onClick={() => setActiveVideo(video.id)}
+              >
+                <div className="absolute left-6 top-6 z-10 rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.78)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  {t('Featured Reel', '精選主片')}
                 </div>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.76)] via-transparent to-transparent" />
-            </div>
-            <div className="space-y-3 p-6">
-              <h3 className="text-2xl text-[var(--text)]">
-                {t(featuredVideo.title, featuredVideo.titleZh)}
-              </h3>
-              <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-                {t(featuredVideo.description, featuredVideo.descriptionZh)}
-              </p>
-            </div>
-          </button>
+                <div className="relative aspect-video overflow-hidden">
+                  <img
+                    src={video.thumbnail}
+                    alt={t(video.title, video.titleZh)}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[rgba(250,247,242,0.48)] bg-[rgba(74,55,40,0.48)] text-[var(--bg)] transition-transform duration-300 group-hover:scale-105">
+                      <Play size={30} className="ml-1 fill-current" />
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[rgba(74,55,40,0.76)] via-transparent to-transparent" />
+                </div>
+                <div className="space-y-3 p-6">
+                  <h3 className="text-2xl text-[var(--text)]">{t(video.title, video.titleZh)}</h3>
+                  <p className="max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+                    {t(video.description, video.descriptionZh)}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
 
           <div className="space-y-4">
             {supportingVideos.map((video) => (
@@ -232,7 +235,7 @@ export default function Videos() {
                 <div className="relative h-28 w-40 shrink-0 overflow-hidden">
                   <img
                     src={video.thumbnail}
-                    alt={video.title}
+                    alt={t(video.title, video.titleZh)}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-[rgba(74,55,40,0.24)]">
