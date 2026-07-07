@@ -87,8 +87,8 @@ const pressHighlights = [
     descriptionZh:
       'Pointe Magazine 聚焦 Crystal Huang 的日常訓練節奏，呈現她作為年輕芭蕾舞者在生活、紀律與養成上的細節。',
     href: 'https://pointemagazine.com/crystal-huang-daily-routine/#gsc.tab=0',
-    imageSrc: '/crystal-press-prix.jpg',
-    imageAlt: 'Crystal Huang daily routine feature',
+    imageSrc: '/crystal-press-daily-routine.png',
+    imageAlt: 'Crystal Huang in the Daily Routine Feature',
   },
 ];
 
