@@ -114,8 +114,8 @@ export default function PressHighlight() {
           </p>
         </div>
 
-        <div className="grid gap-5 xl:auto-rows-min xl:grid-cols-[1.15fr_0.85fr] xl:items-start">
-          <article className="hover-float-card h-fit self-start rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8 sm:py-8">
+        <div className="grid gap-5 xl:flex xl:items-start">
+          <article className="hover-float-card rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-7 sm:px-8 sm:py-8 xl:w-[57%] xl:flex-none">
             <p className="eyebrow">{t('Featured Article', '焦點文章')}</p>
             <p className="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
               {t(featuredHighlight.source, featuredHighlight.sourceZh)}
@@ -152,7 +152,7 @@ export default function PressHighlight() {
             </a>
           </article>
 
-          <div className="grid gap-5">
+          <div className="grid gap-5 xl:w-[43%] xl:flex-none">
             {secondaryHighlights.map((item) => (
               <article
                 key={item.href}
