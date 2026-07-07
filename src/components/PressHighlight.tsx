@@ -72,8 +72,8 @@ const pressHighlights = [
     descriptionZh:
       'The T.O.P. Awards 藝術家頁面將 Crystal 納入其焦點陣容，突顯她作為年輕表演者所獲得的肯定與持續發展。',
     href: 'https://www.thetopawards.com/artists/crystal-huang',
-    imageSrc: '/crystal-press-prix.jpg',
-    imageAlt: 'Crystal Huang artist spotlight',
+    imageSrc: '/crystal-press-artist-spotlight.png',
+    imageAlt: 'Crystal Huang in the Artist Spotlight feature',
   },
   {
     source: 'Pointe Magazine',
