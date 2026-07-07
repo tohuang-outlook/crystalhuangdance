@@ -95,6 +95,7 @@ const pressHighlights = [
 export default function PressHighlight() {
   const { t } = useLanguage();
   const [featuredHighlight, ...supportingHighlights] = pressHighlights;
+  const secondaryHighlights = supportingHighlights.slice(0, 3);
 
   return (
     <section id="press" className="section-padding section-divider relative">
@@ -152,27 +153,42 @@ export default function PressHighlight() {
           </article>
 
           <div className="grid gap-5">
-            {supportingHighlights.map((item) => (
+            {secondaryHighlights.map((item) => (
               <article
                 key={item.href}
-                className="hover-float-card rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-6"
+                className="hover-float-card overflow-hidden rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)]"
               >
-                <p className="eyebrow">{t(item.source, item.sourceZh)}</p>
-                <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  {t(item.date, item.dateZh)}
-                </p>
-                <h3 className="mt-3 text-2xl leading-tight">{t(item.title, item.titleZh)}</h3>
-                <p className="mt-4 text-sm leading-7 text-[var(--text-muted)]">
-                  {t(item.description, item.descriptionZh)}
-                </p>
                 <a
-                  href={item.href}
+                  href={item.imageHref ?? item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-5 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
+                  className="block aspect-[16/9] overflow-hidden border-b border-[var(--line)]"
+                  aria-label={t('Open featured press image', '開啟焦點媒體圖片')}
                 >
-                  {t('Read the feature', '閱讀專訪')}
+                  <img
+                    src={item.imageSrc}
+                    alt={item.imageAlt}
+                    className="h-full w-full object-cover object-center transition-transform duration-300 hover:scale-[1.03]"
+                  />
                 </a>
+                <div className="px-6 py-6">
+                  <p className="eyebrow">{t(item.source, item.sourceZh)}</p>
+                  <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    {t(item.date, item.dateZh)}
+                  </p>
+                  <h3 className="mt-3 text-2xl leading-tight">{t(item.title, item.titleZh)}</h3>
+                  <p className="mt-4 text-sm leading-7 text-[var(--text-muted)]">
+                    {t(item.description, item.descriptionZh)}
+                  </p>
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-5 inline-flex items-center rounded-full border border-[var(--line)] bg-[rgba(250,247,242,0.72)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition-colors hover:bg-[rgba(250,247,242,0.95)]"
+                  >
+                    {t('Read the feature', '閱讀專訪')}
+                  </a>
+                </div>
               </article>
             ))}
           </div>
