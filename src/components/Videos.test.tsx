@@ -28,13 +28,13 @@ describe('Videos modal', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: /Prix de Lausanne 2024/i,
+        name: /XV Moscow Ballet Competition — Round 2 Contemporary/i,
       })
     );
 
     expect(
       screen.getByRole('dialog', {
-        name: /Prix de Lausanne 2024/i,
+        name: /XV Moscow Ballet Competition — Round 2 Contemporary/i,
       })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();

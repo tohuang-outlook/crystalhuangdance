@@ -17,6 +17,19 @@ interface Video {
 
 const videos: Video[] = [
   {
+    id: '_1p3Udn_SZY',
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: 'XV Moscow Ballet Competition — Round 2 Contemporary',
+    titleZh: '第十五屆莫斯科國際芭蕾舞大賽 — 第二輪當代舞',
+    description:
+      'Crystal Huang performs her round 2 contemporary selection at the XV Moscow Ballet Competition in July 2026.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年 7 月在第十五屆莫斯科國際芭蕾舞大賽演出第二輪當代舞作品。',
+    thumbnail: '/crystal-press-moscow-vx.png',
+    featured: true,
+  },
+  {
     id: 'e2Z9UXevvIg',
     videoSrc: '/crystal-prix-de-lausanne.mp4',
     metaLabel: 'Prix de Lausanne · 2024',
@@ -28,7 +41,6 @@ const videos: Video[] = [
     descriptionZh:
       '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
     thumbnail: '/crystal-contemporary.jpg',
-    featured: true,
   },
   {
     id: 'ckEaotosfqs',
