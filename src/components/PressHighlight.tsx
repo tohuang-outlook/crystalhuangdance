@@ -57,8 +57,8 @@ const pressHighlights = [
     descriptionZh:
       'Los Altos Town Crier 報導 Crystal 獲得 American Ballet Theatre 獎學金的重要里程碑，並回顧她早期的舞蹈訓練與持續上升的專業發展。',
     href: 'https://www.losaltosonline.com/schools/dancer-from-mv-studio-lands-scholarship-at-american-ballet-theatre/article_8a493d68-1d1e-11ef-b665-abc30a49a1d4.html',
-    imageSrc: '/crystal-press-prix.jpg',
-    imageAlt: 'Crystal Huang press feature',
+    imageSrc: '/crystal-press-abt-scholarship.jpeg',
+    imageAlt: 'Crystal Huang performing in the ABT Scholarship Feature',
   },
   {
     source: 'The T.O.P. Awards',
