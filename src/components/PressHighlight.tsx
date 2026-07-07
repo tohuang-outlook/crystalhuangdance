@@ -2,6 +2,21 @@ import { useLanguage } from '../context/LanguageContext';
 
 const pressHighlights = [
   {
+    source: 'XV Moscow International Ballet Competition',
+    sourceZh: '第十五屆莫斯科國際芭蕾舞大賽',
+    date: 'July 2026',
+    dateZh: '2026 年 7 月',
+    title: '2026 XV Moscow Ballet Competition Award Ceremony',
+    titleZh: '2026 第十五屆莫斯科芭蕾舞大賽頒獎典禮',
+    description:
+      'Crystal Huang 2026 XV Moscow Ballet Competition - Junior Group, Girls, Solo First Prize and Gold Medal Winner',
+    descriptionZh: 'Crystal Huang 榮獲 2026 第十五屆莫斯科芭蕾舞大賽青少年女子獨舞組第一名與金牌。',
+    href: 'https://www.youtube.com/shorts/uNTARMFtDm8',
+    imageSrc: '/crystal-press-moscow-award-ceremony.png',
+    imageAlt: 'Crystal Huang at the 2026 XV Moscow Ballet Competition award ceremony',
+    imageHref: 'https://www.youtube.com/shorts/uNTARMFtDm8',
+  },
+  {
     source: '2026 Moscow VX International Ballet Competition',
     sourceZh: '2026 莫斯科 VX 國際芭蕾舞大賽',
     date: 'July 2026',
