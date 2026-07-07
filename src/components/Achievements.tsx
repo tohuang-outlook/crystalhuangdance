@@ -2,6 +2,8 @@ import { achievements } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 const titlesZh: Record<string, string> = {
+  'XV Moscow International Ballet Competition — Junior Group Girls Solo First Prize & Gold Medal Winner':
+    '第十五屆莫斯科國際芭蕾舞大賽 — 青少年女子獨舞組第一名暨金牌',
   'T.O.P. Awards — 2025 Asian American Outstanding Dancer':
     'T.O.P. Awards — 2025 亞裔美國傑出舞者',
   'SAIBC International Finals — Senior Women Grand Prix Winner':
@@ -43,6 +45,8 @@ const titlesZh: Record<string, string> = {
 };
 
 const descriptionsZh: Record<string, string> = {
+  'XV Moscow International Ballet Competition — Junior Group Girls Solo First Prize & Gold Medal Winner':
+    '於第十五屆莫斯科國際芭蕾舞大賽獲得青少年女子獨舞組第一名與金牌。',
   'T.O.P. Awards — 2025 Asian American Outstanding Dancer':
     '獲頒 2025 年亞裔美國傑出舞者榮譽。',
   'SAIBC International Finals — Senior Women Grand Prix Winner':

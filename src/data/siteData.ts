@@ -204,6 +204,13 @@ export const danceStyles: DanceStyle[] = [
 
 export const achievements: Achievement[] = [
   {
+    year: '2026',
+    title: 'XV Moscow International Ballet Competition — Junior Group Girls Solo First Prize & Gold Medal Winner',
+    description:
+      'Won First Prize and Gold Medal in the junior group girls solo division at the XV Moscow International Ballet Competition.',
+    highlight: true,
+  },
+  {
     year: '2025',
     title: 'T.O.P. Awards — 2025 Asian American Outstanding Dancer',
     description:
