@@ -14,7 +14,6 @@ export default function Navbar() {
   const isInvestor = user?.memberType === 'investor';
 
   const navLinks = [
-    { label: t('Master Class', '大師課'), href: '#gallery' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 
