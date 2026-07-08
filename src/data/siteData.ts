@@ -115,7 +115,7 @@ export const siteConfig: SiteConfig = {
       href: '#distinctions',
     },
     {
-      title: 'Repertoire',
+      title: 'Artistic Range',
       titleZh: '舞作範圍',
       description: 'Classical foundations and contemporary range.',
       descriptionZh: '古典基礎與當代延展能力。',

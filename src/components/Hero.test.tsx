@@ -15,7 +15,7 @@ describe('Hero cover frame', () => {
     expect(screen.getByText(/Crystal Huang/i)).toBeInTheDocument();
     expect(screen.getByText(/^Training$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Awards$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Repertoire$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Artistic Range$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Media$/i)).toBeInTheDocument();
   });
 });
