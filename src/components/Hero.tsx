@@ -2,7 +2,7 @@ import { siteConfig } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Hero() {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
 
   const archiveHrefMap: Record<string, string> = {
     '#media': '#styles',
@@ -65,11 +65,23 @@ export default function Hero() {
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             {t('Coming Up Events', '即將到來活動')}
           </p>
-          <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[var(--text)]">
-            {(lang === 'zh' ? siteConfig.heroUpcomingEventsZh : siteConfig.heroUpcomingEvents).map((event) => (
-              <li key={event} className="flex gap-2">
-                <span aria-hidden="true">-</span>
-                <span>{event}</span>
+          <ul className="mt-3 space-y-3 text-[var(--text)]">
+            {siteConfig.heroUpcomingEvents.map((event) => (
+              <li
+                key={`${event.date}-${event.title}`}
+                className="border-l border-[rgba(120,138,160,0.28)] pl-4"
+              >
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {t(event.date, event.dateZh)}
+                </p>
+                <p className="mt-1 text-sm font-medium leading-6 text-[var(--text)]">
+                  {t(event.title, event.titleZh)}
+                </p>
+                {event.location ? (
+                  <p className="text-sm leading-6 text-[var(--text-muted)]">
+                    {t(event.location, event.locationZh ?? event.location)}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

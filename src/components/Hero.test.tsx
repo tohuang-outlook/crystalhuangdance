@@ -24,10 +24,13 @@ describe('Hero cover frame', () => {
       '#archive-timeline'
     );
     expect(screen.getByText(/Coming Up Events/i)).toBeInTheDocument();
-    expect(screen.getByText(/Press Play Pro Assistant \(Las Vegas\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/YAGP Gala \(Beijing\)/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/AEDC Performance and Master Class \(Shanghai, Taipei, Hong Kong\)/i)
-    ).toBeInTheDocument();
+    expect(screen.getAllByText(/July 2026/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^Press Play Pro Assistant$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Las Vegas$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^YAGP Gala$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Beijing$/i)).toBeInTheDocument();
+    expect(screen.getByText(/July-August 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/^AEDC Performance and Master Class$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Shanghai \/ Taipei \/ Hong Kong$/i)).toBeInTheDocument();
   });
 });

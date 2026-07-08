@@ -55,12 +55,20 @@ export interface ArchiveEntryPoint {
   href: string;
 }
 
+export interface HeroUpcomingEvent {
+  date: string;
+  dateZh: string;
+  title: string;
+  titleZh: string;
+  location?: string;
+  locationZh?: string;
+}
+
 export interface SiteConfig {
   name: string;
   title: string;
   tagline: string;
-  heroUpcomingEvents: string[];
-  heroUpcomingEventsZh: string[];
+  heroUpcomingEvents: HeroUpcomingEvent[];
   bio: string;
   aboutParagraphs: string[];
   coverIdentity: string;
@@ -82,14 +90,30 @@ export const siteConfig: SiteConfig = {
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
   heroUpcomingEvents: [
-    'Press Play Pro Assistant (Las Vegas)',
-    'YAGP Gala (Beijing)',
-    'AEDC Performance and Master Class (Shanghai, Taipei, Hong Kong)',
-  ],
-  heroUpcomingEventsZh: [
-    'Press Play Pro Assistant（Las Vegas）',
-    'YAGP Gala（Beijing）',
-    'AEDC 演出與大師課（Shanghai、Taipei、Hong Kong）',
+    {
+      date: 'July 2026',
+      dateZh: '2026年7月',
+      title: 'Press Play Pro Assistant',
+      titleZh: 'Press Play Pro Assistant',
+      location: 'Las Vegas',
+      locationZh: 'Las Vegas',
+    },
+    {
+      date: 'July 2026',
+      dateZh: '2026年7月',
+      title: 'YAGP Gala',
+      titleZh: 'YAGP Gala',
+      location: 'Beijing',
+      locationZh: 'Beijing',
+    },
+    {
+      date: 'July-August 2026',
+      dateZh: '2026年7月至8月',
+      title: 'AEDC Performance and Master Class',
+      titleZh: 'AEDC 演出與大師課',
+      location: 'Shanghai / Taipei / Hong Kong',
+      locationZh: 'Shanghai / Taipei / Hong Kong',
+    },
   ],
   bio: `San Francisco Ballet School Trainee with elite training, touring experience, and international performance credits across ballet, contemporary, and commercial work.`,
   aboutParagraphs: [
