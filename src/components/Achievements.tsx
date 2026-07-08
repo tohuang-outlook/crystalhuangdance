@@ -7,6 +7,7 @@ export default function Achievements() {
 
   return (
     <section id="distinctions" className="section-padding section-divider">
+      <div id="archive-timeline" className="scroll-mt-28" aria-hidden="true" />
       <div className="container-max space-y-10">
         <div className="space-y-4">
           <p className="eyebrow">{t('Archive Timeline', '完整檔案時間線')}</p>

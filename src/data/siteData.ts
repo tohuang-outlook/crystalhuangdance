@@ -112,7 +112,7 @@ export const siteConfig: SiteConfig = {
       titleZh: '檔案時間線',
       description: 'Training history, milestones, and development across seasons.',
       descriptionZh: '依時間整理的訓練歷程、里程碑與成長軌跡。',
-      href: '#archive',
+      href: '#archive-timeline',
     },
     {
       title: 'Artist Profile',

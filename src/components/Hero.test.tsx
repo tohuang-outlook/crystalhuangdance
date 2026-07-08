@@ -19,5 +19,9 @@ describe('Hero cover frame', () => {
     expect(screen.getByText(/^Artistic Range$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Media$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Master Class and Choreographer$/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Archive Timeline/i })).toHaveAttribute(
+      'href',
+      '#archive-timeline'
+    );
   });
 });
