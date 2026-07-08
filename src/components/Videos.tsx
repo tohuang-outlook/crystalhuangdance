@@ -37,7 +37,7 @@ const featuredVideos: Video[] = [
       'Crystal Huang performs in the 2026 XV Moscow International Ballet Competition gala presentation.',
     descriptionZh:
       'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽晚會演出中登台演出。',
-    thumbnail: '/crystal-press-moscow-gala.png',
+    thumbnail: '/crystal-press-moscow-gala-2.png',
   },
   {
     id: 'e2Z9UXevvIg',
