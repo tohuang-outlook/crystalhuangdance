@@ -56,6 +56,18 @@ const featuredVideos: Video[] = [
 
 const supportingVideos: Video[] = [
   {
+    id: 'iA3sQ5TDgu0',
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 1 - Gulnare Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第一輪 - Gulnare 變奏',
+    description:
+      'Crystal Huang performs the Gulnare variation in junior solo round 1 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第一輪演出 Gulnare 變奏。',
+    thumbnail: '/crystal-press-moscow-gulnare-2.png',
+  },
+  {
     id: 'ckEaotosfqs',
     metaLabel: 'The Dance Awards · 2023',
     metaLabelZh: '美國舞蹈大獎賽 · 2023',
