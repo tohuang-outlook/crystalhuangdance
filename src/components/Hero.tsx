@@ -63,10 +63,13 @@ export default function Hero() {
       <div className="container-max relative z-10 mt-8 sm:mt-10">
         <div className="max-w-4xl border-t border-[rgba(250,247,242,0.34)] bg-[linear-gradient(180deg,rgba(250,247,242,0.08),rgba(250,247,242,0.76))] px-6 py-5 backdrop-blur-[3px]">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-            {t('Professional Focus', '專業重點')}
+            {t('Coming Up Events', '即將到來活動')}
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--text)]">
-            {t(siteConfig.heroSubtitle, '芭蕾・當代・爵士・抒情・嘻哈・音樂劇')}
+            {t(
+              siteConfig.heroSubtitle,
+              'YAGP 北京 Gala 演出 · AEDC 演出與大師課'
+            )}
           </p>
         </div>
       </div>
