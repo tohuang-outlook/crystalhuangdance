@@ -14,10 +14,6 @@ export default function Navbar() {
   const isInvestor = user?.memberType === 'investor';
 
   const navLinks = [
-    { label: t('Profile', '簡介'), href: '#profile' },
-    { label: t('Archive', '檔案'), href: '#archive' },
-    { label: t('Distinctions', '榮譽'), href: '#distinctions' },
-    { label: t('Media', '影像'), href: '#styles' },
     { label: t('Master Class', '大師課'), href: '#gallery' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
