@@ -56,6 +56,18 @@ const featuredVideos: Video[] = [
 
 const supportingVideos: Video[] = [
   {
+    id: 'JpP-JRj3LMw',
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪 - Harlequinade 變奏',
+    description:
+      'Crystal Huang performs the Harlequinade variation in junior solo round 3 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪演出 Harlequinade 變奏。',
+    thumbnail: '/crystal-press-moscow-harlequinade.png',
+  },
+  {
     id: '3i5ap93thF0',
     metaLabel: 'XV Moscow Ballet Competition · July 2026',
     metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
