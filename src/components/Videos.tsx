@@ -56,6 +56,18 @@ const featuredVideos: Video[] = [
 
 const supportingVideos: Video[] = [
   {
+    id: '3i5ap93thF0',
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Sugar Plum Fairy Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪 - 糖梅仙子變奏',
+    description:
+      'Crystal Huang performs the Sugar Plum Fairy variation in junior solo round 3 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪演出糖梅仙子變奏。',
+    thumbnail: '/crystal-press-moscow-sugar-plum.png',
+  },
+  {
     id: 'iA3sQ5TDgu0',
     metaLabel: 'XV Moscow Ballet Competition · July 2026',
     metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
