@@ -40,6 +40,16 @@ describe('LatestAchievementBanner', () => {
     );
     expect(
       screen.getByRole('link', {
+        name: /2026 XV Moscow Ballet Competition, Round 2 Contemporary/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=_1p3Udn_SZY');
+    expect(
+      screen.getByRole('link', {
+        name: /2026 XV Moscow International Ballet Competition Gala Performance/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=ZINiS_mTgd0');
+    expect(
+      screen.getByRole('link', {
         name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,
       })
     ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=JpP-JRj3LMw');
@@ -86,6 +96,11 @@ describe('LatestAchievementBanner', () => {
 
     const cta = within(bannerSection as HTMLElement).getByRole('link', { name: 'View Achievement' });
     expect(cta).toHaveAttribute('href', '#distinctions');
+    expect(
+      within(bannerSection as HTMLElement).getByRole('link', {
+        name: /2026 XV Moscow Ballet Competition, Round 2 Contemporary/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=_1p3Udn_SZY');
     expect(
       within(bannerSection as HTMLElement).getByRole('link', {
         name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,

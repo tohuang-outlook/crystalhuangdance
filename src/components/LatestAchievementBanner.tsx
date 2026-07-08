@@ -6,9 +6,7 @@ import { getLocalizedAchievement } from '../lib/achievementLocalization';
 export default function LatestAchievementBanner() {
   const { t } = useLanguage();
   const latestAchievement = achievements.find((achievement) => achievement.latest);
-  const moscowVideos = reelVideos.filter(
-    (video) => video.event === 'moscow' && video.placement === 'supporting'
-  );
+  const moscowVideos = reelVideos.filter((video) => video.event === 'moscow');
 
   if (!latestAchievement) {
     return null;
@@ -43,12 +41,12 @@ export default function LatestAchievementBanner() {
             <div className="mt-6 border-t border-[var(--line)] pt-6">
               <div className="mb-4 space-y-1">
                 <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  {t('Moscow Supporting Reels', '莫斯科補充演出影片')}
+                  {t('Moscow Performance Reels', '莫斯科演出影片')}
                 </p>
                 <p className="text-sm leading-6 text-[var(--text-muted)]">
                   {t(
-                    'Additional competition footage from Moscow, organized as quick-view supporting cards.',
-                    '來自莫斯科賽事的補充演出片段，以精簡卡片形式延伸最新成就內容。'
+                    'Moscow competition footage, organized as quick-view cards beneath the latest achievement.',
+                    '將莫斯科賽事影片整理成精簡卡片，延伸顯示在最新成就下方。'
                   )}
                 </p>
               </div>
