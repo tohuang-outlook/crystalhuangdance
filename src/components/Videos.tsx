@@ -28,7 +28,7 @@ const featuredVideos: Video[] = [
     thumbnail: '/crystal-press-moscow-vx.png',
   },
   {
-    id: 'UsRpfGIM3zw',
+    id: 'ZINiS_mTgd0',
     metaLabel: 'XV Moscow Ballet Competition Gala · July 2026',
     metaLabelZh: '莫斯科國際芭蕾舞大賽晚會演出 · 2026年7月',
     title: '2026 XV Moscow International Ballet Competition Gala Performance',
