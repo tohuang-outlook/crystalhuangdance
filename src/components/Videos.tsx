@@ -19,8 +19,8 @@ const featuredVideos: Video[] = [
     id: '_1p3Udn_SZY',
     metaLabel: 'XV Moscow Ballet Competition · July 2026',
     metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
-    title: 'XV Moscow Ballet Competition — Round 2 Contemporary',
-    titleZh: '第十五屆莫斯科國際芭蕾舞大賽 — 第二輪當代舞',
+    title: '2026 XV Moscow Ballet Competition, Round 2 Contemporary',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽第二輪當代舞',
     description:
       'Crystal Huang performs her round 2 contemporary selection at the XV Moscow Ballet Competition in July 2026.',
     descriptionZh:
