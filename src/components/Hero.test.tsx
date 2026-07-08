@@ -13,9 +13,11 @@ describe('Hero cover frame', () => {
     expect(screen.getByText(/Curated Dossier/i)).toBeInTheDocument();
     expect(screen.getAllByText(/San Francisco Ballet School Trainee/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Crystal Huang/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Training$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Awards$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Press Highlight$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Archive Timeline$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Artist Profile$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Artistic Range$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Media$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Master Class and Choreographer$/i)).toBeInTheDocument();
   });
 });
