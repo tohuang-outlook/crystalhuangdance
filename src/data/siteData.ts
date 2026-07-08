@@ -59,7 +59,8 @@ export interface SiteConfig {
   name: string;
   title: string;
   tagline: string;
-  heroSubtitle: string;
+  heroUpcomingEvents: string[];
+  heroUpcomingEventsZh: string[];
   bio: string;
   aboutParagraphs: string[];
   coverIdentity: string;
@@ -80,7 +81,16 @@ export const siteConfig: SiteConfig = {
   name: 'Crystal Huang',
   title: 'Dancer',
   tagline: 'Dance is the hidden language of the soul',
-  heroSubtitle: 'YAGP Beijing Gala Performance · AEDC Performance and Master Class',
+  heroUpcomingEvents: [
+    'Press Play Pro Assistant (Las Vegas)',
+    'YAGP Gala (Beijing)',
+    'AEDC Performance and Master Class (Shanghai, Taipei, Hong Kong)',
+  ],
+  heroUpcomingEventsZh: [
+    'Press Play Pro Assistant（Las Vegas）',
+    'YAGP Gala（Beijing）',
+    'AEDC 演出與大師課（Shanghai、Taipei、Hong Kong）',
+  ],
   bio: `San Francisco Ballet School Trainee with elite training, touring experience, and international performance credits across ballet, contemporary, and commercial work.`,
   aboutParagraphs: [
     `Crystal Huang is a San Francisco Ballet School trainee whose recent work spans elite conservatory training, international gala appearances, and national touring experience. Her current dossier includes Prix de Lausanne 2024 Prize Winner #4 and Contemporary Dance Award Winner, YAGP NYC Finals Senior Women Silver Medal Winner, SAIBC Senior Women Grand Prix Winner, and the 2025 T.O.P. Asian American Outstanding Dancer honor.`,

@@ -2,7 +2,7 @@ import { siteConfig } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Hero() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
 
   const archiveHrefMap: Record<string, string> = {
     '#media': '#styles',
@@ -65,12 +65,14 @@ export default function Hero() {
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             {t('Coming Up Events', '即將到來活動')}
           </p>
-          <p className="mt-2 text-sm leading-6 text-[var(--text)]">
-            {t(
-              siteConfig.heroSubtitle,
-              'YAGP 北京 Gala 演出 · AEDC 演出與大師課'
-            )}
-          </p>
+          <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[var(--text)]">
+            {(lang === 'zh' ? siteConfig.heroUpcomingEventsZh : siteConfig.heroUpcomingEvents).map((event) => (
+              <li key={event} className="flex gap-2">
+                <span aria-hidden="true">-</span>
+                <span>{event}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

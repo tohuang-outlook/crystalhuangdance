@@ -23,5 +23,11 @@ describe('Hero cover frame', () => {
       'href',
       '#archive-timeline'
     );
+    expect(screen.getByText(/Coming Up Events/i)).toBeInTheDocument();
+    expect(screen.getByText(/Press Play Pro Assistant \(Las Vegas\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/YAGP Gala \(Beijing\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/AEDC Performance and Master Class \(Shanghai, Taipei, Hong Kong\)/i)
+    ).toBeInTheDocument();
   });
 });
