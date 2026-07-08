@@ -38,6 +38,16 @@ describe('LatestAchievementBanner', () => {
       'href',
       '#distinctions'
     );
+    expect(
+      screen.getByRole('link', {
+        name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=JpP-JRj3LMw');
+    expect(
+      screen.getByRole('link', {
+        name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Sugar Plum Fairy Variation/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=3i5ap93thF0');
   });
 
   it('renders the Chinese eyebrow and CTA linked to the achievements section', async () => {
@@ -76,6 +86,11 @@ describe('LatestAchievementBanner', () => {
 
     const cta = within(bannerSection as HTMLElement).getByRole('link', { name: 'View Achievement' });
     expect(cta).toHaveAttribute('href', '#distinctions');
+    expect(
+      within(bannerSection as HTMLElement).getByRole('link', {
+        name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,
+      })
+    ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=JpP-JRj3LMw');
   });
 
   it('returns null when no achievement is marked as latest', async () => {

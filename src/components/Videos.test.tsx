@@ -37,9 +37,9 @@ describe('Videos modal', () => {
         name: /Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i,
       })
     ).toBeInTheDocument();
-    expect(
-      screen.getByTitle(/Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i).tagName
-    ).toBe('VIDEO');
+    const prixVideo = screen.getByTitle(/Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner/i);
+    expect(prixVideo.tagName).toBe('VIDEO');
+    expect(prixVideo).toHaveAttribute('src', '/crystal-prix-de-lausanne.mp4');
   });
 
   it('opens and closes the featured reel dialog in English', async () => {
@@ -69,6 +69,31 @@ describe('Videos modal', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+  });
+
+  it('opens a Moscow supporting reel dialog in English', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <LanguageProvider>
+        <Videos />
+      </LanguageProvider>
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,
+      })
+    );
+
+    expect(
+      screen.getByRole('dialog', {
+        name: /2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle(/2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation/i)
+    ).toHaveAttribute('src', expect.stringContaining('youtube.com/embed/JpP-JRj3LMw'));
   });
 
   it('opens a supporting reel dialog and localizes the close control in Chinese mode', async () => {
