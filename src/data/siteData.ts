@@ -10,6 +10,7 @@ export interface Achievement {
   title: string;
   description: string;
   highlight?: boolean;
+  latest?: boolean;
 }
 
 export interface ArchiveTimelineEntry {
@@ -209,6 +210,7 @@ export const achievements: Achievement[] = [
     description:
       'Won First Prize and Gold Medal in the junior group girls solo division at the XV Moscow International Ballet Competition.',
     highlight: true,
+    latest: true,
   },
   {
     year: '2025',
