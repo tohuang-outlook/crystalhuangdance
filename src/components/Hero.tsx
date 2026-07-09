@@ -62,7 +62,7 @@ export default function Hero() {
 
       <div className="container-max relative z-10 mt-8 sm:mt-10">
         <div className="max-w-4xl border-t border-[rgba(250,247,242,0.34)] bg-[linear-gradient(180deg,rgba(250,247,242,0.08),rgba(250,247,242,0.76))] px-6 py-5 backdrop-blur-[3px]">
-          <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--text)] sm:text-base">
             {t('Coming Up Events', '即將到來活動')}
           </p>
           <ul className="mt-3 divide-y divide-[rgba(120,138,160,0.2)] text-[var(--text)]">
