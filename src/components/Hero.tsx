@@ -72,16 +72,13 @@ export default function Hero() {
                 className={index === 0 ? 'pb-3' : 'py-3'}
               >
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  {t(event.date, event.dateZh)}
+                  {event.location
+                    ? `${t(event.date, event.dateZh)} — ${t(event.location, event.locationZh ?? event.location)}`
+                    : t(event.date, event.dateZh)}
                 </p>
                 <p className="mt-1 text-base font-medium leading-6 text-[var(--text)]">
                   {t(event.title, event.titleZh)}
                 </p>
-                {event.location ? (
-                  <p className="mt-0.5 text-sm leading-6 text-[var(--text-muted)]">
-                    {t(event.location, event.locationZh ?? event.location)}
-                  </p>
-                ) : null}
               </li>
             ))}
           </ul>
