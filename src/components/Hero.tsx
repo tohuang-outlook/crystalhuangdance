@@ -65,20 +65,20 @@ export default function Hero() {
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
             {t('Coming Up Events', '即將到來活動')}
           </p>
-          <ul className="mt-3 space-y-3 text-[var(--text)]">
-            {siteConfig.heroUpcomingEvents.map((event) => (
+          <ul className="mt-3 divide-y divide-[rgba(120,138,160,0.2)] text-[var(--text)]">
+            {siteConfig.heroUpcomingEvents.map((event, index) => (
               <li
                 key={`${event.date}-${event.title}`}
-                className="border-l border-[rgba(120,138,160,0.28)] pl-4"
+                className={index === 0 ? 'pb-3' : 'py-3'}
               >
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   {t(event.date, event.dateZh)}
                 </p>
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--text)]">
+                <p className="mt-1 text-base font-medium leading-6 text-[var(--text)]">
                   {t(event.title, event.titleZh)}
                 </p>
                 {event.location ? (
-                  <p className="text-sm leading-6 text-[var(--text-muted)]">
+                  <p className="mt-0.5 text-sm leading-6 text-[var(--text-muted)]">
                     {t(event.location, event.locationZh ?? event.location)}
                   </p>
                 ) : null}
