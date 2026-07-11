@@ -3,6 +3,26 @@ import path from 'path';
 import Database from 'better-sqlite3';
 
 const schemaPath = new URL('./sql/schema.sql', import.meta.url);
+const defaultComingUpEvents = [
+  {
+    dateLabel: 'July 2026',
+    title: 'Press Play Pro Assistant',
+    location: 'Las Vegas',
+    sortOrder: 0,
+  },
+  {
+    dateLabel: 'July 2026',
+    title: 'YAGP Gala',
+    location: 'Beijing',
+    sortOrder: 1,
+  },
+  {
+    dateLabel: 'July-August 2026',
+    title: 'AEDC Performance and Master Class',
+    location: 'Shanghai / Taipei / Hong Kong',
+    sortOrder: 2,
+  },
+];
 
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
@@ -608,6 +628,77 @@ export function createDatabase(filename) {
     deleteExpiredPasswordResetTokens: db.prepare(
       'DELETE FROM password_reset_tokens WHERE expires_at <= ?'
     ),
+    listComingUpEvents: db.prepare(
+      `SELECT
+          id,
+          date_label AS dateLabel,
+          title,
+          location,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM coming_up_events
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countComingUpEvents: db.prepare('SELECT COUNT(*) AS count FROM coming_up_events'),
+    findComingUpEventById: db.prepare(
+      `SELECT
+          id,
+          date_label AS dateLabel,
+          title,
+          location,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM coming_up_events
+       WHERE id = ?`
+    ),
+    createComingUpEvent: db.prepare(
+      `INSERT INTO coming_up_events (date_label, title, location, sort_order)
+       VALUES (@dateLabel, @title, @location, @sortOrder)
+       RETURNING
+         id,
+         date_label AS dateLabel,
+         title,
+         location,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    updateComingUpEvent: db.prepare(
+      `UPDATE coming_up_events
+       SET date_label = @dateLabel,
+           title = @title,
+           location = @location,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+         id,
+         date_label AS dateLabel,
+         title,
+         location,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    deleteComingUpEvent: db.prepare(
+      `DELETE FROM coming_up_events
+       WHERE id = ?
+       RETURNING
+         id,
+         date_label AS dateLabel,
+         title,
+         location,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    updateComingUpEventSortOrder: db.prepare(
+      `UPDATE coming_up_events
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -636,6 +727,31 @@ export function createDatabase(filename) {
     statements.deletePasswordResetTokensByUserId.run(userId);
     return user;
   });
+
+  const reorderComingUpEvents = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateComingUpEventSortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listComingUpEvents.all();
+  });
+
+  function seedComingUpEvents() {
+    const { count } = statements.countComingUpEvents.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const event of defaultComingUpEvents) {
+      statements.createComingUpEvent.get(event);
+    }
+  }
+
+  seedComingUpEvents();
 
   return {
     raw: db,
@@ -795,6 +911,24 @@ export function createDatabase(filename) {
     },
     deleteUserWithVideos(userId) {
       return deleteUserWithVideos(userId);
+    },
+    listComingUpEvents() {
+      return statements.listComingUpEvents.all();
+    },
+    findComingUpEventById(id) {
+      return statements.findComingUpEventById.get(id) ?? null;
+    },
+    createComingUpEvent(event) {
+      return statements.createComingUpEvent.get(event);
+    },
+    updateComingUpEvent(event) {
+      return statements.updateComingUpEvent.get(event) ?? null;
+    },
+    deleteComingUpEvent(eventId) {
+      return statements.deleteComingUpEvent.get(eventId) ?? null;
+    },
+    reorderComingUpEvents(orderedIds) {
+      return reorderComingUpEvents(orderedIds);
     },
     close() {
       db.close();

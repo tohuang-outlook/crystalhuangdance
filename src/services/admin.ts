@@ -44,8 +44,22 @@ export interface AdminInvestmentReportRecord {
   portfolioDisplayName: string | null;
 }
 
+export interface ComingUpEventRecord {
+  id: number;
+  dateLabel: string;
+  title: string;
+  location: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
+}
+
+interface AdminComingUpEventsEnvelope {
+  events: ComingUpEventRecord[];
 }
 
 interface AdminVideosEnvelope {
@@ -66,6 +80,10 @@ interface AdminInvestmentReportsEnvelope {
 
 interface AdminInvestmentReportEnvelope {
   report: AdminInvestmentReportRecord;
+}
+
+interface AdminComingUpEventEnvelope {
+  event: ComingUpEventRecord;
 }
 
 interface ApiErrorPayload {
@@ -179,6 +197,10 @@ export function fetchAdminVideos() {
   return request<AdminVideosEnvelope>('/api/admin/videos', { method: 'GET' });
 }
 
+export function fetchAdminComingUpEvents() {
+  return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events', { method: 'GET' });
+}
+
 export function deleteAdminUser(userId: number) {
   return request<{ deletedUserId: number; deletedVideoCount: number }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -187,6 +209,12 @@ export function deleteAdminUser(userId: number) {
 
 export function deleteAdminVideo(videoId: number) {
   return request<{ deletedVideoId: number }>(`/api/admin/videos/${videoId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminComingUpEvent(eventId: number) {
+  return request<{ deletedEventId: number }>(`/api/admin/coming-up-events/${eventId}`, {
     method: 'DELETE',
   });
 }
@@ -219,6 +247,36 @@ export function uploadAdminVideoFile(userId: number, payload: { title: string; f
   return request<AdminVideoEnvelope>(`/api/admin/users/${userId}/videos/upload`, {
     method: 'POST',
     body: formData,
+  });
+}
+
+export interface AdminComingUpEventPayload {
+  dateLabel: string;
+  title: string;
+  location: string;
+}
+
+export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
+  return request<AdminComingUpEventEnvelope>('/api/admin/coming-up-events', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminComingUpEvent(
+  eventId: number,
+  payload: AdminComingUpEventPayload
+) {
+  return request<AdminComingUpEventEnvelope>(`/api/admin/coming-up-events/${eventId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reorderAdminComingUpEvents(orderedIds: number[]) {
+  return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ orderedIds }),
   });
 }
 

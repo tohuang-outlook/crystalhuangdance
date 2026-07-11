@@ -15,9 +15,12 @@ import {
   updateAdminInvestmentTransaction,
 } from '../services/investment';
 import {
+  createAdminComingUpEvent,
   createAdminYoutubeVideo,
+  deleteAdminComingUpEvent,
   deleteAdminUser,
   deleteAdminVideo,
+  fetchAdminComingUpEvents,
   fetchAdminInvestmentReports,
   fetchAdminUsers,
   fetchAdminVideos,
@@ -25,6 +28,9 @@ import {
   type AdminInvestmentReportRecord,
   type AdminUserRecord,
   type AdminVideoRecord,
+  type ComingUpEventRecord,
+  reorderAdminComingUpEvents,
+  updateAdminComingUpEvent,
   updateAdminInvestmentReportNotes,
   updateAdminUserMemberType,
   uploadAdminVideoFile,
@@ -83,14 +89,48 @@ function createDefaultDraft(): DancerUploadDraft {
   };
 }
 
+interface ComingUpEventDraft {
+  dateLabel: string;
+  location: string;
+  title: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+function createEmptyComingUpEventDraft(): ComingUpEventDraft {
+  return {
+    dateLabel: '',
+    location: '',
+    title: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createComingUpEventDraftFromRecord(event: ComingUpEventRecord): ComingUpEventDraft {
+  return {
+    dateLabel: event.dateLabel,
+    location: event.location,
+    title: event.title,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [videos, setVideos] = useState<AdminVideoRecord[]>([]);
+  const [comingUpEvents, setComingUpEvents] = useState<ComingUpEventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
+  const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
   const [activeMemberTypeUserId, setActiveMemberTypeUserId] = useState<number | null>(null);
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
+  const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
+  const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
+    createEmptyComingUpEventDraft()
+  );
   const [portfolioByInvestorId, setPortfolioByInvestorId] = useState<
     Record<number, InvestmentPortfolioResponse | null | undefined>
   >({});
@@ -155,15 +195,17 @@ export default function AdminPage() {
     setError(null);
 
     try {
-      const [usersResponse, videosResponse, reportsResponse] = await Promise.all([
+      const [usersResponse, videosResponse, reportsResponse, comingUpEventsResponse] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
         fetchAdminInvestmentReports(),
+        fetchAdminComingUpEvents(),
       ]);
 
       setUsers(usersResponse.users);
       setVideos(videosResponse.videos);
       setReportCenterReports(reportsResponse);
+      setComingUpEvents(comingUpEventsResponse.events);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -177,6 +219,18 @@ export default function AdminPage() {
   useEffect(() => {
     void loadDashboard({ keepLoadingState: true });
   }, []);
+
+  useEffect(() => {
+    setComingUpEventDrafts((current) => {
+      const nextDrafts: Record<number, ComingUpEventDraft> = {};
+
+      comingUpEvents.forEach((event) => {
+        nextDrafts[event.id] = current[event.id] ?? createComingUpEventDraftFromRecord(event);
+      });
+
+      return nextDrafts;
+    });
+  }, [comingUpEvents]);
 
   useEffect(() => {
     const loadInvestorPortfolios = async () => {
@@ -211,6 +265,9 @@ export default function AdminPage() {
 
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
+  const getComingUpEventDraft = (event: ComingUpEventRecord) =>
+    comingUpEventDrafts[event.id] ?? createComingUpEventDraftFromRecord(event);
+
   const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
     setUploadDrafts((current) => ({
       ...current,
@@ -229,6 +286,23 @@ export default function AdminPage() {
     setUploadDrafts((current) => ({
       ...current,
       [userId]: nextDraft,
+    }));
+  };
+
+  const updateComingUpEventDraft = (eventId: number, patch: Partial<ComingUpEventDraft>) => {
+    setComingUpEventDrafts((current) => ({
+      ...current,
+      [eventId]: {
+        ...(current[eventId] ?? createEmptyComingUpEventDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewComingUpEventDraft = (patch: Partial<ComingUpEventDraft>) => {
+    setNewComingUpEventDraft((current) => ({
+      ...current,
+      ...patch,
     }));
   };
 
@@ -436,6 +510,114 @@ export default function AdminPage() {
     }
 
     updateDraft(user.id, { isSubmitting: false });
+  };
+
+  const handleCreateComingUpEvent = async () => {
+    updateNewComingUpEventDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminComingUpEvent({
+        dateLabel: newComingUpEventDraft.dateLabel.trim(),
+        location: newComingUpEventDraft.location.trim(),
+        title: newComingUpEventDraft.title.trim(),
+      });
+
+      setComingUpEvents((current) => [...current, response.event]);
+      setNewComingUpEventDraft(createEmptyComingUpEventDraft());
+    } catch (err) {
+      updateNewComingUpEventDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this event.',
+      });
+      return;
+    }
+
+    updateNewComingUpEventDraft({ isSubmitting: false });
+  };
+
+  const handleSaveComingUpEvent = async (event: ComingUpEventRecord) => {
+    const draft = getComingUpEventDraft(event);
+    updateComingUpEventDraft(event.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminComingUpEvent(event.id, {
+        dateLabel: draft.dateLabel.trim(),
+        location: draft.location.trim(),
+        title: draft.title.trim(),
+      });
+
+      setComingUpEvents((current) =>
+        current.map((entry) => (entry.id === event.id ? response.event : entry))
+      );
+      setComingUpEventDrafts((current) => ({
+        ...current,
+        [event.id]: createComingUpEventDraftFromRecord(response.event),
+      }));
+    } catch (err) {
+      updateComingUpEventDraft(event.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this event.',
+      });
+      return;
+    }
+
+    updateComingUpEventDraft(event.id, { isSubmitting: false });
+  };
+
+  const handleDeleteComingUpEvent = async (event: ComingUpEventRecord) => {
+    if (
+      !window.confirm(
+        `Delete "${event.title}" in ${event.location}? This will remove it from the Coming Up Events list.`
+      )
+    ) {
+      return;
+    }
+
+    setActiveEventActionKey(`delete-${event.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminComingUpEvent(event.id);
+      setComingUpEvents((current) => current.filter((entry) => entry.id !== event.id));
+      setComingUpEventDrafts((current) => {
+        const nextDrafts = { ...current };
+        delete nextDrafts[event.id];
+        return nextDrafts;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this event.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveComingUpEvent = async (eventId: number, direction: -1 | 1) => {
+    const currentIndex = comingUpEvents.findIndex((event) => event.id === eventId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= comingUpEvents.length) {
+      return;
+    }
+
+    const reorderedIds = [...comingUpEvents.map((event) => event.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`move-${eventId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminComingUpEvents(reorderedIds);
+      setComingUpEvents(response.events);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder coming up events.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
   };
 
   const loadInvestorPortfolio = async (userId: number) => {
@@ -675,6 +857,210 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="mt-10 space-y-10">
+              <section aria-labelledby="coming-up-events-heading">
+                <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="eyebrow">Homepage</p>
+                      <h2
+                        id="coming-up-events-heading"
+                        className="mt-3 text-4xl text-[var(--text)]"
+                      >
+                        Coming Up Events
+                      </h2>
+                      <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                        Update the homepage event list with structured date, location, and title fields. Use the arrows to manually set the display order.
+                      </p>
+                    </div>
+                    <p className="text-sm text-[var(--text-muted)]">
+                      {comingUpEvents.length} event{comingUpEvents.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow text-[10px]">Create event</p>
+                        <h3 className="mt-3 text-2xl text-[var(--text)]">Add a new stop</h3>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                        <span className="eyebrow text-[10px]">Date label</span>
+                        <input
+                          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                          onChange={(event) =>
+                            updateNewComingUpEventDraft({ dateLabel: event.target.value })
+                          }
+                          placeholder="July-August 2026"
+                          type="text"
+                          value={newComingUpEventDraft.dateLabel}
+                        />
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                        <span className="eyebrow text-[10px]">Location</span>
+                        <input
+                          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                          onChange={(event) =>
+                            updateNewComingUpEventDraft({ location: event.target.value })
+                          }
+                          placeholder="Shanghai / Taipei / Hong Kong"
+                          type="text"
+                          value={newComingUpEventDraft.location}
+                        />
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                        <span className="eyebrow text-[10px]">Event title</span>
+                        <input
+                          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                          onChange={(event) =>
+                            updateNewComingUpEventDraft({ title: event.target.value })
+                          }
+                          placeholder="AEDC Performance and Master Class"
+                          type="text"
+                          value={newComingUpEventDraft.title}
+                        />
+                      </label>
+
+                      <div className="flex items-end">
+                        <button
+                          className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={newComingUpEventDraft.isSubmitting}
+                          onClick={() => void handleCreateComingUpEvent()}
+                          type="button"
+                        >
+                          {newComingUpEventDraft.isSubmitting ? 'Adding...' : 'Add event'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {newComingUpEventDraft.error ? (
+                      <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                        {newComingUpEventDraft.error}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {comingUpEvents.length === 0 ? (
+                    <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                      No coming up events have been added yet.
+                    </div>
+                  ) : (
+                    <div className="mt-6 space-y-4">
+                      {comingUpEvents.map((event, index) => {
+                        const draft = getComingUpEventDraft(event);
+                        const isDeleting = activeEventActionKey === `delete-${event.id}`;
+                        const isMoving = activeEventActionKey === `move-${event.id}`;
+
+                        return (
+                          <article
+                            key={event.id}
+                            className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.78)] p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div>
+                                <p className="eyebrow text-[10px]">Display order #{index + 1}</p>
+                                <h3 className="mt-3 text-2xl text-[var(--text)]">{draft.title || 'Untitled event'}</h3>
+                                <p className="mt-3 text-sm text-[var(--text-muted)]">
+                                  {draft.dateLabel || 'Date label'} · {draft.location || 'Location'}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={index === 0 || isMoving}
+                                  onClick={() => void handleMoveComingUpEvent(event.id, -1)}
+                                  type="button"
+                                >
+                                  {isMoving ? 'Moving...' : 'Move up'}
+                                </button>
+                                <button
+                                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={index === comingUpEvents.length - 1 || isMoving}
+                                  onClick={() => void handleMoveComingUpEvent(event.id, 1)}
+                                  type="button"
+                                >
+                                  {isMoving ? 'Moving...' : 'Move down'}
+                                </button>
+                                <button
+                                  className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={draft.isSubmitting}
+                                  onClick={() => void handleSaveComingUpEvent(event)}
+                                  type="button"
+                                >
+                                  {draft.isSubmitting ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={isDeleting}
+                                  onClick={() => void handleDeleteComingUpEvent(event)}
+                                  type="button"
+                                >
+                                  {isDeleting ? 'Deleting...' : 'Delete'}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 xl:grid-cols-3">
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Date label</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(inputEvent) =>
+                                    updateComingUpEventDraft(event.id, {
+                                      dateLabel: inputEvent.target.value,
+                                    })
+                                  }
+                                  type="text"
+                                  value={draft.dateLabel}
+                                />
+                              </label>
+
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Location</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(inputEvent) =>
+                                    updateComingUpEventDraft(event.id, {
+                                      location: inputEvent.target.value,
+                                    })
+                                  }
+                                  type="text"
+                                  value={draft.location}
+                                />
+                              </label>
+
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Event title</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(inputEvent) =>
+                                    updateComingUpEventDraft(event.id, {
+                                      title: inputEvent.target.value,
+                                    })
+                                  }
+                                  type="text"
+                                  value={draft.title}
+                                />
+                              </label>
+                            </div>
+
+                            {draft.error ? (
+                              <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                {draft.error}
+                              </p>
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
+
               <section aria-labelledby="admin-users-heading">
                 <div className="flex items-end justify-between gap-4">
                   <div>

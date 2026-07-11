@@ -1,13 +1,53 @@
-import { siteConfig } from '../data/siteData';
+import { useEffect, useState } from 'react';
+import { siteConfig, type HeroUpcomingEvent } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchComingUpEvents } from '../services/comingUpEvents';
+
+function createFallbackEvents(): HeroUpcomingEvent[] {
+  return siteConfig.heroUpcomingEvents;
+}
 
 export default function Hero() {
   const { t } = useLanguage();
+  const [upcomingEvents, setUpcomingEvents] = useState<HeroUpcomingEvent[]>(createFallbackEvents);
 
   const archiveHrefMap: Record<string, string> = {
     '#media': '#styles',
     '#range': '#styles',
   };
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadComingUpEvents() {
+      try {
+        const events = await fetchComingUpEvents();
+
+        if (!isActive || events.length === 0) {
+          return;
+        }
+
+        setUpcomingEvents(
+          events.map((event) => ({
+            date: event.dateLabel,
+            dateZh: event.dateLabel,
+            title: event.title,
+            titleZh: event.title,
+            location: event.location,
+            locationZh: event.location,
+          }))
+        );
+      } catch {
+        // Keep the static homepage fallback if the public endpoint is unavailable.
+      }
+    }
+
+    loadComingUpEvents();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   return (
     <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
@@ -66,7 +106,7 @@ export default function Hero() {
             {t('Coming Up Events', '即將到來活動')}
           </p>
           <ul className="mt-3 divide-y divide-[rgba(120,138,160,0.2)] text-[var(--text)]">
-            {siteConfig.heroUpcomingEvents.map((event, index) => (
+            {upcomingEvents.map((event, index) => (
               <li
                 key={`${event.date}-${event.title}`}
                 className={index === 0 ? 'pb-3' : 'py-3'}

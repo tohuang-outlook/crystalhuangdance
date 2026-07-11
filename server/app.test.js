@@ -429,11 +429,12 @@ describe('auth and video backend foundation', () => {
   it('bootstraps users and videos tables', () => {
     const tables = db.raw
       .prepare(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('password_reset_tokens', 'users', 'videos') ORDER BY name"
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('coming_up_events', 'password_reset_tokens', 'users', 'videos') ORDER BY name"
       )
       .all();
 
     expect(tables).toEqual([
+      { name: 'coming_up_events' },
       { name: 'password_reset_tokens' },
       { name: 'users' },
       { name: 'videos' },
@@ -549,6 +550,175 @@ describe('auth and video backend foundation', () => {
     const videosResponse = await userAgent.get('/api/admin/videos');
     expect(videosResponse.status).toBe(403);
     expect(videosResponse.body.error).toMatch(/admin/i);
+  });
+
+  it('returns seeded coming up events in public sort order', async () => {
+    const response = await request(app).get('/api/coming-up-events');
+
+    expect(response.status).toBe(200);
+    expect(response.body.events).toEqual([
+      expect.objectContaining({
+        dateLabel: 'July 2026',
+        title: 'Press Play Pro Assistant',
+        location: 'Las Vegas',
+        sortOrder: 0,
+      }),
+      expect.objectContaining({
+        dateLabel: 'July 2026',
+        title: 'YAGP Gala',
+        location: 'Beijing',
+        sortOrder: 1,
+      }),
+      expect.objectContaining({
+        dateLabel: 'July-August 2026',
+        title: 'AEDC Performance and Master Class',
+        location: 'Shanghai / Taipei / Hong Kong',
+        sortOrder: 2,
+      }),
+    ]);
+  });
+
+  it('protects admin coming up event routes for non-admin users', async () => {
+    const userAgent = request.agent(app);
+    await registerUser(userAgent, 'member@example.com');
+
+    const listResponse = await userAgent.get('/api/admin/coming-up-events');
+    expect(listResponse.status).toBe(403);
+    expect(listResponse.body.error).toMatch(/admin/i);
+
+    const createResponse = await userAgent.post('/api/admin/coming-up-events').send({
+      dateLabel: 'August 2026',
+      title: 'Summer Intensive',
+      location: 'New York',
+    });
+    expect(createResponse.status).toBe(403);
+    expect(createResponse.body.error).toMatch(/admin/i);
+
+    const updateResponse = await userAgent.put('/api/admin/coming-up-events/1').send({
+      dateLabel: 'August 2026',
+      title: 'Updated Title',
+      location: 'Paris',
+    });
+    expect(updateResponse.status).toBe(403);
+    expect(updateResponse.body.error).toMatch(/admin/i);
+
+    const deleteResponse = await userAgent.delete('/api/admin/coming-up-events/1');
+    expect(deleteResponse.status).toBe(403);
+    expect(deleteResponse.body.error).toMatch(/admin/i);
+
+    const reorderResponse = await userAgent.post('/api/admin/coming-up-events/reorder').send({
+      orderedIds: [1, 2, 3],
+    });
+    expect(reorderResponse.status).toBe(403);
+    expect(reorderResponse.body.error).toMatch(/admin/i);
+  });
+
+  it('lets admins create a coming up event at the end of the list', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const response = await adminAgent.post('/api/admin/coming-up-events').send({
+      dateLabel: 'August 2026',
+      title: 'Summer Intensive',
+      location: 'New York',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.event).toMatchObject({
+      dateLabel: 'August 2026',
+      title: 'Summer Intensive',
+      location: 'New York',
+      sortOrder: 3,
+    });
+    expect(db.listComingUpEvents()).toEqual([
+      expect.objectContaining({ sortOrder: 0 }),
+      expect.objectContaining({ sortOrder: 1 }),
+      expect.objectContaining({ sortOrder: 2 }),
+      expect.objectContaining({
+        dateLabel: 'August 2026',
+        title: 'Summer Intensive',
+        location: 'New York',
+        sortOrder: 3,
+      }),
+    ]);
+  });
+
+  it('lets admins update a coming up event', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const existingEvent = db.listComingUpEvents()[1];
+
+    const response = await adminAgent.put(`/api/admin/coming-up-events/${existingEvent.id}`).send({
+      dateLabel: 'September 2026',
+      title: 'Updated Gala',
+      location: 'Tokyo',
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.event).toMatchObject({
+      id: existingEvent.id,
+      dateLabel: 'September 2026',
+      title: 'Updated Gala',
+      location: 'Tokyo',
+      sortOrder: existingEvent.sortOrder,
+    });
+    expect(db.findComingUpEventById(existingEvent.id)).toMatchObject({
+      id: existingEvent.id,
+      dateLabel: 'September 2026',
+      title: 'Updated Gala',
+      location: 'Tokyo',
+      sortOrder: existingEvent.sortOrder,
+    });
+  });
+
+  it('lets admins delete a coming up event and normalizes remaining sort order', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const existingEvents = db.listComingUpEvents();
+    const deletedEvent = existingEvents[1];
+
+    const response = await adminAgent.delete(`/api/admin/coming-up-events/${deletedEvent.id}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedEventId: deletedEvent.id });
+    expect(db.findComingUpEventById(deletedEvent.id)).toBeNull();
+    expect(db.listComingUpEvents()).toEqual([
+      expect.objectContaining({
+        id: existingEvents[0].id,
+        sortOrder: 0,
+      }),
+      expect.objectContaining({
+        id: existingEvents[2].id,
+        sortOrder: 1,
+      }),
+    ]);
+  });
+
+  it('lets admins reorder coming up events when the ids match exactly', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const existingEvents = db.listComingUpEvents();
+    const orderedIds = [existingEvents[2].id, existingEvents[0].id, existingEvents[1].id];
+
+    const response = await adminAgent.post('/api/admin/coming-up-events/reorder').send({
+      orderedIds,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.events.map((event) => event.id)).toEqual(orderedIds);
+    expect(response.body.events.map((event) => event.sortOrder)).toEqual([0, 1, 2]);
+    expect(db.listComingUpEvents().map((event) => event.id)).toEqual(orderedIds);
   });
 
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {

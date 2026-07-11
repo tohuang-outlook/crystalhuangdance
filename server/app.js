@@ -148,6 +148,18 @@ function serializeAdminVideo(video) {
   };
 }
 
+function serializeComingUpEvent(event) {
+  return {
+    id: event.id,
+    dateLabel: event.dateLabel,
+    title: event.title,
+    location: event.location,
+    sortOrder: event.sortOrder,
+    createdAt: event.createdAt,
+    updatedAt: event.updatedAt,
+  };
+}
+
 function serializeInvestmentPortfolio(portfolio) {
   return {
     id: portfolio.id,
@@ -761,6 +773,19 @@ function trimOptionalString(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function parseRequiredTrimmedString(value) {
+  const trimmed = String(value ?? '').trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parseComingUpEventPayload(body) {
+  return {
+    dateLabel: parseRequiredTrimmedString(body?.dateLabel),
+    title: parseRequiredTrimmedString(body?.title),
+    location: parseRequiredTrimmedString(body?.location),
+  };
+}
+
 function hashResetToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -1042,6 +1067,11 @@ export function createApp({
     res.json({ videos });
   });
 
+  app.get('/api/coming-up-events', (_req, res) => {
+    const events = db.listComingUpEvents().map(serializeComingUpEvent);
+    res.json({ events });
+  });
+
   app.get('/api/investment/me', requireInvestor, async (req, res) => {
     const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
 
@@ -1180,6 +1210,111 @@ export function createApp({
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
+  });
+
+  app.get('/api/admin/coming-up-events', requireAdmin, (_req, res) => {
+    const events = db.listComingUpEvents().map(serializeComingUpEvent);
+    res.json({ events });
+  });
+
+  app.post('/api/admin/coming-up-events', requireAdmin, (req, res) => {
+    const payload = parseComingUpEventPayload(req.body);
+
+    if (!payload.dateLabel) {
+      return res.status(400).json({ error: 'A date label is required.' });
+    }
+
+    if (!payload.title) {
+      return res.status(400).json({ error: 'A title is required.' });
+    }
+
+    if (!payload.location) {
+      return res.status(400).json({ error: 'A location is required.' });
+    }
+
+    const event = db.createComingUpEvent({
+      ...payload,
+      sortOrder: db.listComingUpEvents().length,
+    });
+
+    return res.status(201).json({ event: serializeComingUpEvent(event) });
+  });
+
+  app.put('/api/admin/coming-up-events/:eventId', requireAdmin, (req, res) => {
+    const eventId = parseIdParam(req.params.eventId);
+
+    if (!eventId) {
+      return res.status(400).json({ error: 'A valid event id is required.' });
+    }
+
+    const payload = parseComingUpEventPayload(req.body);
+
+    if (!payload.dateLabel) {
+      return res.status(400).json({ error: 'A date label is required.' });
+    }
+
+    if (!payload.title) {
+      return res.status(400).json({ error: 'A title is required.' });
+    }
+
+    if (!payload.location) {
+      return res.status(400).json({ error: 'A location is required.' });
+    }
+
+    const event = db.updateComingUpEvent({
+      id: eventId,
+      ...payload,
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: 'Coming up event not found.' });
+    }
+
+    return res.json({ event: serializeComingUpEvent(event) });
+  });
+
+  app.delete('/api/admin/coming-up-events/:eventId', requireAdmin, (req, res) => {
+    const eventId = parseIdParam(req.params.eventId);
+
+    if (!eventId) {
+      return res.status(400).json({ error: 'A valid event id is required.' });
+    }
+
+    const deletedEvent = db.deleteComingUpEvent(eventId);
+
+    if (!deletedEvent) {
+      return res.status(404).json({ error: 'Coming up event not found.' });
+    }
+
+    const remainingIds = db.listComingUpEvents().map((event) => event.id);
+    db.reorderComingUpEvents(remainingIds);
+
+    return res.json({ deletedEventId: deletedEvent.id });
+  });
+
+  app.post('/api/admin/coming-up-events/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid event ids.' });
+    }
+
+    const currentIds = db.listComingUpEvents().map((event) => event.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current event ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current event ids.' });
+    }
+
+    const events = db.reorderComingUpEvents(orderedIds).map(serializeComingUpEvent);
+    return res.json({ events });
   });
 
   app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {
