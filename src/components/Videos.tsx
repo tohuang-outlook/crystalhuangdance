@@ -79,6 +79,8 @@ export default function Videos() {
                   <img
                     src={video.thumbnail}
                     alt={t(video.title, video.titleZh)}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -110,6 +112,8 @@ export default function Videos() {
                   <img
                     src={video.thumbnail}
                     alt={t(video.title, video.titleZh)}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-[rgba(74,55,40,0.24)]">

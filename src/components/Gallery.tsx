@@ -156,6 +156,8 @@ export default function Gallery() {
                 <img
                   src={item.image}
                   alt={t(item.imageAlt, item.imageAltZh)}
+                  loading="lazy"
+                  decoding="async"
                   className={`h-64 w-full object-cover ${archiveImagePositionClasses[item.title] ?? 'object-center'}`}
                 />
                 <div className="flex flex-1 flex-col space-y-2 p-5">
@@ -211,6 +213,8 @@ export default function Gallery() {
                   <img
                     src={item.image}
                     alt={t(item.imageAlt, item.imageAltZh)}
+                    loading="lazy"
+                    decoding="async"
                     className={`h-64 w-full object-cover ${archiveImagePositionClasses[item.title] ?? 'object-center'}`}
                   />
                   <div className="flex flex-1 flex-col space-y-2 p-5">
@@ -303,6 +307,7 @@ export default function Gallery() {
             <img
               src={selectedItem.image}
               alt={t(selectedItem.imageAlt, selectedItem.imageAltZh)}
+              decoding="async"
               className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
               onClick={(event) => event.stopPropagation()}
             />

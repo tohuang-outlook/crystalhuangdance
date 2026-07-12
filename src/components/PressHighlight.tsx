@@ -152,6 +152,8 @@ export default function PressHighlight() {
                   <img
                     src={item.imageSrc}
                     alt={item.imageAlt}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover object-center"
                   />
                 </a>
@@ -175,6 +177,8 @@ export default function PressHighlight() {
                   <img
                     src={item.imageSrc}
                     alt={item.imageAlt}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover object-center transition-transform duration-300 hover:scale-[1.03]"
                   />
                 </a>

@@ -10,6 +10,7 @@ function createFallbackEvents(): HeroUpcomingEvent[] {
 export default function Hero() {
   const { t } = useLanguage();
   const [upcomingEvents, setUpcomingEvents] = useState<HeroUpcomingEvent[]>(createFallbackEvents);
+  const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
 
   const archiveHrefMap: Record<string, string> = {
     '#media': '#styles',
@@ -49,6 +50,39 @@ export default function Hero() {
     };
   }, []);
 
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion || connection?.saveData) {
+      return;
+    }
+
+    let timeoutId: number | null = null;
+
+    const scheduleVideoLoad = () => {
+      timeoutId = window.setTimeout(() => {
+        setShouldLoadHeroVideo(true);
+      }, 250);
+    };
+
+    if (document.readyState === 'complete') {
+      scheduleVideoLoad();
+    } else {
+      window.addEventListener('load', scheduleVideoLoad, { once: true });
+    }
+
+    return () => {
+      window.removeEventListener('load', scheduleVideoLoad);
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
   return (
     <section id="home" className="section-padding relative overflow-hidden pt-32 sm:pt-36">
       <video
@@ -57,11 +91,11 @@ export default function Hero() {
         muted
         loop
         playsInline
-        preload="metadata"
+        preload={shouldLoadHeroVideo ? 'metadata' : 'none'}
         poster="/crystal-hero.jpg"
         aria-label="Crystal Huang hero background video"
       >
-        <source src="/crystal-hero-side.mp4" type="video/mp4" />
+        {shouldLoadHeroVideo ? <source src="/crystal-hero-side.mp4" type="video/mp4" /> : null}
       </video>
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,249,255,0.72)_0%,rgba(234,241,249,0.60)_36%,rgba(214,228,244,0.54)_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(246,249,255,0.62)_0%,rgba(246,249,255,0.50)_28%,rgba(246,249,255,0.18)_56%,rgba(246,249,255,0.08)_100%)]" />

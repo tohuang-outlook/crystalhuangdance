@@ -136,6 +136,8 @@ export default function DanceStyles() {
                   <img
                     src={style.image}
                     alt={style.name}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-contain object-center"
                   />
                 </div>
@@ -143,6 +145,8 @@ export default function DanceStyles() {
                 <img
                   src={style.image}
                   alt={style.name}
+                  loading="lazy"
+                  decoding="async"
                   className={`h-64 w-full object-cover ${imagePositionClasses[style.name] ?? 'object-center'} ${imageScaleClasses[style.name] ?? ''}`}
                 />
               )}
