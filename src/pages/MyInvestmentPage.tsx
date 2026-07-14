@@ -37,6 +37,16 @@ function formatShortDate(value: string) {
   }).format(new Date(normalizedValue));
 }
 
+function formatStatusTimestamp(value: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
 export default function MyInvestmentPage() {
   const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
   const [reports, setReports] = useState<InvestmentMonthlyReportRecord[]>([]);
@@ -201,6 +211,45 @@ export default function MyInvestmentPage() {
     [investorUpdates]
   );
 
+  const activeInvestorModuleCount = useMemo(
+    () =>
+      investorUpdateCategories.filter((category) => groupedInvestorUpdates[category.id].length > 0)
+        .length,
+    [groupedInvestorUpdates]
+  );
+
+  const dataStatusCards = [
+    {
+      label: 'Last Content Update',
+      value: latestInvestorUpdate ? formatShortDate(latestInvestorUpdate.updatedAt) : 'Pending',
+      detail: latestInvestorUpdate
+        ? latestInvestorUpdate.title
+        : 'No investor-facing updates have been published yet.',
+    },
+    {
+      label: 'Live Price Sync',
+      value: data?.pricesLastUpdatedAt ? 'Updated' : 'Waiting for feed',
+      detail: data?.pricesLastUpdatedAt
+        ? `Last sync ${formatStatusTimestamp(data.pricesLastUpdatedAt)}`
+        : 'No live price refresh has been recorded yet.',
+    },
+    {
+      label: 'Monthly Reports',
+      value: reports.length > 0 ? 'Available' : 'Pending',
+      detail:
+        reports.length > 0
+          ? `${reports.length} saved report${reports.length === 1 ? '' : 's'} ready in this portal.`
+          : 'The first month-end report will appear here after generation.',
+    },
+    {
+      label: 'Portal Status',
+      value: refreshError ? 'Attention needed' : 'Operational',
+      detail: refreshError
+        ? refreshError
+        : `${activeInvestorModuleCount} of ${investorUpdateCategories.length} investor update modules currently have published content.`,
+    },
+  ];
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-6xl">
@@ -261,9 +310,7 @@ export default function MyInvestmentPage() {
                     </article>
                     <article className="rounded-[1.25rem] border border-[var(--line)] bg-white/72 p-4 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                       <p className="eyebrow text-[10px]">Active Modules</p>
-                      <p className="mt-2 text-3xl text-[var(--text)]">
-                        {investorUpdateCategories.filter((category) => groupedInvestorUpdates[category.id].length > 0).length}
-                      </p>
+                      <p className="mt-2 text-3xl text-[var(--text)]">{activeInvestorModuleCount}</p>
                     </article>
                   </div>
                 </div>
@@ -287,6 +334,38 @@ export default function MyInvestmentPage() {
               </div>
 
               <div className="mt-6 space-y-6">
+                <div className="rounded-[1.35rem] border border-[var(--line)] bg-white/74 p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <p className="eyebrow text-[10px]">Data Status</p>
+                      <h3 className="mt-3 text-2xl text-[var(--text)]">Current publishing snapshot</h3>
+                      <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--text-muted)]">
+                        A quick confidence check for recent publishing activity, live price freshness,
+                        and report availability inside this portal.
+                      </p>
+                    </div>
+                    <div className="rounded-[1.1rem] border border-[var(--line)] bg-[rgba(255,255,255,0.76)] px-4 py-3 text-right">
+                      <p className="eyebrow text-[10px]">Portal Readiness</p>
+                      <p className="mt-2 text-2xl text-[var(--text)]">
+                        {activeInvestorModuleCount}/{investorUpdateCategories.length}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+                    {dataStatusCards.map((card) => (
+                      <article
+                        key={card.label}
+                        className="rounded-[1.2rem] border border-[var(--line)] bg-[rgba(255,255,255,0.82)] p-4"
+                      >
+                        <p className="eyebrow text-[10px]">{card.label}</p>
+                        <p className="mt-3 text-2xl leading-tight text-[var(--text)]">{card.value}</p>
+                        <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{card.detail}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
                 {investorUpdateCategories.map((category) => {
                   const entries = groupedInvestorUpdates[category.id];
 
