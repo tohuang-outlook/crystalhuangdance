@@ -54,12 +54,32 @@ export interface ComingUpEventRecord {
   updatedAt: string;
 }
 
+export type InvestorUpdateCategory =
+  | 'investment-page'
+  | 'monthly-reports'
+  | 'real-time-quote';
+
+export interface InvestorUpdateRecord {
+  id: number;
+  category: InvestorUpdateCategory;
+  title: string;
+  summary: string;
+  href: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
 
 interface AdminComingUpEventsEnvelope {
   events: ComingUpEventRecord[];
+}
+
+interface AdminInvestorUpdatesEnvelope {
+  updates: InvestorUpdateRecord[];
 }
 
 interface AdminVideosEnvelope {
@@ -84,6 +104,10 @@ interface AdminInvestmentReportEnvelope {
 
 interface AdminComingUpEventEnvelope {
   event: ComingUpEventRecord;
+}
+
+interface AdminInvestorUpdateEnvelope {
+  update: InvestorUpdateRecord;
 }
 
 interface ApiErrorPayload {
@@ -201,6 +225,10 @@ export function fetchAdminComingUpEvents() {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events', { method: 'GET' });
 }
 
+export function fetchAdminInvestorUpdates() {
+  return request<AdminInvestorUpdatesEnvelope>('/api/admin/investor-updates', { method: 'GET' });
+}
+
 export function deleteAdminUser(userId: number) {
   return request<{ deletedUserId: number; deletedVideoCount: number }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -215,6 +243,12 @@ export function deleteAdminVideo(videoId: number) {
 
 export function deleteAdminComingUpEvent(eventId: number) {
   return request<{ deletedEventId: number }>(`/api/admin/coming-up-events/${eventId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminInvestorUpdate(updateId: number) {
+  return request<{ deletedUpdateId: number }>(`/api/admin/investor-updates/${updateId}`, {
     method: 'DELETE',
   });
 }
@@ -256,6 +290,13 @@ export interface AdminComingUpEventPayload {
   location: string;
 }
 
+export interface AdminInvestorUpdatePayload {
+  category: InvestorUpdateCategory;
+  title: string;
+  summary: string;
+  href: string;
+}
+
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
   return request<AdminComingUpEventEnvelope>('/api/admin/coming-up-events', {
     method: 'POST',
@@ -273,10 +314,37 @@ export function updateAdminComingUpEvent(
   });
 }
 
+export function createAdminInvestorUpdate(payload: AdminInvestorUpdatePayload) {
+  return request<AdminInvestorUpdateEnvelope>('/api/admin/investor-updates', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminInvestorUpdate(
+  updateId: number,
+  payload: AdminInvestorUpdatePayload
+) {
+  return request<AdminInvestorUpdateEnvelope>(`/api/admin/investor-updates/${updateId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function reorderAdminComingUpEvents(orderedIds: number[]) {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
     method: 'POST',
     body: JSON.stringify({ orderedIds }),
+  });
+}
+
+export function reorderAdminInvestorUpdates(
+  category: InvestorUpdateCategory,
+  orderedIds: number[]
+) {
+  return request<AdminInvestorUpdatesEnvelope>('/api/admin/investor-updates/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ category, orderedIds }),
   });
 }
 

@@ -23,7 +23,6 @@ const defaultComingUpEvents = [
     sortOrder: 2,
   },
 ];
-
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
     return;
@@ -699,6 +698,94 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    listInvestorUpdates: db.prepare(
+      `SELECT
+          id,
+          category,
+          title,
+          summary,
+          href,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM investor_updates
+       ORDER BY
+         CASE category
+           WHEN 'investment-page' THEN 0
+           WHEN 'monthly-reports' THEN 1
+           WHEN 'real-time-quote' THEN 2
+           ELSE 99
+         END ASC,
+         sort_order ASC,
+         id ASC`
+    ),
+    countInvestorUpdatesByCategory: db.prepare(
+      'SELECT COUNT(*) AS count FROM investor_updates WHERE category = ?'
+    ),
+    findInvestorUpdateById: db.prepare(
+      `SELECT
+          id,
+          category,
+          title,
+          summary,
+          href,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM investor_updates
+       WHERE id = ?`
+    ),
+    createInvestorUpdate: db.prepare(
+      `INSERT INTO investor_updates (category, title, summary, href, sort_order)
+       VALUES (@category, @title, @summary, @href, @sortOrder)
+       RETURNING
+         id,
+         category,
+         title,
+         summary,
+         href,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    updateInvestorUpdate: db.prepare(
+      `UPDATE investor_updates
+       SET category = @category,
+           title = @title,
+           summary = @summary,
+           href = @href,
+           sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+         id,
+         category,
+         title,
+         summary,
+         href,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    deleteInvestorUpdate: db.prepare(
+      `DELETE FROM investor_updates
+       WHERE id = ?
+       RETURNING
+         id,
+         category,
+         title,
+         summary,
+         href,
+         sort_order AS sortOrder,
+         created_at AS createdAt,
+         updated_at AS updatedAt`
+    ),
+    updateInvestorUpdateSortOrder: db.prepare(
+      `UPDATE investor_updates
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -737,6 +824,20 @@ export function createDatabase(filename) {
     });
 
     return statements.listComingUpEvents.all();
+  });
+
+  const reorderInvestorUpdates = db.transaction((category, orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateInvestorUpdateSortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements
+      .listInvestorUpdates
+      .all()
+      .filter((entry) => entry.category === category);
   });
 
   function seedComingUpEvents() {
@@ -929,6 +1030,28 @@ export function createDatabase(filename) {
     },
     reorderComingUpEvents(orderedIds) {
       return reorderComingUpEvents(orderedIds);
+    },
+    listInvestorUpdates() {
+      return statements.listInvestorUpdates.all();
+    },
+    countInvestorUpdatesByCategory(category) {
+      const { count } = statements.countInvestorUpdatesByCategory.get(category);
+      return Number(count);
+    },
+    findInvestorUpdateById(id) {
+      return statements.findInvestorUpdateById.get(id) ?? null;
+    },
+    createInvestorUpdate(update) {
+      return statements.createInvestorUpdate.get(update);
+    },
+    updateInvestorUpdate(update) {
+      return statements.updateInvestorUpdate.get(update) ?? null;
+    },
+    deleteInvestorUpdate(updateId) {
+      return statements.deleteInvestorUpdate.get(updateId) ?? null;
+    },
+    reorderInvestorUpdates(category, orderedIds) {
+      return reorderInvestorUpdates(category, orderedIds);
     },
     close() {
       db.close();

@@ -721,6 +721,144 @@ describe('auth and video backend foundation', () => {
     expect(db.listComingUpEvents().map((event) => event.id)).toEqual(orderedIds);
   });
 
+  it('lists investor updates publicly and protects admin investor routes for non-admin users', async () => {
+    const publicResponse = await request(app).get('/api/investor-updates');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.updates).toEqual([]);
+
+    const userAgent = request.agent(app);
+    await registerUser(userAgent, 'member@example.com');
+
+    const listResponse = await userAgent.get('/api/admin/investor-updates');
+    expect(listResponse.status).toBe(403);
+
+    const createResponse = await userAgent.post('/api/admin/investor-updates').send({
+      category: 'investment-page',
+      title: 'Investor page note',
+      summary: 'Summary',
+      href: 'https://example.com',
+    });
+    expect(createResponse.status).toBe(403);
+
+    const updateResponse = await userAgent.put('/api/admin/investor-updates/1').send({
+      category: 'investment-page',
+      title: 'Updated note',
+      summary: 'Updated summary',
+      href: 'https://example.com/updated',
+    });
+    expect(updateResponse.status).toBe(403);
+
+    const deleteResponse = await userAgent.delete('/api/admin/investor-updates/1');
+    expect(deleteResponse.status).toBe(403);
+
+    const reorderResponse = await userAgent.post('/api/admin/investor-updates/reorder').send({
+      category: 'investment-page',
+      orderedIds: [1],
+    });
+    expect(reorderResponse.status).toBe(403);
+  });
+
+  it('lets admins create, update, delete, and reorder investor updates by category', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const firstCreate = await adminAgent.post('/api/admin/investor-updates').send({
+      category: 'investment-page',
+      title: 'Investor page note',
+      summary: 'First investor summary',
+      href: 'https://example.com/investor-page',
+    });
+    expect(firstCreate.status).toBe(201);
+    expect(firstCreate.body.update).toMatchObject({
+      category: 'investment-page',
+      title: 'Investor page note',
+      sortOrder: 0,
+    });
+
+    const secondCreate = await adminAgent.post('/api/admin/investor-updates').send({
+      category: 'investment-page',
+      title: 'Second investor note',
+      summary: 'Second investor summary',
+      href: '',
+    });
+    expect(secondCreate.status).toBe(201);
+    expect(secondCreate.body.update).toMatchObject({
+      category: 'investment-page',
+      title: 'Second investor note',
+      sortOrder: 1,
+      href: null,
+    });
+
+    const thirdCreate = await adminAgent.post('/api/admin/investor-updates').send({
+      category: 'monthly-reports',
+      title: 'June report',
+      summary: 'Report published',
+      href: 'https://example.com/june-report',
+    });
+    expect(thirdCreate.status).toBe(201);
+    expect(thirdCreate.body.update).toMatchObject({
+      category: 'monthly-reports',
+      title: 'June report',
+      sortOrder: 0,
+    });
+
+    const publicResponse = await request(app).get('/api/investor-updates');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.updates).toHaveLength(3);
+
+    const secondUpdateId = secondCreate.body.update.id;
+    const saveResponse = await adminAgent.put(`/api/admin/investor-updates/${secondUpdateId}`).send({
+      category: 'monthly-reports',
+      title: 'Moved report note',
+      summary: 'Moved into monthly reports',
+      href: 'https://example.com/moved-report',
+    });
+    expect(saveResponse.status).toBe(200);
+    expect(saveResponse.body.update).toMatchObject({
+      id: secondUpdateId,
+      category: 'monthly-reports',
+      title: 'Moved report note',
+      sortOrder: 1,
+    });
+
+    expect(db.listInvestorUpdates().filter((entry) => entry.category === 'investment-page')).toEqual([
+      expect.objectContaining({
+        id: firstCreate.body.update.id,
+        sortOrder: 0,
+      }),
+    ]);
+
+    const monthlyIdsBeforeReorder = db
+      .listInvestorUpdates()
+      .filter((entry) => entry.category === 'monthly-reports')
+      .map((entry) => entry.id);
+    expect(monthlyIdsBeforeReorder).toEqual([thirdCreate.body.update.id, secondUpdateId]);
+
+    const reorderResponse = await adminAgent.post('/api/admin/investor-updates/reorder').send({
+      category: 'monthly-reports',
+      orderedIds: [secondUpdateId, thirdCreate.body.update.id],
+    });
+    expect(reorderResponse.status).toBe(200);
+    expect(reorderResponse.body.updates.map((entry) => entry.id)).toEqual([
+      secondUpdateId,
+      thirdCreate.body.update.id,
+    ]);
+    expect(reorderResponse.body.updates.map((entry) => entry.sortOrder)).toEqual([0, 1]);
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/investor-updates/${secondUpdateId}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ deletedUpdateId: secondUpdateId });
+    expect(db.findInvestorUpdateById(secondUpdateId)).toBeNull();
+    expect(db.listInvestorUpdates().filter((entry) => entry.category === 'monthly-reports')).toEqual([
+      expect.objectContaining({
+        id: thirdCreate.body.update.id,
+        sortOrder: 0,
+      }),
+    ]);
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

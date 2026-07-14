@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AllocationChart from '../components/investment/AllocationChart';
 import HoldingsTable from '../components/investment/HoldingsTable';
 import InvestorReportNoteCard from '../components/investment/InvestorReportNoteCard';
@@ -13,6 +13,11 @@ import {
   type InvestmentMonthlyReportRecord,
   type InvestmentPortfolioResponse,
 } from '../services/investment';
+import {
+  fetchInvestorUpdates,
+  type InvestorUpdate,
+  type InvestorUpdateCategory,
+} from '../services/investorUpdates';
 
 function formatReportDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -25,6 +30,7 @@ function formatReportDate(value: string) {
 export default function MyInvestmentPage() {
   const [data, setData] = useState<InvestmentPortfolioResponse | null>(null);
   const [reports, setReports] = useState<InvestmentMonthlyReportRecord[]>([]);
+  const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +60,7 @@ export default function MyInvestmentPage() {
       }
 
       try {
-        const [portfolioResponse, reportsResponse] = await Promise.all([
+        const [portfolioResponse, reportsResponse, investorUpdatesResponse] = await Promise.all([
           fetchMyInvestmentPortfolio(),
           fetchMyInvestmentReports().catch((err) => {
             const message =
@@ -66,6 +72,7 @@ export default function MyInvestmentPage() {
 
             throw err;
           }),
+          fetchInvestorUpdates().catch(() => []),
         ]);
         if (!isMounted) {
           return;
@@ -73,6 +80,7 @@ export default function MyInvestmentPage() {
 
         setData(portfolioResponse);
         setReports(reportsResponse);
+        setInvestorUpdates(investorUpdatesResponse);
         setError(null);
         setRefreshError(null);
         hasLoadedOnceRef.current = true;
@@ -139,6 +147,31 @@ export default function MyInvestmentPage() {
   const latestInvestorNoteReport =
     reports.find((report) => report.investorNote && report.investorNote.trim().length > 0) ?? null;
 
+  const investorUpdateCategories: Array<{
+    id: InvestorUpdateCategory;
+    label: string;
+  }> = [
+    { id: 'investment-page', label: 'Investment Page Updates' },
+    { id: 'monthly-reports', label: 'Monthly Report Updates' },
+    { id: 'real-time-quote', label: 'Real-Time Quote Updates' },
+  ];
+
+  const groupedInvestorUpdates = useMemo(
+    () =>
+      investorUpdateCategories.reduce<Record<InvestorUpdateCategory, InvestorUpdate[]>>(
+        (grouped, category) => {
+          grouped[category.id] = investorUpdates.filter((entry) => entry.category === category.id);
+          return grouped;
+        },
+        {
+          'investment-page': [],
+          'monthly-reports': [],
+          'real-time-quote': [],
+        }
+      ),
+    [investorUpdates]
+  );
+
   return (
     <section className="section-padding pt-32 sm:pt-36">
       <div className="container-max max-w-6xl">
@@ -173,6 +206,57 @@ export default function MyInvestmentPage() {
             <p className="mt-8 rounded-2xl border border-[rgba(228,178,58,0.28)] bg-[rgba(255,245,204,0.72)] px-4 py-3 text-sm text-[var(--text)]">
               {refreshError}
             </p>
+          ) : null}
+
+          {investorUpdates.length > 0 ? (
+            <section className="mt-10 rounded-[1.5rem] border border-[var(--line)] bg-white/80 p-6 shadow-[0_16px_40px_rgba(68,102,136,0.08)]">
+              <p className="eyebrow">Investor Updates</p>
+              <h2 className="mt-4 text-3xl text-[var(--text)]">Admin-published updates</h2>
+              <div className="mt-6 space-y-6">
+                {investorUpdateCategories.map((category) => {
+                  const entries = groupedInvestorUpdates[category.id];
+
+                  if (entries.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div key={category.id} className="space-y-4">
+                      <div className="flex items-end justify-between gap-4">
+                        <h3 className="text-xl text-[var(--text)]">{category.label}</h3>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          {entries.length} item{entries.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        {entries.map((entry) => (
+                          <article
+                            key={entry.id}
+                            className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.72)] p-5"
+                          >
+                            <p className="eyebrow text-[10px]">Updated {formatReportDate(entry.updatedAt.slice(0, 10))}</p>
+                            <h4 className="mt-3 text-2xl text-[var(--text)]">{entry.title}</h4>
+                            <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                              {entry.summary}
+                            </p>
+                            {entry.href ? (
+                              <a
+                                className="mt-5 inline-flex items-center justify-center rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)]"
+                                href={entry.href}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Open Link
+                              </a>
+                            ) : null}
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
 
           {isLoading ? (

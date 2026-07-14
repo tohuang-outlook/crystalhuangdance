@@ -55,6 +55,11 @@ const seededInvestmentMonthlyPerformance = [
   { month: '2026-05', portfolioValue: 34855.04, snapshotDate: '2026-05-31' },
 ];
 const investmentPricingFetchTimeoutMs = 5000;
+const investorUpdateCategories = new Set([
+  'investment-page',
+  'monthly-reports',
+  'real-time-quote',
+]);
 
 function toSafeUser(user) {
   return {
@@ -157,6 +162,19 @@ function serializeComingUpEvent(event) {
     sortOrder: event.sortOrder,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
+  };
+}
+
+function serializeInvestorUpdate(update) {
+  return {
+    id: update.id,
+    category: update.category,
+    title: update.title,
+    summary: update.summary,
+    href: update.href,
+    sortOrder: update.sortOrder,
+    createdAt: update.createdAt,
+    updatedAt: update.updatedAt,
   };
 }
 
@@ -786,6 +804,20 @@ function parseComingUpEventPayload(body) {
   };
 }
 
+function parseInvestorUpdatePayload(body) {
+  const category = parseRequiredTrimmedString(body?.category);
+
+  return {
+    category:
+      category && investorUpdateCategories.has(category)
+        ? category
+        : null,
+    title: parseRequiredTrimmedString(body?.title),
+    summary: parseRequiredTrimmedString(body?.summary),
+    href: trimOptionalString(body?.href),
+  };
+}
+
 function hashResetToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -1072,6 +1104,11 @@ export function createApp({
     res.json({ events });
   });
 
+  app.get('/api/investor-updates', (_req, res) => {
+    const updates = db.listInvestorUpdates().map(serializeInvestorUpdate);
+    res.json({ updates });
+  });
+
   app.get('/api/investment/me', requireInvestor, async (req, res) => {
     const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
 
@@ -1315,6 +1352,148 @@ export function createApp({
 
     const events = db.reorderComingUpEvents(orderedIds).map(serializeComingUpEvent);
     return res.json({ events });
+  });
+
+  app.get('/api/admin/investor-updates', requireAdmin, (_req, res) => {
+    const updates = db.listInvestorUpdates().map(serializeInvestorUpdate);
+    res.json({ updates });
+  });
+
+  app.post('/api/admin/investor-updates', requireAdmin, (req, res) => {
+    const payload = parseInvestorUpdatePayload(req.body);
+
+    if (!payload.category) {
+      return res.status(400).json({ error: 'A valid investor category is required.' });
+    }
+
+    if (!payload.title) {
+      return res.status(400).json({ error: 'A title is required.' });
+    }
+
+    if (!payload.summary) {
+      return res.status(400).json({ error: 'A summary is required.' });
+    }
+
+    const update = db.createInvestorUpdate({
+      ...payload,
+      sortOrder: db.countInvestorUpdatesByCategory(payload.category),
+    });
+
+    return res.status(201).json({ update: serializeInvestorUpdate(update) });
+  });
+
+  app.put('/api/admin/investor-updates/:updateId', requireAdmin, (req, res) => {
+    const updateId = parseIdParam(req.params.updateId);
+
+    if (!updateId) {
+      return res.status(400).json({ error: 'A valid investor update id is required.' });
+    }
+
+    const existingUpdate = db.findInvestorUpdateById(updateId);
+
+    if (!existingUpdate) {
+      return res.status(404).json({ error: 'Investor update not found.' });
+    }
+
+    const payload = parseInvestorUpdatePayload(req.body);
+
+    if (!payload.category) {
+      return res.status(400).json({ error: 'A valid investor category is required.' });
+    }
+
+    if (!payload.title) {
+      return res.status(400).json({ error: 'A title is required.' });
+    }
+
+    if (!payload.summary) {
+      return res.status(400).json({ error: 'A summary is required.' });
+    }
+
+    const sortOrder =
+      payload.category === existingUpdate.category
+        ? existingUpdate.sortOrder
+        : db.countInvestorUpdatesByCategory(payload.category);
+
+    const update = db.updateInvestorUpdate({
+      id: updateId,
+      ...payload,
+      sortOrder,
+    });
+
+    if (!update) {
+      return res.status(404).json({ error: 'Investor update not found.' });
+    }
+
+    if (payload.category !== existingUpdate.category) {
+      const previousCategoryIds = db
+        .listInvestorUpdates()
+        .filter((entry) => entry.category === existingUpdate.category)
+        .map((entry) => entry.id);
+      db.reorderInvestorUpdates(existingUpdate.category, previousCategoryIds);
+
+      const nextCategoryIds = db
+        .listInvestorUpdates()
+        .filter((entry) => entry.category === payload.category)
+        .map((entry) => entry.id);
+      db.reorderInvestorUpdates(payload.category, nextCategoryIds);
+    }
+
+    return res.json({ update: serializeInvestorUpdate(db.findInvestorUpdateById(updateId)) });
+  });
+
+  app.delete('/api/admin/investor-updates/:updateId', requireAdmin, (req, res) => {
+    const updateId = parseIdParam(req.params.updateId);
+
+    if (!updateId) {
+      return res.status(400).json({ error: 'A valid investor update id is required.' });
+    }
+
+    const deletedUpdate = db.deleteInvestorUpdate(updateId);
+
+    if (!deletedUpdate) {
+      return res.status(404).json({ error: 'Investor update not found.' });
+    }
+
+    const remainingIds = db
+      .listInvestorUpdates()
+      .filter((entry) => entry.category === deletedUpdate.category)
+      .map((entry) => entry.id);
+    db.reorderInvestorUpdates(deletedUpdate.category, remainingIds);
+
+    return res.json({ deletedUpdateId: deletedUpdate.id });
+  });
+
+  app.post('/api/admin/investor-updates/reorder', requireAdmin, (req, res) => {
+    const category = parseRequiredTrimmedString(req.body?.category);
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!category || !investorUpdateCategories.has(category)) {
+      return res.status(400).json({ error: 'A valid investor category is required.' });
+    }
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid investor update ids.' });
+    }
+
+    const currentIds = db
+      .listInvestorUpdates()
+      .filter((entry) => entry.category === category)
+      .map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current investor update ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current investor update ids.' });
+    }
+
+    const updates = db.reorderInvestorUpdates(category, orderedIds).map(serializeInvestorUpdate);
+    return res.json({ updates });
   });
 
   app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {

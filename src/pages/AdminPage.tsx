@@ -16,22 +16,30 @@ import {
 } from '../services/investment';
 import {
   createAdminComingUpEvent,
+  createAdminInvestorUpdate,
   createAdminYoutubeVideo,
   deleteAdminComingUpEvent,
+  deleteAdminInvestorUpdate,
   deleteAdminUser,
   deleteAdminVideo,
   fetchAdminComingUpEvents,
   fetchAdminInvestmentReports,
+  fetchAdminInvestorUpdates,
   fetchAdminUsers,
   fetchAdminVideos,
   regenerateAdminInvestmentReport,
+  type AdminInvestorUpdatePayload,
   type AdminInvestmentReportRecord,
   type AdminUserRecord,
   type AdminVideoRecord,
   type ComingUpEventRecord,
+  type InvestorUpdateCategory,
+  type InvestorUpdateRecord,
   reorderAdminComingUpEvents,
+  reorderAdminInvestorUpdates,
   updateAdminComingUpEvent,
   updateAdminInvestmentReportNotes,
+  updateAdminInvestorUpdate,
   updateAdminUserMemberType,
   uploadAdminVideoFile,
 } from '../services/admin';
@@ -66,6 +74,7 @@ function formatBytes(bytes: number | null) {
 }
 
 type AdminUploadMode = 'youtube' | 'upload';
+type AdminConsoleTab = 'coming-up-events' | 'dancer' | 'investor';
 
 interface DancerUploadDraft {
   mode: AdminUploadMode;
@@ -97,6 +106,15 @@ interface ComingUpEventDraft {
   error: string | null;
 }
 
+interface InvestorUpdateDraft {
+  category: InvestorUpdateCategory;
+  title: string;
+  summary: string;
+  href: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
 function createEmptyComingUpEventDraft(): ComingUpEventDraft {
   return {
     dateLabel: '',
@@ -117,10 +135,60 @@ function createComingUpEventDraftFromRecord(event: ComingUpEventRecord): ComingU
   };
 }
 
+function createEmptyInvestorUpdateDraft(
+  category: InvestorUpdateCategory
+): InvestorUpdateDraft {
+  return {
+    category,
+    title: '',
+    summary: '',
+    href: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createInvestorUpdateDraftFromRecord(
+  update: InvestorUpdateRecord
+): InvestorUpdateDraft {
+  return {
+    category: update.category,
+    title: update.title,
+    summary: update.summary,
+    href: update.href ?? '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
+  const investorCategories: Array<{
+    id: InvestorUpdateCategory;
+    label: string;
+    description: string;
+  }> = [
+    {
+      id: 'investment-page',
+      label: 'Investment page',
+      description: 'Homepage-linked investor content and publishing controls.',
+    },
+    {
+      id: 'monthly-reports',
+      label: 'Monthly reports',
+      description: 'Structured report updates, review notes, and report links.',
+    },
+    {
+      id: 'real-time-quote',
+      label: 'Real-time quote',
+      description: 'Quote feed status, provider checks, and live-market notes.',
+    },
+  ];
+
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [videos, setVideos] = useState<AdminVideoRecord[]>([]);
   const [comingUpEvents, setComingUpEvents] = useState<ComingUpEventRecord[]>([]);
+  const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdateRecord[]>([]);
+  const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
@@ -128,9 +196,17 @@ export default function AdminPage() {
   const [activeMemberTypeUserId, setActiveMemberTypeUserId] = useState<number | null>(null);
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
+  const [investorUpdateDrafts, setInvestorUpdateDrafts] = useState<Record<number, InvestorUpdateDraft>>({});
   const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
     createEmptyComingUpEventDraft()
   );
+  const [newInvestorUpdateDrafts, setNewInvestorUpdateDrafts] = useState<
+    Record<InvestorUpdateCategory, InvestorUpdateDraft>
+  >({
+    'investment-page': createEmptyInvestorUpdateDraft('investment-page'),
+    'monthly-reports': createEmptyInvestorUpdateDraft('monthly-reports'),
+    'real-time-quote': createEmptyInvestorUpdateDraft('real-time-quote'),
+  });
   const [portfolioByInvestorId, setPortfolioByInvestorId] = useState<
     Record<number, InvestmentPortfolioResponse | null | undefined>
   >({});
@@ -169,6 +245,40 @@ export default function AdminPage() {
     [users]
   );
 
+  const adminTabs = [
+    {
+      id: 'coming-up-events' as const,
+      label: 'Coming Up Events',
+      description: 'Homepage event list and ordering',
+    },
+    {
+      id: 'dancer' as const,
+      label: 'Dancer',
+      description: 'Admin accounts and private video management',
+    },
+    {
+      id: 'investor' as const,
+      label: 'Investor',
+      description: 'Investor portfolios, reports, and page updates',
+    },
+  ];
+
+  const investorUpdatesByCategory = useMemo(
+    () =>
+      investorCategories.reduce<Record<InvestorUpdateCategory, InvestorUpdateRecord[]>>(
+        (grouped, category) => {
+          grouped[category.id] = investorUpdates.filter((entry) => entry.category === category.id);
+          return grouped;
+        },
+        {
+          'investment-page': [],
+          'monthly-reports': [],
+          'real-time-quote': [],
+        }
+      ),
+    [investorUpdates]
+  );
+
   const videosByUser = useMemo(() => {
     const grouped = new Map<number, AdminVideoRecord[]>();
 
@@ -195,17 +305,19 @@ export default function AdminPage() {
     setError(null);
 
     try {
-      const [usersResponse, videosResponse, reportsResponse, comingUpEventsResponse] = await Promise.all([
+      const [usersResponse, videosResponse, reportsResponse, comingUpEventsResponse, investorUpdatesResponse] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
         fetchAdminInvestmentReports(),
         fetchAdminComingUpEvents(),
+        fetchAdminInvestorUpdates(),
       ]);
 
       setUsers(usersResponse.users);
       setVideos(videosResponse.videos);
       setReportCenterReports(reportsResponse);
       setComingUpEvents(comingUpEventsResponse.events);
+      setInvestorUpdates(investorUpdatesResponse.updates);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -231,6 +343,18 @@ export default function AdminPage() {
       return nextDrafts;
     });
   }, [comingUpEvents]);
+
+  useEffect(() => {
+    setInvestorUpdateDrafts((current) => {
+      const nextDrafts: Record<number, InvestorUpdateDraft> = {};
+
+      investorUpdates.forEach((update) => {
+        nextDrafts[update.id] = current[update.id] ?? createInvestorUpdateDraftFromRecord(update);
+      });
+
+      return nextDrafts;
+    });
+  }, [investorUpdates]);
 
   useEffect(() => {
     const loadInvestorPortfolios = async () => {
@@ -268,6 +392,9 @@ export default function AdminPage() {
   const getComingUpEventDraft = (event: ComingUpEventRecord) =>
     comingUpEventDrafts[event.id] ?? createComingUpEventDraftFromRecord(event);
 
+  const getInvestorUpdateDraft = (update: InvestorUpdateRecord) =>
+    investorUpdateDrafts[update.id] ?? createInvestorUpdateDraftFromRecord(update);
+
   const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
     setUploadDrafts((current) => ({
       ...current,
@@ -303,6 +430,29 @@ export default function AdminPage() {
     setNewComingUpEventDraft((current) => ({
       ...current,
       ...patch,
+    }));
+  };
+
+  const updateInvestorUpdateDraft = (updateId: number, patch: Partial<InvestorUpdateDraft>) => {
+    setInvestorUpdateDrafts((current) => ({
+      ...current,
+      [updateId]: {
+        ...(current[updateId] ?? createEmptyInvestorUpdateDraft('investment-page')),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewInvestorUpdateDraft = (
+    category: InvestorUpdateCategory,
+    patch: Partial<InvestorUpdateDraft>
+  ) => {
+    setNewInvestorUpdateDrafts((current) => ({
+      ...current,
+      [category]: {
+        ...current[category],
+        ...patch,
+      },
     }));
   };
 
@@ -620,6 +770,119 @@ export default function AdminPage() {
     }
   };
 
+  const toInvestorUpdatePayload = (draft: InvestorUpdateDraft): AdminInvestorUpdatePayload => ({
+    category: draft.category,
+    title: draft.title.trim(),
+    summary: draft.summary.trim(),
+    href: draft.href.trim(),
+  });
+
+  const handleCreateInvestorUpdate = async (category: InvestorUpdateCategory) => {
+    const draft = newInvestorUpdateDrafts[category];
+    updateNewInvestorUpdateDraft(category, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminInvestorUpdate(toInvestorUpdatePayload(draft));
+      setInvestorUpdates((current) => [...current, response.update]);
+      updateNewInvestorUpdateDraft(category, createEmptyInvestorUpdateDraft(category));
+    } catch (err) {
+      updateNewInvestorUpdateDraft(category, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this investor update.',
+      });
+      return;
+    }
+
+    updateNewInvestorUpdateDraft(category, { isSubmitting: false });
+  };
+
+  const handleSaveInvestorUpdate = async (update: InvestorUpdateRecord) => {
+    const draft = getInvestorUpdateDraft(update);
+    updateInvestorUpdateDraft(update.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminInvestorUpdate(update.id, toInvestorUpdatePayload(draft));
+      setInvestorUpdates((current) =>
+        current.map((entry) => (entry.id === update.id ? response.update : entry))
+      );
+      setInvestorUpdateDrafts((current) => ({
+        ...current,
+        [update.id]: createInvestorUpdateDraftFromRecord(response.update),
+      }));
+      await loadDashboard();
+    } catch (err) {
+      updateInvestorUpdateDraft(update.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this investor update.',
+      });
+      return;
+    }
+
+    updateInvestorUpdateDraft(update.id, { isSubmitting: false });
+  };
+
+  const handleDeleteInvestorUpdate = async (update: InvestorUpdateRecord) => {
+    if (
+      !window.confirm(
+        `Delete "${update.title}" from ${update.category.replaceAll('-', ' ')}?`
+      )
+    ) {
+      return;
+    }
+
+    setActiveEventActionKey(`investor-delete-${update.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminInvestorUpdate(update.id);
+      setInvestorUpdates((current) => current.filter((entry) => entry.id !== update.id));
+      setInvestorUpdateDrafts((current) => {
+        const nextDrafts = { ...current };
+        delete nextDrafts[update.id];
+        return nextDrafts;
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this investor update.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveInvestorUpdate = async (
+    category: InvestorUpdateCategory,
+    updateId: number,
+    direction: -1 | 1
+  ) => {
+    const categoryUpdates = investorUpdatesByCategory[category];
+    const currentIndex = categoryUpdates.findIndex((entry) => entry.id === updateId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= categoryUpdates.length) {
+      return;
+    }
+
+    const reorderedIds = [...categoryUpdates.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`investor-move-${updateId}`);
+    setError(null);
+
+    try {
+      await reorderAdminInvestorUpdates(category, reorderedIds);
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder investor updates.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
   const loadInvestorPortfolio = async (userId: number) => {
     const response = await fetchAdminInvestmentPortfolio(userId);
     setPortfolioByInvestorId((current) => ({
@@ -844,6 +1107,33 @@ export default function AdminPage() {
             </div>
           </div>
 
+          <div className="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.5)] p-3 shadow-[0_14px_36px_rgba(68,102,136,0.08)]">
+            <div className="grid gap-3 md:grid-cols-3">
+              {adminTabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`rounded-[1.2rem] border px-4 py-4 text-left transition ${
+                      isActive
+                        ? 'border-[var(--text)] bg-[var(--surface)] shadow-[0_12px_28px_rgba(68,102,136,0.08)]'
+                        : 'border-transparent bg-transparent hover:border-[var(--line)] hover:bg-[rgba(255,255,255,0.42)]'
+                    }`}
+                  >
+                    <p className="eyebrow text-[10px]">Admin Section</p>
+                    <h2 className="mt-3 text-2xl text-[var(--text)]">{tab.label}</h2>
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                      {tab.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {error && (
             <p className="mt-8 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
               {error}
@@ -857,6 +1147,7 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="mt-10 space-y-10">
+              {activeTab === 'coming-up-events' ? (
               <section aria-labelledby="coming-up-events-heading">
                 <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                   <div className="flex flex-wrap items-end justify-between gap-4">
@@ -1060,7 +1351,10 @@ export default function AdminPage() {
                   )}
                 </div>
               </section>
+              ) : null}
 
+              {activeTab === 'dancer' ? (
+              <>
               <section aria-labelledby="admin-users-heading">
                 <div className="flex items-end justify-between gap-4">
                   <div>
@@ -1339,7 +1633,10 @@ export default function AdminPage() {
                   </div>
                 )}
               </section>
+              </>
+              ) : null}
 
+              {activeTab === 'investor' ? (
               <section aria-labelledby="admin-investors-heading">
                 <div className="flex items-end justify-between gap-4">
                   <div>
@@ -1365,11 +1662,232 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                <div className="mt-6 grid gap-4 lg:grid-cols-3">
+                  {investorCategories.map((category) => (
+                    <article
+                      key={category.id}
+                      className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
+                    >
+                      <p className="eyebrow">Investor Module</p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <h3 className="text-2xl text-[var(--text)]">{category.label}</h3>
+                        <span className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                          {investorUpdatesByCategory[category.id].length} item
+                          {investorUpdatesByCategory[category.id].length === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">
+                        {category.description}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+
                 {reportGenerationMessage ? (
                   <p className="mt-4 rounded-2xl border border-[rgba(74,155,127,0.24)] bg-[rgba(74,155,127,0.10)] px-4 py-3 text-sm text-[var(--text)]">
                     {reportGenerationMessage}
                   </p>
                 ) : null}
+
+                <div className="mt-6 space-y-6">
+                  {investorCategories.map((category) => {
+                    const categoryUpdates = investorUpdatesByCategory[category.id];
+                    const newDraft = newInvestorUpdateDrafts[category.id];
+
+                    return (
+                      <article
+                        key={category.id}
+                        className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
+                      >
+                        <div className="flex flex-wrap items-end justify-between gap-4">
+                          <div>
+                            <p className="eyebrow">{category.label}</p>
+                            <h3 className="mt-3 text-3xl text-[var(--text)]">{category.label}</h3>
+                            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                              {category.description}
+                            </p>
+                          </div>
+                          <p className="text-sm text-[var(--text-muted)]">
+                            {categoryUpdates.length} item{categoryUpdates.length === 1 ? '' : 's'}
+                          </p>
+                        </div>
+
+                        <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                          <p className="eyebrow text-[10px]">New entry</p>
+                          <h4 className="mt-3 text-2xl text-[var(--text)]">Add investor update</h4>
+
+                          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Title</span>
+                              <input
+                                className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                onChange={(event) =>
+                                  updateNewInvestorUpdateDraft(category.id, { title: event.target.value })
+                                }
+                                placeholder="Enter an investor-facing title"
+                                type="text"
+                                value={newDraft.title}
+                              />
+                            </label>
+
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Link (optional)</span>
+                              <input
+                                className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                onChange={(event) =>
+                                  updateNewInvestorUpdateDraft(category.id, { href: event.target.value })
+                                }
+                                placeholder="https://..."
+                                type="url"
+                                value={newDraft.href}
+                              />
+                            </label>
+
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                              <span className="eyebrow text-[10px]">Summary</span>
+                              <textarea
+                                className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                onChange={(event) =>
+                                  updateNewInvestorUpdateDraft(category.id, { summary: event.target.value })
+                                }
+                                placeholder="Write the investor update summary"
+                                value={newDraft.summary}
+                              />
+                            </label>
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm text-[var(--text-muted)]">
+                              New entries are appended to the end of this module.
+                            </p>
+                            <button
+                              className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={newDraft.isSubmitting}
+                              onClick={() => void handleCreateInvestorUpdate(category.id)}
+                              type="button"
+                            >
+                              {newDraft.isSubmitting ? 'Adding...' : 'Add update'}
+                            </button>
+                          </div>
+
+                          {newDraft.error ? (
+                            <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                              {newDraft.error}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        {categoryUpdates.length === 0 ? (
+                          <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                            No investor updates in this module yet.
+                          </div>
+                        ) : (
+                          <div className="mt-6 space-y-4">
+                            {categoryUpdates.map((update, index) => {
+                              const draft = getInvestorUpdateDraft(update);
+                              const isSaving = draft.isSubmitting;
+                              const isDeleting = activeEventActionKey === `investor-delete-${update.id}`;
+                              const isMoving = activeEventActionKey === `investor-move-${update.id}`;
+
+                              return (
+                                <article
+                                  key={update.id}
+                                  className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]"
+                                >
+                                  <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                      <p className="eyebrow text-[10px]">
+                                        Position {index + 1} · {formatDate(update.updatedAt)}
+                                      </p>
+                                      <h4 className="mt-3 text-2xl text-[var(--text)]">{update.title}</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={index === 0 || isMoving}
+                                        onClick={() => void handleMoveInvestorUpdate(category.id, update.id, -1)}
+                                        type="button"
+                                      >
+                                        Up
+                                      </button>
+                                      <button
+                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={index === categoryUpdates.length - 1 || isMoving}
+                                        onClick={() => void handleMoveInvestorUpdate(category.id, update.id, 1)}
+                                        type="button"
+                                      >
+                                        Down
+                                      </button>
+                                      <button
+                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={isSaving}
+                                        onClick={() => void handleSaveInvestorUpdate(update)}
+                                        type="button"
+                                      >
+                                        {isSaving ? 'Saving...' : 'Save'}
+                                      </button>
+                                      <button
+                                        className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={isDeleting}
+                                        onClick={() => void handleDeleteInvestorUpdate(update)}
+                                        type="button"
+                                      >
+                                        {isDeleting ? 'Deleting...' : 'Delete'}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                      <span className="eyebrow text-[10px]">Title</span>
+                                      <input
+                                        className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                        onChange={(event) =>
+                                          updateInvestorUpdateDraft(update.id, { title: event.target.value })
+                                        }
+                                        type="text"
+                                        value={draft.title}
+                                      />
+                                    </label>
+
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                      <span className="eyebrow text-[10px]">Link (optional)</span>
+                                      <input
+                                        className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                        onChange={(event) =>
+                                          updateInvestorUpdateDraft(update.id, { href: event.target.value })
+                                        }
+                                        type="url"
+                                        value={draft.href}
+                                      />
+                                    </label>
+
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                                      <span className="eyebrow text-[10px]">Summary</span>
+                                      <textarea
+                                        className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                        onChange={(event) =>
+                                          updateInvestorUpdateDraft(update.id, { summary: event.target.value })
+                                        }
+                                        value={draft.summary}
+                                      />
+                                    </label>
+                                  </div>
+
+                                  {draft.error ? (
+                                    <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                      {draft.error}
+                                    </p>
+                                  ) : null}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
 
                 <AdminReportCenter
                   activeRegenerateKey={activeReportRegenerateKey}
@@ -1535,6 +2053,7 @@ export default function AdminPage() {
                   </div>
                 )}
               </section>
+              ) : null}
             </div>
           )}
         </div>

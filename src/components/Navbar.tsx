@@ -14,6 +14,7 @@ export default function Navbar() {
   const isInvestor = user?.memberType === 'investor';
 
   const navLinks = [
+    { label: t('Investment', '投資資訊'), href: '/investment' },
     { label: t('Contact', '聯絡'), href: '#contact' },
   ];
 
@@ -69,8 +70,16 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
-            {isHome &&
-              navLinks.map((link) => (
+            {navLinks.map((link) =>
+              link.href.startsWith('/') ? (
+                <Link
+                  key={`${link.href}-${link.label}`}
+                  to={link.href}
+                  className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+                >
+                  {link.label}
+                </Link>
+              ) : isHome ? (
                 <a
                   key={`${link.href}-${link.label}`}
                   href={link.href}
@@ -78,7 +87,8 @@ export default function Navbar() {
                 >
                   {link.label}
                 </a>
-              ))}
+              ) : null
+            )}
 
             {isLoading ? (
               <span className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
@@ -165,8 +175,17 @@ export default function Navbar() {
       {isOpen && (
         <div className="border-t border-[var(--line)] bg-[rgba(238,246,255,0.94)] md:hidden">
           <div className="container-max space-y-2 px-4 py-4 sm:px-6">
-            {isHome &&
-              navLinks.map((link) => (
+            {navLinks.map((link) =>
+              link.href.startsWith('/') ? (
+                <Link
+                  key={`${link.href}-${link.label}`}
+                  to={link.href}
+                  className="block rounded-lg px-3 py-3 text-sm text-[var(--text-muted)] transition-colors hover:bg-[rgba(243,238,228,0.04)] hover:text-[var(--text)]"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ) : isHome ? (
                 <a
                   key={`${link.href}-${link.label}`}
                   href={link.href}
@@ -175,7 +194,8 @@ export default function Navbar() {
                 >
                   {link.label}
                 </a>
-              ))}
+              ) : null
+            )}
 
             {isAuthenticated &&
               privateLinks.map((link) => (
