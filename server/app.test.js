@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import { createHash } from 'crypto';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
 import { createDatabase } from './db.js';
 
@@ -13,7 +13,6 @@ function createTestConfig() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'crystal-auth-test-'));
 
   return {
-    reportStorageDirectory: path.join(root, 'investment-reports'),
     uploadTempDirectory: path.join(root, 'tmp'),
     processedVideosDirectory: path.join(root, 'videos'),
     publicVideosBasePath: '/uploads/videos',
@@ -23,7 +22,6 @@ function createTestConfig() {
     resetPasswordUrlBase: 'https://www.crystalhuangdance.org/reset-password',
     emailFromAddress: 'noreply@crystalhuangdance.org',
     resendApiKey: 'test-resend-api-key',
-    cronSecret: 'test-cron-secret',
     maxVideoDurationSeconds: 300,
     targetVideoSizeBytes: 19 * 1024 * 1024,
     maxAllowedVideoSizeBytes: 20 * 1024 * 1024,
@@ -103,18 +101,12 @@ describe('auth and video backend foundation', () => {
   let sentResetEmails;
   let currentTime;
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
   beforeEach(() => {
     db = createDatabase(':memory:');
     config = createTestConfig();
     sentResetEmails = [];
     currentTime = new Date('2026-06-06T19:00:00.000Z');
     fs.mkdirSync(config.uploadTempDirectory, { recursive: true });
-    fs.mkdirSync(config.reportStorageDirectory, { recursive: true });
     fs.mkdirSync(config.processedVideosDirectory, { recursive: true });
     fs.mkdirSync(config.frontendDistDirectory, { recursive: true });
     fs.writeFileSync(
@@ -147,7 +139,6 @@ describe('auth and video backend foundation', () => {
       id: 1,
       email: 'crystal@example.com',
       role: 'user',
-      memberType: 'dancer',
     });
 
     const meResponse = await agent.get('/api/auth/me');
@@ -158,7 +149,6 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
-        memberType: 'dancer',
       },
     });
 
@@ -170,7 +160,6 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
-        memberType: 'dancer',
       },
     });
 
@@ -178,7 +167,6 @@ describe('auth and video backend foundation', () => {
       id: 1,
       email: 'crystal@example.com',
       role: 'user',
-      memberType: 'dancer',
     });
 
     const logoutResponse = await agent.post('/api/auth/logout');
@@ -197,31 +185,7 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
-        memberType: 'dancer',
       },
-    });
-  });
-
-  it('returns the default member type for newly registered users', async () => {
-    const agent = request.agent(app);
-
-    const response = await agent.post('/api/auth/register').send({
-      email: 'investor-default@example.com',
-      password: 'password123',
-    });
-
-    expect(response.status).toBe(201);
-    expect(response.body.user).toEqual({
-      id: 1,
-      email: 'investor-default@example.com',
-      role: 'user',
-      memberType: 'dancer',
-    });
-
-    expect(db.findUserByEmail('investor-default@example.com')).toMatchObject({
-      email: 'investor-default@example.com',
-      role: 'user',
-      memberType: 'dancer',
     });
   });
 
@@ -859,6 +823,73 @@ describe('auth and video backend foundation', () => {
     ]);
   });
 
+  it('lists featured reels publicly and lets admins manage them by placement', async () => {
+    const publicResponse = await request(app).get('/api/featured-reels');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.reels.length).toBeGreaterThan(0);
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createResponse = await adminAgent.post('/api/admin/featured-reels').send({
+      placement: 'supporting',
+      youtubeId: 'abc123xyz99',
+      videoSrc: '',
+      metaLabel: 'Test Event · 2026',
+      metaLabelZh: '測試活動 · 2026',
+      title: 'Test Supporting Reel',
+      titleZh: '測試支援影片',
+      description: 'English description',
+      descriptionZh: '中文描述',
+      thumbnail: '/test-thumbnail.png',
+    });
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.reel).toMatchObject({
+      placement: 'supporting',
+      title: 'Test Supporting Reel',
+    });
+
+    const createdId = createResponse.body.reel.id;
+    const updateResponse = await adminAgent.put(`/api/admin/featured-reels/${createdId}`).send({
+      placement: 'featured',
+      youtubeId: '',
+      videoSrc: '/local-test.mp4',
+      metaLabel: 'Updated Event · 2026',
+      metaLabelZh: '更新活動 · 2026',
+      title: 'Updated Featured Reel',
+      titleZh: '更新主影片',
+      description: 'Updated English description',
+      descriptionZh: '更新中文描述',
+      thumbnail: '/updated-thumbnail.png',
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.reel).toMatchObject({
+      id: createdId,
+      placement: 'featured',
+      videoSrc: '/local-test.mp4',
+      youtubeId: null,
+    });
+
+    const featuredIds = db
+      .listFeaturedReels()
+      .filter((entry) => entry.placement === 'featured')
+      .map((entry) => entry.id);
+    const reorderedFeaturedIds = [...featuredIds].reverse();
+    const reorderResponse = await adminAgent.post('/api/admin/featured-reels/reorder').send({
+      placement: 'featured',
+      orderedIds: reorderedFeaturedIds,
+    });
+    expect(reorderResponse.status).toBe(200);
+    expect(reorderResponse.body.reels.map((entry) => entry.id)).toEqual(reorderedFeaturedIds);
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/featured-reels/${createdId}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ deletedReelId: createdId });
+    expect(db.findFeaturedReelById(createdId)).toBeNull();
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({
@@ -946,14 +977,12 @@ describe('auth and video backend foundation', () => {
           id: adminUser.id,
           email: 'admin@example.com',
           role: 'admin',
-          memberType: 'dancer',
           uploadCount: 1,
         }),
         expect.objectContaining({
           id: memberUser.id,
           email: 'member@example.com',
           role: 'user',
-          memberType: 'dancer',
           uploadCount: 1,
         }),
       ])
@@ -979,1106 +1008,6 @@ describe('auth and video backend foundation', () => {
         },
       }),
     ]);
-  });
-
-  it('lets an admin update a member type between dancer and investor', async () => {
-    const adminAgent = request.agent(app);
-    const userAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-    const createdUser = await registerUser(userAgent, 'jennifer@example.com');
-
-    const response = await adminAgent
-      .patch(`/api/admin/users/${createdUser.id}/member-type`)
-      .send({
-        memberType: 'investor',
-      });
-
-    expect(response.status).toBe(200);
-    expect(response.body.user).toEqual({
-      id: createdUser.id,
-      email: 'jennifer@example.com',
-      role: 'user',
-      memberType: 'investor',
-    });
-
-    expect(db.findUserByEmail('jennifer@example.com')).toMatchObject({
-      email: 'jennifer@example.com',
-      memberType: 'investor',
-    });
-  });
-
-  it('rejects unsupported member type values', async () => {
-    const adminAgent = request.agent(app);
-    const userAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-    const createdUser = await registerUser(userAgent, 'bad-role@example.com');
-
-    const response = await adminAgent
-      .patch(`/api/admin/users/${createdUser.id}/member-type`)
-      .send({
-        memberType: 'vip',
-      });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toMatch(/member type/i);
-  });
-
-  it('lets an admin create a portfolio for an investor and read it back', async () => {
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-
-    const createResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.body.portfolio).toMatchObject({
-      userId: promotedUser.id,
-      displayName: 'Jennifer Portfolio',
-      baseCurrency: 'USD',
-    });
-
-    const getResponse = await adminAgent.get(`/api/admin/investors/${promotedUser.id}/portfolio`);
-
-    expect(getResponse.status).toBe(200);
-    expect(getResponse.body.portfolio).toMatchObject({
-      userId: promotedUser.id,
-      displayName: 'Jennifer Portfolio',
-      baseCurrency: 'USD',
-    });
-  });
-
-  it('lets an admin add a buy transaction and exposes calculated holdings to the investor', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-
-    const transactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-        notes: 'Initial BTC position',
-      });
-
-    expect(transactionResponse.status).toBe(201);
-
-    const investmentResponse = await investorAgent.get('/api/investment/me');
-
-    expect(investmentResponse.status).toBe(200);
-    expect(investmentResponse.body.summary).toMatchObject({
-      totalInvested: 5000,
-      portfolioValue: 5400,
-      unrealizedPnL: 400,
-      totalReturnPercent: 8,
-    });
-    expect(investmentResponse.body.holdings).toEqual([
-      expect.objectContaining({
-        assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
-        quantity: 0.1,
-        invested: 5000,
-        averageCost: 50000,
-        currentPrice: 54000,
-        currentValue: 5400,
-        unrealizedPnL: 400,
-        allocationPercent: 100,
-      }),
-    ]);
-    expect(investmentResponse.body.transactions).toEqual([
-      expect.objectContaining({
-        assetSymbol: 'BTC',
-        assetName: 'Bitcoin',
-        amountInvested: 5000,
-        purchasePrice: 50000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-      }),
-    ]);
-  });
-
-  it('includes live prices and a last-updated timestamp in the investor snapshot', async () => {
-    const mockedPriceTime = '2026-06-19T16:00:00.000Z';
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-        ETH: 2500,
-      }),
-      getInvestmentPricesLastUpdatedAt: () => mockedPriceTime,
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    const createPortfolioResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-    expect(createPortfolioResponse.status).toBe(201);
-
-    const createTransactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-      });
-    expect(createTransactionResponse.status).toBe(201);
-
-    const response = await investorAgent.get('/api/investment/me');
-
-    expect(response.status).toBe(200);
-    expect(response.body.livePrices).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          assetSymbol: 'BTC',
-          assetName: 'Bitcoin',
-          currentPrice: 54000,
-        }),
-      ])
-    );
-    expect(response.body.pricesLastUpdatedAt).toBe(mockedPriceTime);
-  });
-
-  it('returns seeded monthly portfolio performance values for investors', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    const createPortfolioResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-    expect(createPortfolioResponse.status).toBe(201);
-
-    const createTransactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      });
-    expect(createTransactionResponse.status).toBe(201);
-
-    const response = await investorAgent.get('/api/investment/me');
-
-    expect(response.status).toBe(200);
-    expect(response.body.monthlyPerformance).toEqual([
-      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
-      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
-      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
-      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
-      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
-      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
-      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
-      { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
-      { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
-      { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
-      { month: '2026-04', label: 'Apr 2026', portfolioValue: 32263.08 },
-      { month: '2026-05', label: 'May 2026', portfolioValue: 34855.04 },
-    ]);
-  });
-
-  it('seeds monthly performance once and appends the latest completed month snapshot', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 60000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    const createPortfolioResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-    expect(createPortfolioResponse.status).toBe(201);
-
-    const createTransactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      });
-    expect(createTransactionResponse.status).toBe(201);
-
-    const firstResponse = await investorAgent.get('/api/investment/me');
-    const secondResponse = await investorAgent.get('/api/investment/me');
-
-    expect(firstResponse.status).toBe(200);
-    expect(secondResponse.status).toBe(200);
-    expect(firstResponse.body.monthlyPerformance).toEqual([
-      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
-      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
-      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
-      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
-      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
-      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
-      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
-      { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
-      { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
-      { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
-      { month: '2026-04', label: 'Apr 2026', portfolioValue: 32263.08 },
-      { month: '2026-05', label: 'May 2026', portfolioValue: 34855.04 },
-      { month: '2026-06', label: 'Jun 2026', portfolioValue: 6000 },
-    ]);
-    expect(secondResponse.body.monthlyPerformance).toEqual(firstResponse.body.monthlyPerformance);
-  });
-
-  it('lists and downloads saved monthly reports for the logged-in investor', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 60000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'investor@example.com');
-    db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'investor@example.com');
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
-      .send({ displayName: 'Investor Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    const generateResponse = await adminAgent
-      .post('/api/admin/investment/reports/generate-latest')
-      .send({});
-
-    expect(generateResponse.status).toBe(200);
-    expect(generateResponse.body.monthKey).toBe('2026-06');
-
-    const listResponse = await investorAgent.get('/api/investment/me/reports');
-    expect(listResponse.status).toBe(200);
-    expect(listResponse.body.reports).toEqual([
-      expect.objectContaining({
-        monthKey: '2026-06',
-        label: 'Jun 2026',
-        status: 'ready',
-      }),
-    ]);
-
-    const downloadResponse = await investorAgent.get('/api/investment/me/reports/2026-06/download');
-    expect(downloadResponse.status).toBe(200);
-    expect(downloadResponse.headers['content-type']).toContain('application/pdf');
-    expect(downloadResponse.headers['content-disposition']).toContain('.pdf');
-  });
-
-  it('lists saved investor reports for admins across multiple portfolios', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async () => {},
-      getInvestmentPrices: async () => ({ BTC: 60000 }),
-    });
-
-    const adminAgent = request.agent(app);
-    const firstInvestorAgent = request.agent(app);
-    const secondInvestorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const firstCreatedUser = await registerUser(firstInvestorAgent, 'jennifer@example.com');
-    db.setUserMemberTypeById(firstCreatedUser.id, 'investor');
-    const secondCreatedUser = await registerUser(secondInvestorAgent, 'marco@example.com');
-    db.setUserMemberTypeById(secondCreatedUser.id, 'investor');
-
-    await adminAgent
-      .post(`/api/admin/investors/${firstCreatedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${firstCreatedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${secondCreatedUser.id}/portfolio`)
-      .send({ displayName: 'Marco Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${secondCreatedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'ETH',
-        amountInvested: 7000,
-        purchaseShares: 2,
-        purchaseDate: '2026-05-18',
-      })
-      .expect(201);
-
-    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
-
-    const response = await adminAgent.get('/api/admin/investment/reports').expect(200);
-
-    expect(response.body.reports).toHaveLength(2);
-    expect(response.body.reports).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          investorEmail: 'jennifer@example.com',
-          portfolioDisplayName: 'Jennifer Portfolio',
-          monthKey: '2026-06',
-          status: 'ready',
-        }),
-        expect.objectContaining({
-          investorEmail: 'marco@example.com',
-          portfolioDisplayName: 'Marco Portfolio',
-          monthKey: '2026-06',
-          status: 'ready',
-        }),
-      ])
-    );
-  });
-
-  it('lets admins save investor-facing and admin-only notes on a monthly report', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async () => {},
-      getInvestmentPrices: async () => ({ BTC: 60000 }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
-    const adminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
-    const savedReport = adminReportList.body.reports.find((report) => report.monthKey === '2026-06');
-    expect(savedReport).toBeDefined();
-
-    const updateResponse = await adminAgent
-      .patch(`/api/admin/investment/reports/2026-06/${savedReport.id}`)
-      .send({
-        investorNote: 'Stayed patient during June volatility.',
-        adminNote: 'Review ETH sizing before next rebalance.',
-      })
-      .expect(200);
-
-    expect(updateResponse.body.report).toEqual(
-      expect.objectContaining({
-        investorNote: 'Stayed patient during June volatility.',
-        adminNote: 'Review ETH sizing before next rebalance.',
-      })
-    );
-
-    const refreshedAdminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
-    expect(refreshedAdminReportList.body.reports).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: savedReport.id,
-          monthKey: '2026-06',
-          investorNote: 'Stayed patient during June volatility.',
-          adminNote: 'Review ETH sizing before next rebalance.',
-        }),
-      ])
-    );
-
-    const investorReportList = await investorAgent.get('/api/investment/me/reports').expect(200);
-    expect(investorReportList.body.reports).toEqual([
-      expect.objectContaining({
-        investorNote: 'Stayed patient during June volatility.',
-      }),
-    ]);
-    expect(investorReportList.body.reports[0].adminNote).toBeUndefined();
-  });
-
-  it('lets admins regenerate a specific saved month report', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async () => {},
-      getInvestmentPrices: async () => ({ BTC: 60000 }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    db.setUserMemberTypeById(createdUser.id, 'investor');
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    await adminAgent.post('/api/admin/investment/reports/generate-latest').send({}).expect(200);
-    const adminReportList = await adminAgent.get('/api/admin/investment/reports').expect(200);
-    const savedReport = adminReportList.body.reports.find((report) => report.monthKey === '2026-06');
-    expect(savedReport).toBeDefined();
-
-    const response = await adminAgent
-      .post(`/api/admin/investment/reports/2026-06/${savedReport.id}/regenerate`)
-      .send({})
-      .expect(200);
-
-    expect(response.body.report).toEqual(
-      expect.objectContaining({
-        monthKey: '2026-06',
-        status: 'ready',
-      })
-    );
-  });
-
-  it('regenerates the latest completed month report idempotently', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 60000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'investor@example.com');
-    db.setUserMemberTypeById(createdUser.id, 'investor');
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
-      .send({ displayName: 'Investor Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    const firstRun = await adminAgent.post('/api/admin/investment/reports/generate-latest').send({});
-    const secondRun = await adminAgent.post('/api/admin/investment/reports/generate-latest').send({});
-
-    expect(firstRun.status).toBe(200);
-    expect(secondRun.status).toBe(200);
-    expect(secondRun.body.summary.updated + secondRun.body.summary.generated).toBeGreaterThanOrEqual(1);
-  });
-
-  it('allows the internal cron endpoint to generate the latest reports with the shared secret', async () => {
-    currentTime = new Date('2026-07-10T12:00:00.000Z');
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 60000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'investor@example.com');
-    db.setUserMemberTypeById(createdUser.id, 'investor');
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio`)
-      .send({ displayName: 'Investor Portfolio' })
-      .expect(201);
-
-    await adminAgent
-      .post(`/api/admin/investors/${createdUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      })
-      .expect(201);
-
-    await request(app)
-      .post('/internal/jobs/investment-reports/generate-latest')
-      .set('x-cron-secret', 'test-cron-secret')
-      .send({})
-      .expect(200)
-      .expect(({ body }) => {
-        expect(body.monthKey).toBe('2026-06');
-        expect(body.summary.generated + body.summary.updated).toBeGreaterThanOrEqual(1);
-      });
-  });
-
-  it('backfills missing seeded months for portfolios that were initialized before the 2025 history was added', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    const portfolio = db.createInvestmentPortfolio({
-      userId: promotedUser.id,
-      displayName: 'Jennifer Portfolio',
-    });
-
-    for (const seed of [
-      { month: '2026-01', portfolioValue: 45283.78, snapshotDate: '2026-01-31' },
-      { month: '2026-02', portfolioValue: 36456.4, snapshotDate: '2026-02-28' },
-      { month: '2026-03', portfolioValue: 31754.3, snapshotDate: '2026-03-31' },
-      { month: '2026-04', portfolioValue: 32263.08, snapshotDate: '2026-04-30' },
-      { month: '2026-05', portfolioValue: 34855.04, snapshotDate: '2026-05-31' },
-    ]) {
-      db.upsertInvestmentMonthlyHistory({
-        portfolioId: portfolio.id,
-        month: seed.month,
-        portfolioValue: seed.portfolioValue,
-        snapshotDate: seed.snapshotDate,
-      });
-    }
-
-    const createTransactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-05-12',
-      });
-    expect(createTransactionResponse.status).toBe(201);
-
-    const response = await investorAgent.get('/api/investment/me');
-
-    expect(response.status).toBe(200);
-    expect(response.body.monthlyPerformance).toEqual([
-      { month: '2025-06', label: 'Jun 2025', portfolioValue: 50004.88 },
-      { month: '2025-07', label: 'Jul 2025', portfolioValue: 49345.13 },
-      { month: '2025-08', label: 'Aug 2025', portfolioValue: 61851.85 },
-      { month: '2025-09', label: 'Sep 2025', portfolioValue: 68851.62 },
-      { month: '2025-10', label: 'Oct 2025', portfolioValue: 69919.95 },
-      { month: '2025-11', label: 'Nov 2025', portfolioValue: 60918.19 },
-      { month: '2025-12', label: 'Dec 2025', portfolioValue: 44607.51 },
-      { month: '2026-01', label: 'Jan 2026', portfolioValue: 45283.78 },
-      { month: '2026-02', label: 'Feb 2026', portfolioValue: 36456.4 },
-      { month: '2026-03', label: 'Mar 2026', portfolioValue: 31754.3 },
-      { month: '2026-04', label: 'Apr 2026', portfolioValue: 32263.08 },
-      { month: '2026-05', label: 'May 2026', portfolioValue: 34855.04 },
-    ]);
-  });
-
-  it('keeps the investor snapshot available when live price fetching fails', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => {
-        throw new Error('CoinGecko unavailable');
-      },
-      getInvestmentPricesLastUpdatedAt: () => null,
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    const createPortfolioResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-    expect(createPortfolioResponse.status).toBe(201);
-
-    const createTransactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-      });
-    expect(createTransactionResponse.status).toBe(201);
-
-    const response = await investorAgent.get('/api/investment/me');
-
-    expect(response.status).toBe(200);
-    expect(response.body.livePrices).toEqual([]);
-    expect(response.body.pricesLastUpdatedAt).toBeNull();
-    expect(response.body.summary).toEqual({
-      totalInvested: 5000,
-      portfolioValue: 5000,
-      unrealizedPnL: 0,
-      totalReturnPercent: 0,
-    });
-    expect(response.body.holdings).toEqual([
-      expect.objectContaining({
-        assetSymbol: 'BTC',
-        currentPrice: 50000,
-        currentValue: 5000,
-        unrealizedPnL: 0,
-        allocationPercent: 100,
-      }),
-    ]);
-  });
-
-  it('times out hung CoinGecko requests and returns the investor snapshot without fake losses', async () => {
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = vi.fn((_url, options = {}) => {
-      const { signal } = options;
-
-      return new Promise((_resolve, reject) => {
-        signal?.addEventListener(
-          'abort',
-          () => {
-            const abortError = new Error('The operation was aborted.');
-            abortError.name = 'AbortError';
-            reject(abortError);
-          },
-          { once: true }
-        );
-      });
-    });
-
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      investmentPriceFetchTimeoutMs: 20,
-    });
-
-    try {
-      const adminAgent = request.agent(app);
-      const investorAgent = request.agent(app);
-
-      await registerUser(adminAgent, 'admin@example.com');
-      promoteUserToAdmin(db, 'admin@example.com');
-      await loginUser(adminAgent, 'admin@example.com');
-
-      const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-      const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-      await loginUser(investorAgent, 'jennifer@example.com');
-
-      const createPortfolioResponse = await adminAgent
-        .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-        .send({ displayName: 'Jennifer Portfolio' });
-      expect(createPortfolioResponse.status).toBe(201);
-
-      const createTransactionResponse = await adminAgent
-        .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-        .send({
-          assetSymbol: 'BTC',
-          amountInvested: 5000,
-          purchaseShares: 0.1,
-          purchaseDate: '2026-06-01',
-        });
-      expect(createTransactionResponse.status).toBe(201);
-
-      const response = await investorAgent.get('/api/investment/me');
-
-      expect(response.status).toBe(200);
-      expect(response.body.livePrices).toEqual([]);
-      expect(response.body.pricesLastUpdatedAt).toBeNull();
-      expect(response.body.summary).toEqual({
-        totalInvested: 5000,
-        portfolioValue: 5000,
-        unrealizedPnL: 0,
-        totalReturnPercent: 0,
-      });
-      expect(response.body.holdings).toEqual([
-        expect.objectContaining({
-          assetSymbol: 'BTC',
-          currentPrice: 50000,
-          currentValue: 5000,
-          unrealizedPnL: 0,
-        }),
-      ]);
-      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-      expect(globalThis.fetch.mock.calls[0][1]).toEqual(
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-        })
-      );
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-  });
-
-  it('rejects transaction mutation requests from investor users', async () => {
-    const investorAgent = request.agent(app);
-    const ownerAgent = request.agent(app);
-
-    const actingInvestor = await registerUser(investorAgent, 'investor-one@example.com');
-    const targetInvestor = await registerUser(ownerAgent, 'investor-two@example.com');
-
-    db.setUserMemberTypeById(actingInvestor.id, 'investor');
-    const promotedTarget = db.setUserMemberTypeById(targetInvestor.id, 'investor');
-
-    const response = await investorAgent
-      .post(`/api/admin/investors/${promotedTarget.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-      });
-
-    expect(response.status).toBe(403);
-    expect(response.body.error).toMatch(/admin/i);
-  });
-
-  it('lets an admin edit a buy transaction and recalculates the investor snapshot', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-
-    const transactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-        notes: 'Initial BTC position',
-      });
-
-    const transactionId = transactionResponse.body.transaction.id;
-
-    const updateResponse = await adminAgent
-      .patch(`/api/admin/portfolio-transactions/${transactionId}`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 6000,
-        purchasePrice: 60000,
-        purchaseDate: '2026-06-02',
-        notes: 'Updated BTC position',
-      });
-
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body.transaction).toMatchObject({
-      id: transactionId,
-      amountInvested: 6000,
-      purchasePrice: 60000,
-      purchaseShares: 0.1,
-      purchaseDate: '2026-06-02',
-      notes: 'Updated BTC position',
-    });
-
-    const investmentResponse = await investorAgent.get('/api/investment/me');
-
-    expect(investmentResponse.status).toBe(200);
-    expect(investmentResponse.body.summary).toMatchObject({
-      totalInvested: 6000,
-      portfolioValue: 5400,
-      unrealizedPnL: -600,
-      totalReturnPercent: -10,
-    });
-    expect(investmentResponse.body.transactions).toEqual([
-      expect.objectContaining({
-        id: transactionId,
-        amountInvested: 6000,
-        purchasePrice: 60000,
-        purchaseDate: '2026-06-02',
-      }),
-    ]);
-  });
-
-  it('lets an admin delete a buy transaction and removes it from the investor snapshot', async () => {
-    app = createApp({
-      db,
-      sessionSecret: 'test-session-secret',
-      config,
-      now: () => currentTime,
-      sendPasswordResetEmail: async (payload) => {
-        sentResetEmails.push(payload);
-      },
-      getInvestmentPrices: async () => ({
-        BTC: 54000,
-      }),
-    });
-
-    const adminAgent = request.agent(app);
-    const investorAgent = request.agent(app);
-
-    await registerUser(adminAgent, 'admin@example.com');
-    promoteUserToAdmin(db, 'admin@example.com');
-    await loginUser(adminAgent, 'admin@example.com');
-
-    const createdUser = await registerUser(investorAgent, 'jennifer@example.com');
-    const promotedUser = db.setUserMemberTypeById(createdUser.id, 'investor');
-    await loginUser(investorAgent, 'jennifer@example.com');
-
-    await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio`)
-      .send({ displayName: 'Jennifer Portfolio' });
-
-    const transactionResponse = await adminAgent
-      .post(`/api/admin/investors/${promotedUser.id}/portfolio/transactions`)
-      .send({
-        assetSymbol: 'BTC',
-        amountInvested: 5000,
-        purchaseShares: 0.1,
-        purchaseDate: '2026-06-01',
-      });
-
-    const transactionId = transactionResponse.body.transaction.id;
-
-    const deleteResponse = await adminAgent.delete(`/api/admin/portfolio-transactions/${transactionId}`);
-
-    expect(deleteResponse.status).toBe(200);
-    expect(deleteResponse.body).toEqual({ deletedTransactionId: transactionId });
-
-    const investmentResponse = await investorAgent.get('/api/investment/me');
-
-    expect(investmentResponse.status).toBe(200);
-    expect(investmentResponse.body.summary).toMatchObject({
-      totalInvested: 0,
-      portfolioValue: 0,
-      unrealizedPnL: 0,
-      totalReturnPercent: 0,
-    });
-    expect(investmentResponse.body.holdings).toEqual([]);
-    expect(investmentResponse.body.transactions).toEqual([]);
   });
 
   it('deletes a single video and removes its processed file for admins', async () => {

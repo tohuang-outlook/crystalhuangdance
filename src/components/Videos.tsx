@@ -2,15 +2,41 @@ import { useEffect, useRef, useState } from 'react';
 import { Play } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { reelVideos } from '../data/reels';
+import { fetchFeaturedReels } from '../services/featuredReels';
 
 export default function Videos() {
   const { t } = useLanguage();
+  const [videos, setVideos] = useState(reelVideos);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const featuredVideos = reelVideos.filter((video) => video.placement === 'featured');
-  const supportingVideos = reelVideos.filter((video) => video.placement === 'supporting');
-  const activeVideoData = reelVideos.find((video) => video.id === activeVideo) ?? null;
+  const featuredVideos = videos.filter((video) => video.placement === 'featured');
+  const supportingVideos = videos.filter((video) => video.placement === 'supporting');
+  const activeVideoData = videos.find((video) => video.id === activeVideo) ?? null;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFeaturedReels = async () => {
+      try {
+        const response = await fetchFeaturedReels();
+
+        if (!isMounted || response.length === 0) {
+          return;
+        }
+
+        setVideos(response);
+      } catch {
+        // Fall back to static data when the admin-managed feed is unavailable.
+      }
+    };
+
+    void loadFeaturedReels();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeVideo) return;

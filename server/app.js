@@ -1,12 +1,10 @@
 import bcrypt from 'bcryptjs';
-import { AsyncLocalStorage } from 'async_hooks';
 import { createHash, randomBytes } from 'crypto';
 import express from 'express';
 import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
-import { buildInvestmentReportFilename, createInvestmentReportPdfDocument } from './investment-report-pdf.js';
 import { processUploadedVideo } from './video-processing.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,50 +21,18 @@ const allowedMimeTypes = new Set([
   'video/avi',
 ]);
 const inviteCodePattern = /^\d{6}$/;
-const allowedMemberTypes = new Set(['dancer', 'investor']);
-const investmentAssetNamesBySymbol = {
-  BTC: 'Bitcoin',
-  ETH: 'Ethereum',
-  ADA: 'Cardano',
-  XRP: 'XRP',
-  SOL: 'Solana',
-  DOGE: 'Dogecoin',
-};
-const investmentAssetIdsBySymbol = {
-  BTC: 'bitcoin',
-  ETH: 'ethereum',
-  ADA: 'cardano',
-  XRP: 'ripple',
-  SOL: 'solana',
-  DOGE: 'dogecoin',
-};
-const seededInvestmentMonthlyPerformance = [
-  { month: '2025-06', portfolioValue: 50004.88, snapshotDate: '2025-06-30' },
-  { month: '2025-07', portfolioValue: 49345.13, snapshotDate: '2025-07-31' },
-  { month: '2025-08', portfolioValue: 61851.85, snapshotDate: '2025-08-31' },
-  { month: '2025-09', portfolioValue: 68851.62, snapshotDate: '2025-09-30' },
-  { month: '2025-10', portfolioValue: 69919.95, snapshotDate: '2025-10-31' },
-  { month: '2025-11', portfolioValue: 60918.19, snapshotDate: '2025-11-30' },
-  { month: '2025-12', portfolioValue: 44607.51, snapshotDate: '2025-12-31' },
-  { month: '2026-01', portfolioValue: 45283.78, snapshotDate: '2026-01-31' },
-  { month: '2026-02', portfolioValue: 36456.4, snapshotDate: '2026-02-28' },
-  { month: '2026-03', portfolioValue: 31754.3, snapshotDate: '2026-03-31' },
-  { month: '2026-04', portfolioValue: 32263.08, snapshotDate: '2026-04-30' },
-  { month: '2026-05', portfolioValue: 34855.04, snapshotDate: '2026-05-31' },
-];
-const investmentPricingFetchTimeoutMs = 5000;
 const investorUpdateCategories = new Set([
   'investment-page',
   'monthly-reports',
   'real-time-quote',
 ]);
+const featuredReelPlacements = new Set(['featured', 'supporting']);
 
 function toSafeUser(user) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
-    memberType: user.memberType,
   };
 }
 
@@ -101,18 +67,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function requireInvestor(req, res, next) {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (req.session.user.memberType !== 'investor') {
-    return res.status(403).json({ error: 'Investor access is required.' });
-  }
-
-  next();
-}
-
 function serializeVideo(video) {
   return {
     id: video.id,
@@ -134,7 +88,6 @@ function serializeAdminUser(user) {
     id: user.id,
     email: user.email,
     role: user.role,
-    memberType: user.memberType,
     uploadCount: user.uploadCount,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -178,582 +131,28 @@ function serializeInvestorUpdate(update) {
   };
 }
 
-function serializeInvestmentPortfolio(portfolio) {
+function serializeFeaturedReel(reel) {
   return {
-    id: portfolio.id,
-    userId: portfolio.userId,
-    baseCurrency: portfolio.baseCurrency,
-    displayName: portfolio.displayName,
-    notes: portfolio.notes,
-    createdAt: portfolio.createdAt,
-    updatedAt: portfolio.updatedAt,
+    id: reel.id,
+    placement: reel.placement,
+    youtubeId: reel.youtubeId,
+    videoSrc: reel.videoSrc,
+    metaLabel: reel.metaLabel,
+    metaLabelZh: reel.metaLabelZh,
+    title: reel.title,
+    titleZh: reel.titleZh,
+    description: reel.description,
+    descriptionZh: reel.descriptionZh,
+    thumbnail: reel.thumbnail,
+    sortOrder: reel.sortOrder,
+    createdAt: reel.createdAt,
+    updatedAt: reel.updatedAt,
   };
-}
-
-function serializeInvestmentTransaction(transaction) {
-  return {
-    id: transaction.id,
-    portfolioId: transaction.portfolioId,
-    assetSymbol: transaction.assetSymbol,
-    assetName: transaction.assetName,
-    transactionType: transaction.transactionType,
-    amountInvested: transaction.amountInvested,
-    purchasePrice: transaction.purchasePrice,
-    purchaseShares: transaction.purchaseShares,
-    purchaseDate: transaction.purchaseDate,
-    notes: transaction.notes,
-    createdAt: transaction.createdAt,
-    updatedAt: transaction.updatedAt,
-  };
-}
-
-function roundCurrency(value) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function roundQuantity(value) {
-  return Math.round((value + Number.EPSILON) * 100000000) / 100000000;
-}
-
-function buildPortfolioSnapshot(transactions, livePricesBySymbol) {
-  const holdingsMap = new Map();
-
-  for (const transaction of transactions) {
-    const key = transaction.assetSymbol;
-    const current = holdingsMap.get(key) ?? {
-      assetSymbol: transaction.assetSymbol,
-      assetName: transaction.assetName,
-      quantity: 0,
-      invested: 0,
-    };
-
-    current.quantity += Number(transaction.purchaseShares);
-    current.invested += Number(transaction.amountInvested);
-    holdingsMap.set(key, current);
-  }
-
-  const rawHoldings = Array.from(holdingsMap.values()).map((holding) => {
-    const averageCost = holding.quantity > 0 ? holding.invested / holding.quantity : 0;
-    const livePrice = Number(livePricesBySymbol[holding.assetSymbol]);
-    const hasLivePrice = Number.isFinite(livePrice);
-    const currentPrice = hasLivePrice ? livePrice : averageCost;
-    const currentValue = hasLivePrice ? holding.quantity * livePrice : holding.invested;
-    const unrealizedPnL = hasLivePrice ? currentValue - holding.invested : 0;
-
-    return {
-      assetSymbol: holding.assetSymbol,
-      assetName: holding.assetName,
-      quantity: roundQuantity(holding.quantity),
-      invested: roundCurrency(holding.invested),
-      averageCost: roundCurrency(averageCost),
-      currentPrice: roundCurrency(currentPrice),
-      currentValue: roundCurrency(currentValue),
-      unrealizedPnL: roundCurrency(unrealizedPnL),
-    };
-  });
-
-  const totalInvested = roundCurrency(
-    rawHoldings.reduce((sum, holding) => sum + holding.invested, 0)
-  );
-  const portfolioValue = roundCurrency(
-    rawHoldings.reduce((sum, holding) => sum + holding.currentValue, 0)
-  );
-  const unrealizedPnL = roundCurrency(portfolioValue - totalInvested);
-  const totalReturnPercent =
-    totalInvested > 0 ? roundCurrency((unrealizedPnL / totalInvested) * 100) : 0;
-
-  const holdings = rawHoldings.map((holding) => ({
-    ...holding,
-    allocationPercent:
-      portfolioValue > 0 ? roundCurrency((holding.currentValue / portfolioValue) * 100) : 0,
-  }));
-
-  return {
-    summary: {
-      totalInvested,
-      portfolioValue,
-      unrealizedPnL,
-      totalReturnPercent,
-    },
-    holdings,
-  };
-}
-
-function normalizeInvestmentSymbols(symbols = Object.keys(investmentAssetIdsBySymbol)) {
-  return [...new Set(symbols)].filter((symbol) => investmentAssetIdsBySymbol[symbol]);
-}
-
-function buildLivePrices(symbols, livePricesBySymbol) {
-  return normalizeInvestmentSymbols(symbols)
-    .map((assetSymbol) => {
-      const currentPrice = Number(livePricesBySymbol[assetSymbol]);
-
-      if (!Number.isFinite(currentPrice)) {
-        return null;
-      }
-
-      return {
-        assetSymbol,
-        assetName: investmentAssetNamesBySymbol[assetSymbol],
-        currentPrice: roundCurrency(currentPrice),
-      };
-    })
-    .filter(Boolean);
-}
-
-function formatMonthKeyFromDate(value) {
-  const year = value.getUTCFullYear();
-  const month = String(value.getUTCMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
-
-function formatMonthLabel(monthKey) {
-  const [year, month] = monthKey.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, 1));
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(date);
-}
-
-function getLastCompletedMonthKey(now = new Date()) {
-  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  date.setUTCMonth(date.getUTCMonth() - 1);
-  return formatMonthKeyFromDate(date);
-}
-
-function getMonthEndDate(monthKey) {
-  const [year, month] = monthKey.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month, 0));
-  return date.toISOString().slice(0, 10);
-}
-
-function ensureSeededInvestmentMonthlyHistory(db, portfolioId) {
-  const existing = db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
-  const existingMonths = new Set(existing.map((entry) => entry.month));
-
-  for (const seed of seededInvestmentMonthlyPerformance) {
-    if (existingMonths.has(seed.month)) {
-      continue;
-    }
-
-    db.upsertInvestmentMonthlyHistory({
-      portfolioId,
-      month: seed.month,
-      portfolioValue: seed.portfolioValue,
-      snapshotDate: seed.snapshotDate,
-    });
-  }
-
-  return db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
-}
-
-function appendLatestCompletedMonthSnapshot({
-  db,
-  portfolioId,
-  summary,
-  now = new Date(),
-}) {
-  const lastCompletedMonth = getLastCompletedMonthKey(now);
-  const existing = db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
-  const hasLatestCompletedMonth = existing.some((entry) => entry.month === lastCompletedMonth);
-
-  if (!lastCompletedMonth || hasLatestCompletedMonth) {
-    return existing;
-  }
-
-  db.upsertInvestmentMonthlyHistory({
-    portfolioId,
-    month: lastCompletedMonth,
-    portfolioValue: summary.portfolioValue,
-    snapshotDate: getMonthEndDate(lastCompletedMonth),
-  });
-
-  return db.listInvestmentMonthlyHistoryByPortfolioId(portfolioId);
-}
-
-function serializeInvestmentMonthlyPerformance(history) {
-  return history.map((entry) => ({
-    month: entry.month,
-    label: formatMonthLabel(entry.month),
-    portfolioValue: roundCurrency(entry.portfolioValue),
-  }));
-}
-
-function serializeInvestmentMonthlyReport(report, { includeAdminFields = false } = {}) {
-  const serialized = {
-    id: report.id,
-    monthKey: report.monthKey,
-    label: formatMonthLabel(report.monthKey),
-    snapshotDate: report.snapshotDate,
-    status: report.status,
-    generatedAt: report.generatedAt,
-    fileName: report.fileName,
-    investorNote: report.investorNote ?? null,
-  };
-
-  if (includeAdminFields) {
-    serialized.adminNote = report.adminNote ?? null;
-    serialized.portfolioId = report.portfolioId;
-  }
-
-  return serialized;
-}
-
-function serializeAdminInvestmentMonthlyReport(report) {
-  return {
-    ...serializeInvestmentMonthlyReport(report, { includeAdminFields: true }),
-    investorEmail: report.investorEmail,
-    investorUserId: report.investorUserId,
-    portfolioDisplayName: report.portfolioDisplayName,
-  };
-}
-
-function findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey) {
-  return (
-    db.raw
-      .prepare(
-        `SELECT
-           reports.id,
-           reports.portfolio_id AS portfolioId,
-           reports.month_key AS monthKey,
-           reports.snapshot_date AS snapshotDate,
-           reports.file_name AS fileName,
-           reports.file_path AS filePath,
-           reports.status,
-           reports.generated_at AS generatedAt,
-           reports.error_message AS errorMessage,
-           reports.investor_note AS investorNote,
-           reports.admin_note AS adminNote,
-           reports.created_at AS createdAt,
-           reports.updated_at AS updatedAt,
-           portfolios.user_id AS investorUserId,
-           portfolios.display_name AS portfolioDisplayName,
-           portfolios.base_currency AS baseCurrency,
-           portfolios.notes,
-           portfolios.created_at AS portfolioCreatedAt,
-           portfolios.updated_at AS portfolioUpdatedAt,
-           users.email AS investorEmail
-         FROM investment_monthly_reports reports
-         INNER JOIN investment_portfolios portfolios ON portfolios.id = reports.portfolio_id
-         INNER JOIN users ON users.id = portfolios.user_id
-         WHERE reports.id = ? AND reports.month_key = ?`
-      )
-      .get(reportId, monthKey) ?? null
-  );
-}
-
-function findInvestmentPortfolioById(db, portfolioId) {
-  return (
-    db.raw
-      .prepare(
-        `SELECT
-           id,
-           user_id AS userId,
-           base_currency AS baseCurrency,
-           display_name AS displayName,
-           notes,
-           created_at AS createdAt,
-           updated_at AS updatedAt
-         FROM investment_portfolios
-         WHERE id = ?`
-      )
-      .get(portfolioId) ?? null
-  );
-}
-
-async function writeInvestmentMonthlyReportPdf({ outputPath, reportData }) {
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  const { doc } = createInvestmentReportPdfDocument(reportData);
-  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-  await fs.writeFile(outputPath, pdfBuffer);
-}
-
-async function generateInvestmentMonthlyReport({
-  db,
-  portfolio,
-  monthKey,
-  currentDate,
-  reportStorageRoot,
-  getInvestmentPrices,
-  getInvestmentPricesLastUpdatedAt,
-  runWithInvestmentPricingRequestState,
-}) {
-  const existingReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
-  const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
-
-  if (transactions.length === 0) {
-    return { status: 'skipped', reason: 'no-transactions' };
-  }
-
-  const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
-  const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
-    await runWithInvestmentPricingRequestState(() =>
-      loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
-    );
-  const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
-  ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
-  const monthlyHistory = appendLatestCompletedMonthSnapshot({
-    db,
-    portfolioId: portfolio.id,
-    summary: snapshot.summary,
-    now: currentDate,
-  });
-  const filteredHistory = monthlyHistory.filter((entry) => entry.month <= monthKey);
-  const reportMonthEntry = filteredHistory.find((entry) => entry.month === monthKey);
-
-  if (!reportMonthEntry) {
-    return { status: 'skipped', reason: 'missing-month-history' };
-  }
-
-  const reportMonthLabel = formatMonthLabel(monthKey);
-  const fileName = buildInvestmentReportFilename(
-    portfolio.displayName || 'investor-portfolio',
-    reportMonthLabel
-  );
-  const relativePath = path.join(String(portfolio.id), fileName);
-  const outputPath = path.join(reportStorageRoot, relativePath);
-
-  await writeInvestmentMonthlyReportPdf({
-    outputPath,
-    reportData: {
-      portfolio: serializeInvestmentPortfolio(portfolio),
-      summary: snapshot.summary,
-      holdings: snapshot.holdings,
-      transactions: [],
-      livePrices,
-      pricesLastUpdatedAt,
-      monthlyPerformance: serializeInvestmentMonthlyPerformance(filteredHistory),
-      investorNote: existingReport?.investorNote ?? null,
-    },
-  });
-
-  const report = db.upsertInvestmentMonthlyReport({
-    portfolioId: portfolio.id,
-    monthKey,
-    snapshotDate: reportMonthEntry.snapshotDate,
-    fileName,
-    filePath: relativePath,
-    status: 'ready',
-    errorMessage: null,
-    investorNote: existingReport?.investorNote ?? null,
-    adminNote: existingReport?.adminNote ?? null,
-  });
-
-  return { status: 'ready', report };
-}
-
-async function generateLatestCompletedInvestmentReports({
-  db,
-  currentDate,
-  reportStorageRoot,
-  getInvestmentPrices,
-  getInvestmentPricesLastUpdatedAt,
-  runWithInvestmentPricingRequestState,
-}) {
-  const monthKey = getLastCompletedMonthKey(currentDate);
-  const portfolios = db.listInvestmentPortfoliosForInvestors();
-  let generated = 0;
-  let updated = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  for (const portfolio of portfolios) {
-    const existing = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
-
-    try {
-      const result = await generateInvestmentMonthlyReport({
-        db,
-        portfolio,
-        monthKey,
-        currentDate,
-        reportStorageRoot,
-        getInvestmentPrices,
-        getInvestmentPricesLastUpdatedAt,
-        runWithInvestmentPricingRequestState,
-      });
-
-      if (result.status === 'ready') {
-        if (existing) {
-          updated += 1;
-        } else {
-          generated += 1;
-        }
-      } else {
-        skipped += 1;
-      }
-    } catch (error) {
-      failed += 1;
-      db.upsertInvestmentMonthlyReport({
-        portfolioId: portfolio.id,
-        monthKey,
-        snapshotDate: getMonthEndDate(monthKey),
-        fileName: `${monthKey}-failed.pdf`,
-        filePath: path.join(String(portfolio.id), `${monthKey}-failed.pdf`),
-        status: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown generation error.',
-        investorNote: existing?.investorNote ?? null,
-        adminNote: existing?.adminNote ?? null,
-      });
-    }
-  }
-
-  return { monthKey, summary: { generated, updated, skipped, failed } };
-}
-
-function isAbortError(error) {
-  return error instanceof Error && error.name === 'AbortError';
-}
-
-async function defaultCoinGeckoPriceFetcher(
-  symbols,
-  fetchFn = fetch,
-  timeoutMs = investmentPricingFetchTimeoutMs
-) {
-  const normalizedSymbols = normalizeInvestmentSymbols(symbols);
-
-  if (normalizedSymbols.length === 0) {
-    return {
-      pricesBySymbol: {},
-      pricesLastUpdatedAt: null,
-    };
-  }
-
-  const coinGeckoIds = normalizedSymbols.map((symbol) => investmentAssetIdsBySymbol[symbol]);
-  const url = new URL('https://api.coingecko.com/api/v3/simple/price');
-  url.searchParams.set('ids', coinGeckoIds.join(','));
-  url.searchParams.set('vs_currencies', 'usd');
-  url.searchParams.set('include_last_updated_at', 'true');
-
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => {
-    abortController.abort();
-  }, timeoutMs);
-  let response;
-
-  try {
-    response = await fetchFn(url, { signal: abortController.signal });
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw new Error(`CoinGecko pricing request timed out after ${timeoutMs}ms`);
-    }
-
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-
-  if (!response.ok) {
-    throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
-  }
-
-  const payload = await response.json();
-  const pricesBySymbol = {};
-  let latestTimestampSeconds = null;
-
-  for (const symbol of normalizedSymbols) {
-    const assetPayload = payload[investmentAssetIdsBySymbol[symbol]];
-    const currentPrice = Number(assetPayload?.usd);
-
-    if (Number.isFinite(currentPrice)) {
-      pricesBySymbol[symbol] = currentPrice;
-    }
-
-    const updatedAt = Number(assetPayload?.last_updated_at);
-
-    if (Number.isFinite(updatedAt)) {
-      latestTimestampSeconds =
-        latestTimestampSeconds === null ? updatedAt : Math.max(latestTimestampSeconds, updatedAt);
-    }
-  }
-
-  return {
-    pricesBySymbol,
-    pricesLastUpdatedAt:
-      latestTimestampSeconds === null ? null : new Date(latestTimestampSeconds * 1000).toISOString(),
-  };
-}
-
-async function loadInvestmentPricing(symbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt) {
-  const normalizedSymbols = normalizeInvestmentSymbols(symbols);
-
-  if (normalizedSymbols.length === 0) {
-    return {
-      livePricesBySymbol: {},
-      livePrices: [],
-      pricesLastUpdatedAt: null,
-    };
-  }
-
-  try {
-    const livePricesBySymbol = await getInvestmentPrices(normalizedSymbols);
-
-    return {
-      livePricesBySymbol,
-      livePrices: buildLivePrices(normalizedSymbols, livePricesBySymbol),
-      pricesLastUpdatedAt: getInvestmentPricesLastUpdatedAt() ?? null,
-    };
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    console.warn('Investment pricing unavailable; returning snapshot without live prices.', {
-      reason,
-    });
-
-    return {
-      livePricesBySymbol: {},
-      livePrices: [],
-      pricesLastUpdatedAt: null,
-    };
-  }
 }
 
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
-
-function parseTransactionPayload(body) {
-  const assetSymbol = String(body?.assetSymbol ?? '')
-    .trim()
-    .toUpperCase();
-  const amountInvested = Number(body?.amountInvested);
-  const rawPurchasePrice = String(body?.purchasePrice ?? '').trim();
-  const rawPurchaseShares = String(body?.purchaseShares ?? '').trim();
-  const purchasePrice = rawPurchasePrice ? Number(rawPurchasePrice) : Number.NaN;
-  const purchaseShares = rawPurchaseShares ? Number(rawPurchaseShares) : Number.NaN;
-  const purchaseDate = String(body?.purchaseDate ?? '').trim();
-  const notes = trimOptionalString(body?.notes);
-  const assetName = investmentAssetNamesBySymbol[assetSymbol];
-
-  if (!assetName || !purchaseDate) {
-    return { error: 'A supported asset symbol and purchase date are required.' };
-  }
-
-  if (!Number.isFinite(amountInvested) || amountInvested <= 0) {
-    return { error: 'Amount invested must be a positive number.' };
-  }
-
-  const hasPurchasePrice = Number.isFinite(purchasePrice) && purchasePrice > 0;
-  const hasPurchaseShares = Number.isFinite(purchaseShares) && purchaseShares > 0;
-
-  if (!hasPurchasePrice && !hasPurchaseShares) {
-    return { error: 'Enter either purchase price or purchase shares.' };
-  }
-
-  const normalizedPurchasePrice = hasPurchasePrice ? purchasePrice : amountInvested / purchaseShares;
-  const normalizedPurchaseShares = hasPurchaseShares ? purchaseShares : amountInvested / purchasePrice;
-
-  return {
-    assetSymbol,
-    assetName,
-    amountInvested,
-    purchasePrice: normalizedPurchasePrice,
-    purchaseShares: normalizedPurchaseShares,
-    purchaseDate,
-    notes,
-  };
 }
 
 function findHydratedAdminVideo(db, videoId) {
@@ -818,6 +217,26 @@ function parseInvestorUpdatePayload(body) {
   };
 }
 
+function parseFeaturedReelPayload(body) {
+  const placement = parseRequiredTrimmedString(body?.placement);
+
+  return {
+    placement:
+      placement && featuredReelPlacements.has(placement)
+        ? placement
+        : null,
+    youtubeId: trimOptionalString(body?.youtubeId),
+    videoSrc: trimOptionalString(body?.videoSrc),
+    metaLabel: parseRequiredTrimmedString(body?.metaLabel),
+    metaLabelZh: parseRequiredTrimmedString(body?.metaLabelZh),
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    description: parseRequiredTrimmedString(body?.description),
+    descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
+    thumbnail: parseRequiredTrimmedString(body?.thumbnail),
+  };
+}
+
 function hashResetToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -860,51 +279,7 @@ export function createApp({
   now = () => new Date(),
   sendPasswordResetEmail = async () => {},
   processUploadedVideoFn = processUploadedVideo,
-  getInvestmentPrices: customGetInvestmentPrices,
-  getInvestmentPricesLastUpdatedAt: customGetInvestmentPricesLastUpdatedAt,
-  investmentPriceFetchTimeoutMs = investmentPricingFetchTimeoutMs,
 }) {
-  const investmentPricingRequestState = new AsyncLocalStorage();
-  const runWithInvestmentPricingRequestState = (callback) =>
-    investmentPricingRequestState.run({ pricesLastUpdatedAt: null }, callback);
-  const setInvestmentPricingRequestTimestamp = (pricesLastUpdatedAt) => {
-    const store = investmentPricingRequestState.getStore();
-
-    if (store) {
-      store.pricesLastUpdatedAt = pricesLastUpdatedAt ?? null;
-    }
-  };
-  const getInvestmentPricingRequestTimestamp = () =>
-    investmentPricingRequestState.getStore()?.pricesLastUpdatedAt ?? null;
-
-  let getInvestmentPrices;
-
-  if (customGetInvestmentPrices) {
-    getInvestmentPrices = async (symbols) => {
-      const pricesBySymbol = await customGetInvestmentPrices(symbols);
-
-      if (!customGetInvestmentPricesLastUpdatedAt) {
-        setInvestmentPricingRequestTimestamp(new Date(now()).toISOString());
-      }
-
-      return pricesBySymbol;
-    };
-  } else {
-    getInvestmentPrices = async (symbols) => {
-      const { pricesBySymbol, pricesLastUpdatedAt } = await defaultCoinGeckoPriceFetcher(
-        symbols,
-        fetch,
-        investmentPriceFetchTimeoutMs
-      );
-      setInvestmentPricingRequestTimestamp(pricesLastUpdatedAt);
-      return pricesBySymbol;
-    };
-  }
-
-  const getInvestmentPricesLastUpdatedAt =
-    customGetInvestmentPricesLastUpdatedAt ?? getInvestmentPricingRequestTimestamp;
-  const reportStorageRoot = config.reportStorageDirectory;
-
   if (config.requireInviteCode && config.inviteCodes.length === 0) {
     throw new Error(
       'Invite code enforcement requires at least one configured six-digit invite code.'
@@ -1109,139 +484,9 @@ export function createApp({
     res.json({ updates });
   });
 
-  app.get('/api/investment/me', requireInvestor, async (req, res) => {
-    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
-
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
-    }
-
-    const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
-    const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
-    const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
-      await runWithInvestmentPricingRequestState(() =>
-        loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
-      );
-    const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
-    ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
-    const monthlyHistory = appendLatestCompletedMonthSnapshot({
-      db,
-      portfolioId: portfolio.id,
-      summary: snapshot.summary,
-      now: now(),
-    });
-
-    return res.json({
-      portfolio: serializeInvestmentPortfolio(portfolio),
-      summary: snapshot.summary,
-      holdings: snapshot.holdings,
-      transactions: transactions.map(serializeInvestmentTransaction),
-      livePrices,
-      pricesLastUpdatedAt,
-      monthlyPerformance: serializeInvestmentMonthlyPerformance(monthlyHistory),
-    });
-  });
-
-  app.get('/api/investment/me/reports', requireInvestor, (req, res) => {
-    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
-
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
-    }
-
-    return res.json({
-      reports: db
-        .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
-        .map(serializeInvestmentMonthlyReport),
-    });
-  });
-
-  app.get('/api/admin/investment/reports', requireAdmin, (_req, res) => {
-    const reports = db
-      .listInvestmentMonthlyReportsForAdmin()
-      .map(serializeAdminInvestmentMonthlyReport);
-
-    return res.json({ reports });
-  });
-
-  app.patch('/api/admin/investment/reports/:monthKey/:reportId', requireAdmin, (req, res) => {
-    const reportId = parseIdParam(req.params.reportId);
-    const monthKey = String(req.params.monthKey ?? '').trim();
-    const investorNote = trimOptionalString(req.body?.investorNote);
-    const adminNote = trimOptionalString(req.body?.adminNote);
-
-    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      return res.status(400).json({ error: 'A valid report id and month are required.' });
-    }
-
-    const report = db.updateInvestmentMonthlyReportNotes(reportId, monthKey, investorNote, adminNote);
-
-    if (!report) {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-
-    const adminReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
-
-    if (!adminReport) {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-
-    return res.json({
-      report: serializeAdminInvestmentMonthlyReport(adminReport),
-    });
-  });
-
-  app.get('/api/admin/investment/reports/:monthKey/:reportId/download', requireAdmin, async (req, res) => {
-    const reportId = parseIdParam(req.params.reportId);
-    const monthKey = String(req.params.monthKey ?? '').trim();
-
-    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      return res.status(400).json({ error: 'A valid report id and month are required.' });
-    }
-
-    const report = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
-
-    if (!report || report.status !== 'ready') {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-
-    const absolutePath = path.join(reportStorageRoot, report.filePath);
-
-    try {
-      await fs.access(absolutePath);
-    } catch {
-      return res.status(404).json({ error: 'Report file is missing.' });
-    }
-
-    return res.download(absolutePath, report.fileName);
-  });
-
-  app.get('/api/investment/me/reports/:monthKey/download', requireInvestor, async (req, res) => {
-    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
-
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
-    }
-
-    const monthKey = String(req.params.monthKey ?? '').trim();
-    if (!/^\d{4}-\d{2}$/.test(monthKey)) {
-      return res.status(400).json({ error: 'A valid report month is required.' });
-    }
-
-    const report = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey);
-    if (!report || report.status !== 'ready') {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-
-    const absolutePath = path.join(reportStorageRoot, report.filePath);
-
-    try {
-      await fs.access(absolutePath);
-    } catch {
-      return res.status(404).json({ error: 'Report file is missing.' });
-    }
-
-    return res.download(absolutePath, report.fileName);
+  app.get('/api/featured-reels', (_req, res) => {
+    const reels = db.listFeaturedReels().map(serializeFeaturedReel);
+    res.json({ reels });
   });
 
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
@@ -1496,233 +741,162 @@ export function createApp({
     return res.json({ updates });
   });
 
-  app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {
-    const userId = parseIdParam(req.params.userId);
-    const memberType = String(req.body?.memberType ?? '')
-      .trim()
-      .toLowerCase();
-
-    if (!userId) {
-      return res.status(400).json({ error: 'A valid user id is required.' });
-    }
-
-    if (!allowedMemberTypes.has(memberType)) {
-      return res.status(400).json({ error: 'A valid member type is required.' });
-    }
-
-    const updatedUser = db.setUserMemberTypeById(userId, memberType);
-
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    return res.json({ user: toSafeUser(updatedUser) });
+  app.get('/api/admin/featured-reels', requireAdmin, (_req, res) => {
+    const reels = db.listFeaturedReels().map(serializeFeaturedReel);
+    res.json({ reels });
   });
 
-  app.post('/api/admin/investors/:userId/portfolio', requireAdmin, (req, res) => {
-    const userId = parseIdParam(req.params.userId);
-    const displayName = trimOptionalString(req.body?.displayName);
-    const notes = trimOptionalString(req.body?.notes);
+  app.post('/api/admin/featured-reels', requireAdmin, (req, res) => {
+    const payload = parseFeaturedReelPayload(req.body);
 
-    if (!userId) {
-      return res.status(400).json({ error: 'A valid user id is required.' });
+    if (!payload.placement) {
+      return res.status(400).json({ error: 'A valid reel placement is required.' });
     }
 
-    const targetUser = db.findUserById(userId);
-
-    if (!targetUser) {
-      return res.status(404).json({ error: 'User not found.' });
+    if (!payload.metaLabel || !payload.metaLabelZh || !payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese labels and titles are required.' });
     }
 
-    if (targetUser.memberType !== 'investor') {
-      return res.status(400).json({ error: 'Portfolios can only be created for investor users.' });
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
     }
 
-    const existingPortfolio = db.findInvestmentPortfolioByUserId(userId);
-
-    if (existingPortfolio) {
-      return res.status(409).json({ error: 'This investor already has a portfolio.' });
+    if (!payload.thumbnail) {
+      return res.status(400).json({ error: 'A thumbnail path is required.' });
     }
 
-    const portfolio = db.createInvestmentPortfolio({
-      userId,
-      displayName,
-      notes,
+    if (!payload.youtubeId && !payload.videoSrc) {
+      return res.status(400).json({ error: 'Provide either a YouTube id or a local video source.' });
+    }
+
+    const reel = db.createFeaturedReel({
+      ...payload,
+      sortOrder: db.countFeaturedReelsByPlacement(payload.placement),
     });
 
-    return res.status(201).json({ portfolio: serializeInvestmentPortfolio(portfolio) });
+    return res.status(201).json({ reel: serializeFeaturedReel(reel) });
   });
 
-  app.get('/api/admin/investors/:userId/portfolio', requireAdmin, async (req, res) => {
-    const userId = parseIdParam(req.params.userId);
+  app.put('/api/admin/featured-reels/:reelId', requireAdmin, (req, res) => {
+    const reelId = parseIdParam(req.params.reelId);
 
-    if (!userId) {
-      return res.status(400).json({ error: 'A valid user id is required.' });
+    if (!reelId) {
+      return res.status(400).json({ error: 'A valid featured reel id is required.' });
     }
 
-    const portfolio = db.findInvestmentPortfolioByUserId(userId);
+    const existingReel = db.findFeaturedReelById(reelId);
 
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
+    if (!existingReel) {
+      return res.status(404).json({ error: 'Featured reel not found.' });
     }
 
-    const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
-    const priceSymbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
-    const { livePricesBySymbol, livePrices, pricesLastUpdatedAt } =
-      await runWithInvestmentPricingRequestState(() =>
-        loadInvestmentPricing(priceSymbols, getInvestmentPrices, getInvestmentPricesLastUpdatedAt)
-      );
-    const snapshot = buildPortfolioSnapshot(transactions, livePricesBySymbol);
-    ensureSeededInvestmentMonthlyHistory(db, portfolio.id);
-    const monthlyHistory = appendLatestCompletedMonthSnapshot({
-      db,
-      portfolioId: portfolio.id,
-      summary: snapshot.summary,
-      now: now(),
+    const payload = parseFeaturedReelPayload(req.body);
+
+    if (!payload.placement) {
+      return res.status(400).json({ error: 'A valid reel placement is required.' });
+    }
+
+    if (!payload.metaLabel || !payload.metaLabelZh || !payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese labels and titles are required.' });
+    }
+
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
+    }
+
+    if (!payload.thumbnail) {
+      return res.status(400).json({ error: 'A thumbnail path is required.' });
+    }
+
+    if (!payload.youtubeId && !payload.videoSrc) {
+      return res.status(400).json({ error: 'Provide either a YouTube id or a local video source.' });
+    }
+
+    const sortOrder =
+      payload.placement === existingReel.placement
+        ? existingReel.sortOrder
+        : db.countFeaturedReelsByPlacement(payload.placement);
+
+    const reel = db.updateFeaturedReel({
+      id: reelId,
+      ...payload,
+      sortOrder,
     });
 
-    return res.json({
-      portfolio: serializeInvestmentPortfolio(portfolio),
-      summary: snapshot.summary,
-      holdings: snapshot.holdings,
-      transactions: transactions.map(serializeInvestmentTransaction),
-      livePrices,
-      pricesLastUpdatedAt,
-      monthlyPerformance: serializeInvestmentMonthlyPerformance(monthlyHistory),
-    });
+    if (!reel) {
+      return res.status(404).json({ error: 'Featured reel not found.' });
+    }
+
+    if (payload.placement !== existingReel.placement) {
+      const previousPlacementIds = db
+        .listFeaturedReels()
+        .filter((entry) => entry.placement === existingReel.placement)
+        .map((entry) => entry.id);
+      db.reorderFeaturedReels(existingReel.placement, previousPlacementIds);
+
+      const nextPlacementIds = db
+        .listFeaturedReels()
+        .filter((entry) => entry.placement === payload.placement)
+        .map((entry) => entry.id);
+      db.reorderFeaturedReels(payload.placement, nextPlacementIds);
+    }
+
+    return res.json({ reel: serializeFeaturedReel(db.findFeaturedReelById(reelId)) });
   });
 
-  app.post('/api/admin/investment/reports/generate-latest', requireAdmin, async (_req, res) => {
-    const result = await generateLatestCompletedInvestmentReports({
-      db,
-      currentDate: now(),
-      reportStorageRoot,
-      getInvestmentPrices,
-      getInvestmentPricesLastUpdatedAt,
-      runWithInvestmentPricingRequestState,
-    });
+  app.delete('/api/admin/featured-reels/:reelId', requireAdmin, (req, res) => {
+    const reelId = parseIdParam(req.params.reelId);
 
-    return res.json(result);
+    if (!reelId) {
+      return res.status(400).json({ error: 'A valid featured reel id is required.' });
+    }
+
+    const deletedReel = db.deleteFeaturedReel(reelId);
+
+    if (!deletedReel) {
+      return res.status(404).json({ error: 'Featured reel not found.' });
+    }
+
+    const remainingIds = db
+      .listFeaturedReels()
+      .filter((entry) => entry.placement === deletedReel.placement)
+      .map((entry) => entry.id);
+    db.reorderFeaturedReels(deletedReel.placement, remainingIds);
+
+    return res.json({ deletedReelId: deletedReel.id });
   });
 
-  app.post('/api/admin/investment/reports/:monthKey/:reportId/regenerate', requireAdmin, async (req, res) => {
-    const reportId = parseIdParam(req.params.reportId);
-    const monthKey = String(req.params.monthKey ?? '').trim();
+  app.post('/api/admin/featured-reels/reorder', requireAdmin, (req, res) => {
+    const placement = parseRequiredTrimmedString(req.body?.placement);
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
 
-    if (!reportId || !/^\d{4}-\d{2}$/.test(monthKey)) {
-      return res.status(400).json({ error: 'A valid report id and month are required.' });
+    if (!placement || !featuredReelPlacements.has(placement)) {
+      return res.status(400).json({ error: 'A valid reel placement is required.' });
     }
 
-    const existingReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
-
-    if (!existingReport) {
-      return res.status(404).json({ error: 'Report not found.' });
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid featured reel ids.' });
     }
 
-    const portfolio = findInvestmentPortfolioById(db, existingReport.portfolioId);
+    const currentIds = db
+      .listFeaturedReels()
+      .filter((entry) => entry.placement === placement)
+      .map((entry) => entry.id);
 
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current featured reel ids.' });
     }
 
-    const result = await generateInvestmentMonthlyReport({
-      db,
-      portfolio,
-      monthKey,
-      currentDate: now(),
-      reportStorageRoot,
-      getInvestmentPrices,
-      getInvestmentPricesLastUpdatedAt,
-      runWithInvestmentPricingRequestState,
-    });
+    const orderedIdSet = new Set(orderedIds);
 
-    if (result.status !== 'ready') {
-      return res.status(409).json({ error: 'Report could not be generated for that month.' });
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current featured reel ids.' });
     }
 
-    const refreshedReport = findAdminInvestmentReportByIdAndMonth(db, reportId, monthKey);
-
-    if (!refreshedReport) {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-
-    return res.json({
-      report: serializeAdminInvestmentMonthlyReport(refreshedReport),
-    });
-  });
-
-  app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
-    const userId = parseIdParam(req.params.userId);
-
-    if (!userId) {
-      return res.status(400).json({ error: 'A valid user id is required.' });
-    }
-
-    const portfolio = db.findInvestmentPortfolioByUserId(userId);
-
-    if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found.' });
-    }
-
-    const parsedPayload = parseTransactionPayload(req.body);
-
-    if ('error' in parsedPayload) {
-      return res.status(400).json({ error: parsedPayload.error });
-    }
-
-    const transaction = db.createInvestmentTransaction({
-      portfolioId: portfolio.id,
-      ...parsedPayload,
-    });
-
-    return res.status(201).json({
-      transaction: serializeInvestmentTransaction(transaction),
-    });
-  });
-
-  app.patch('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
-    const transactionId = parseIdParam(req.params.transactionId);
-
-    if (!transactionId) {
-      return res.status(400).json({ error: 'A valid transaction id is required.' });
-    }
-
-    const existingTransaction = db.findInvestmentTransactionById(transactionId);
-
-    if (!existingTransaction) {
-      return res.status(404).json({ error: 'Transaction not found.' });
-    }
-
-    const parsedPayload = parseTransactionPayload(req.body);
-
-    if ('error' in parsedPayload) {
-      return res.status(400).json({ error: parsedPayload.error });
-    }
-
-    const transaction = db.updateInvestmentTransaction({
-      id: transactionId,
-      ...parsedPayload,
-    });
-
-    return res.json({
-      transaction: serializeInvestmentTransaction(transaction),
-    });
-  });
-
-  app.delete('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
-    const transactionId = parseIdParam(req.params.transactionId);
-
-    if (!transactionId) {
-      return res.status(400).json({ error: 'A valid transaction id is required.' });
-    }
-
-    const deletedTransaction = db.deleteInvestmentTransactionById(transactionId);
-
-    if (!deletedTransaction) {
-      return res.status(404).json({ error: 'Transaction not found.' });
-    }
-
-    return res.json({ deletedTransactionId: deletedTransaction.id });
+    const reels = db.reorderFeaturedReels(placement, orderedIds).map(serializeFeaturedReel);
+    return res.json({ reels });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {
@@ -1971,23 +1145,6 @@ export function createApp({
         await fs.rm(file.path, { force: true }).catch(() => {});
       }
     });
-  });
-
-  app.post('/internal/jobs/investment-reports/generate-latest', async (req, res) => {
-    if (!config.cronSecret || req.get('x-cron-secret') !== config.cronSecret) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const result = await generateLatestCompletedInvestmentReports({
-      db,
-      currentDate: now(),
-      reportStorageRoot,
-      getInvestmentPrices,
-      getInvestmentPricesLastUpdatedAt,
-      runWithInvestmentPricingRequestState,
-    });
-
-    return res.json(result);
   });
 
   app.use(express.static(config.frontendDistDirectory));

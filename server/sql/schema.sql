@@ -53,3 +53,20 @@ CREATE TABLE IF NOT EXISTS investor_updates (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS featured_reels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  placement TEXT NOT NULL,
+  youtube_id TEXT,
+  video_src TEXT,
+  meta_label TEXT NOT NULL,
+  meta_label_zh TEXT NOT NULL,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  description TEXT NOT NULL,
+  description_zh TEXT NOT NULL,
+  thumbnail TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

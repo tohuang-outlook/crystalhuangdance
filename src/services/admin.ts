@@ -2,7 +2,6 @@ export interface AdminUserRecord {
   id: number;
   email: string;
   role: 'user' | 'admin';
-  memberType: 'dancer' | 'investor';
   uploadCount: number;
   createdAt: string;
   updatedAt: string;
@@ -26,22 +25,6 @@ export interface AdminVideoRecord {
     email: string;
     role: 'user' | 'admin';
   };
-}
-
-export interface AdminInvestmentReportRecord {
-  id: number;
-  portfolioId: number;
-  monthKey: string;
-  label: string;
-  snapshotDate: string;
-  status: 'ready' | 'failed';
-  generatedAt: string;
-  fileName: string;
-  investorNote: string | null;
-  adminNote: string | null;
-  investorEmail: string;
-  investorUserId: number;
-  portfolioDisplayName: string | null;
 }
 
 export interface ComingUpEventRecord {
@@ -70,6 +53,25 @@ export interface InvestorUpdateRecord {
   updatedAt: string;
 }
 
+export type FeaturedReelPlacement = 'featured' | 'supporting';
+
+export interface FeaturedReelRecord {
+  id: number;
+  placement: FeaturedReelPlacement;
+  youtubeId: string | null;
+  videoSrc: string | null;
+  metaLabel: string;
+  metaLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  thumbnail: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -82,6 +84,10 @@ interface AdminInvestorUpdatesEnvelope {
   updates: InvestorUpdateRecord[];
 }
 
+interface AdminFeaturedReelsEnvelope {
+  reels: FeaturedReelRecord[];
+}
+
 interface AdminVideosEnvelope {
   videos: AdminVideoRecord[];
 }
@@ -90,24 +96,16 @@ interface AdminVideoEnvelope {
   video: AdminVideoRecord;
 }
 
-interface AdminUserEnvelope {
-  user: AdminUserRecord;
-}
-
-interface AdminInvestmentReportsEnvelope {
-  reports: AdminInvestmentReportRecord[];
-}
-
-interface AdminInvestmentReportEnvelope {
-  report: AdminInvestmentReportRecord;
-}
-
 interface AdminComingUpEventEnvelope {
   event: ComingUpEventRecord;
 }
 
 interface AdminInvestorUpdateEnvelope {
   update: InvestorUpdateRecord;
+}
+
+interface AdminFeaturedReelEnvelope {
+  reel: FeaturedReelRecord;
 }
 
 interface ApiErrorPayload {
@@ -148,71 +146,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function normalizeAdminInvestmentReports(payload: unknown): AdminInvestmentReportRecord[] {
-  if (!Array.isArray(payload)) {
-    return [];
-  }
-
-  return payload.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object') {
-      return [];
-    }
-
-    const id = Number(entry.id);
-    const portfolioId = Number(entry.portfolioId);
-    const monthKey = typeof entry.monthKey === 'string' ? entry.monthKey.trim() : '';
-    const label = typeof entry.label === 'string' ? entry.label.trim() : '';
-    const snapshotDate =
-      typeof entry.snapshotDate === 'string' ? entry.snapshotDate.trim() : '';
-    const status = entry.status === 'failed' ? 'failed' : entry.status === 'ready' ? 'ready' : '';
-    const generatedAt =
-      typeof entry.generatedAt === 'string' ? entry.generatedAt.trim() : '';
-    const fileName = typeof entry.fileName === 'string' ? entry.fileName.trim() : '';
-    const investorEmail =
-      typeof entry.investorEmail === 'string' ? entry.investorEmail.trim() : '';
-    const investorUserId = Number(entry.investorUserId);
-    const portfolioDisplayName =
-      typeof entry.portfolioDisplayName === 'string' ? entry.portfolioDisplayName : null;
-    const investorNote =
-      typeof entry.investorNote === 'string' ? entry.investorNote : entry.investorNote === null ? null : null;
-    const adminNote =
-      typeof entry.adminNote === 'string' ? entry.adminNote : entry.adminNote === null ? null : null;
-
-    if (
-      !Number.isInteger(id) ||
-      !Number.isInteger(portfolioId) ||
-      !monthKey ||
-      !label ||
-      !snapshotDate ||
-      !status ||
-      !generatedAt ||
-      !fileName ||
-      !investorEmail ||
-      !Number.isInteger(investorUserId)
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id,
-        portfolioId,
-        monthKey,
-        label,
-        snapshotDate,
-        status,
-        generatedAt,
-        fileName,
-        investorNote,
-        adminNote,
-        investorEmail,
-        investorUserId,
-        portfolioDisplayName,
-      },
-    ];
-  });
-}
-
 export function fetchAdminUsers() {
   return request<AdminUsersEnvelope>('/api/admin/users', { method: 'GET' });
 }
@@ -227,6 +160,10 @@ export function fetchAdminComingUpEvents() {
 
 export function fetchAdminInvestorUpdates() {
   return request<AdminInvestorUpdatesEnvelope>('/api/admin/investor-updates', { method: 'GET' });
+}
+
+export function fetchAdminFeaturedReels() {
+  return request<AdminFeaturedReelsEnvelope>('/api/admin/featured-reels', { method: 'GET' });
 }
 
 export function deleteAdminUser(userId: number) {
@@ -253,13 +190,9 @@ export function deleteAdminInvestorUpdate(updateId: number) {
   });
 }
 
-export function updateAdminUserMemberType(
-  userId: number,
-  payload: { memberType: 'dancer' | 'investor' }
-) {
-  return request<AdminUserEnvelope>(`/api/admin/users/${userId}/member-type`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
+export function deleteAdminFeaturedReel(reelId: number) {
+  return request<{ deletedReelId: number }>(`/api/admin/featured-reels/${reelId}`, {
+    method: 'DELETE',
   });
 }
 
@@ -297,6 +230,19 @@ export interface AdminInvestorUpdatePayload {
   href: string;
 }
 
+export interface AdminFeaturedReelPayload {
+  placement: FeaturedReelPlacement;
+  youtubeId: string;
+  videoSrc: string;
+  metaLabel: string;
+  metaLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  thumbnail: string;
+}
+
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
   return request<AdminComingUpEventEnvelope>('/api/admin/coming-up-events', {
     method: 'POST',
@@ -331,6 +277,23 @@ export function updateAdminInvestorUpdate(
   });
 }
 
+export function createAdminFeaturedReel(payload: AdminFeaturedReelPayload) {
+  return request<AdminFeaturedReelEnvelope>('/api/admin/featured-reels', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminFeaturedReel(
+  reelId: number,
+  payload: AdminFeaturedReelPayload
+) {
+  return request<AdminFeaturedReelEnvelope>(`/api/admin/featured-reels/${reelId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function reorderAdminComingUpEvents(orderedIds: number[]) {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
     method: 'POST',
@@ -348,57 +311,12 @@ export function reorderAdminInvestorUpdates(
   });
 }
 
-export async function fetchAdminInvestmentReports() {
-  const payload = await request<AdminInvestmentReportsEnvelope>('/api/admin/investment/reports', {
-    method: 'GET',
-  });
-
-  return normalizeAdminInvestmentReports(payload.reports);
-}
-
-export async function updateAdminInvestmentReportNotes(
-  monthKey: string,
-  reportId: number,
-  payload: {
-    investorNote: string | null;
-    adminNote: string | null;
-  }
+export function reorderAdminFeaturedReels(
+  placement: FeaturedReelPlacement,
+  orderedIds: number[]
 ) {
-  const response = await request<AdminInvestmentReportEnvelope>(
-    `/api/admin/investment/reports/${monthKey}/${reportId}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }
-  );
-
-  const [report] = normalizeAdminInvestmentReports([response.report]);
-
-  if (!report) {
-    throw new Error('Unable to parse saved report response.');
-  }
-
-  return report;
-}
-
-export async function regenerateAdminInvestmentReport(monthKey: string, reportId: number) {
-  const response = await request<AdminInvestmentReportEnvelope>(
-    `/api/admin/investment/reports/${monthKey}/${reportId}/regenerate`,
-    {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }
-  );
-
-  const [report] = normalizeAdminInvestmentReports([response.report]);
-
-  if (!report) {
-    throw new Error('Unable to parse regenerated report response.');
-  }
-
-  return report;
-}
-
-export function getAdminInvestmentReportDownloadUrl(monthKey: string, reportId: number) {
-  return `${apiBaseUrl}/api/admin/investment/reports/${monthKey}/${reportId}/download`;
+  return request<AdminFeaturedReelsEnvelope>('/api/admin/featured-reels/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ placement, orderedIds }),
+  });
 }

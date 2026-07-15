@@ -1,56 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
-import AdminReportCenter from '../components/investment/AdminReportCenter';
-import HoldingsTable from '../components/investment/HoldingsTable';
-import PortfolioSummary from '../components/investment/PortfolioSummary';
-import TransactionForm from '../components/investment/TransactionForm';
-import TransactionTable from '../components/investment/TransactionTable';
 import {
-  createAdminInvestmentPortfolio,
-  generateAdminInvestmentReports,
-  createAdminInvestmentTransaction,
-  deleteAdminInvestmentTransaction,
-  fetchAdminInvestmentPortfolio,
-  type InvestmentTransaction,
-  type InvestmentPortfolioResponse,
-  updateAdminInvestmentTransaction,
-} from '../services/investment';
-import {
+  createAdminFeaturedReel,
   createAdminComingUpEvent,
   createAdminInvestorUpdate,
   createAdminYoutubeVideo,
+  deleteAdminFeaturedReel,
   deleteAdminComingUpEvent,
   deleteAdminInvestorUpdate,
   deleteAdminUser,
   deleteAdminVideo,
+  fetchAdminFeaturedReels,
   fetchAdminComingUpEvents,
-  fetchAdminInvestmentReports,
   fetchAdminInvestorUpdates,
   fetchAdminUsers,
   fetchAdminVideos,
-  regenerateAdminInvestmentReport,
+  reorderAdminFeaturedReels,
+  type AdminFeaturedReelPayload,
   type AdminInvestorUpdatePayload,
-  type AdminInvestmentReportRecord,
   type AdminUserRecord,
   type AdminVideoRecord,
   type ComingUpEventRecord,
+  type FeaturedReelPlacement,
+  type FeaturedReelRecord,
   type InvestorUpdateCategory,
   type InvestorUpdateRecord,
   reorderAdminComingUpEvents,
   reorderAdminInvestorUpdates,
+  updateAdminFeaturedReel,
   updateAdminComingUpEvent,
-  updateAdminInvestmentReportNotes,
   updateAdminInvestorUpdate,
-  updateAdminUserMemberType,
   uploadAdminVideoFile,
 } from '../services/admin';
 
 function formatDate(value: string) {
-  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(normalizedValue));
+  }).format(new Date(value));
 }
 
 function formatDuration(seconds: number | null) {
@@ -74,7 +61,7 @@ function formatBytes(bytes: number | null) {
 }
 
 type AdminUploadMode = 'youtube' | 'upload';
-type AdminConsoleTab = 'coming-up-events' | 'dancer' | 'investor';
+type AdminConsoleTab = 'coming-up-events' | 'content' | 'dancer' | 'investor';
 
 interface DancerUploadDraft {
   mode: AdminUploadMode;
@@ -111,6 +98,21 @@ interface InvestorUpdateDraft {
   title: string;
   summary: string;
   href: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface FeaturedReelDraft {
+  placement: FeaturedReelPlacement;
+  youtubeId: string;
+  videoSrc: string;
+  metaLabel: string;
+  metaLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  thumbnail: string;
   isSubmitting: boolean;
   error: string | null;
 }
@@ -161,6 +163,44 @@ function createInvestorUpdateDraftFromRecord(
   };
 }
 
+function createEmptyFeaturedReelDraft(
+  placement: FeaturedReelPlacement
+): FeaturedReelDraft {
+  return {
+    placement,
+    youtubeId: '',
+    videoSrc: '',
+    metaLabel: '',
+    metaLabelZh: '',
+    title: '',
+    titleZh: '',
+    description: '',
+    descriptionZh: '',
+    thumbnail: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createFeaturedReelDraftFromRecord(
+  reel: FeaturedReelRecord
+): FeaturedReelDraft {
+  return {
+    placement: reel.placement,
+    youtubeId: reel.youtubeId ?? '',
+    videoSrc: reel.videoSrc ?? '',
+    metaLabel: reel.metaLabel,
+    metaLabelZh: reel.metaLabelZh,
+    title: reel.title,
+    titleZh: reel.titleZh,
+    description: reel.description,
+    descriptionZh: reel.descriptionZh,
+    thumbnail: reel.thumbnail,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
   const investorCategories: Array<{
     id: InvestorUpdateCategory;
@@ -187,15 +227,16 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [videos, setVideos] = useState<AdminVideoRecord[]>([]);
   const [comingUpEvents, setComingUpEvents] = useState<ComingUpEventRecord[]>([]);
+  const [featuredReels, setFeaturedReels] = useState<FeaturedReelRecord[]>([]);
   const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdateRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
-  const [activeMemberTypeUserId, setActiveMemberTypeUserId] = useState<number | null>(null);
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
+  const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
   const [investorUpdateDrafts, setInvestorUpdateDrafts] = useState<Record<number, InvestorUpdateDraft>>({});
   const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
     createEmptyComingUpEventDraft()
@@ -207,19 +248,12 @@ export default function AdminPage() {
     'monthly-reports': createEmptyInvestorUpdateDraft('monthly-reports'),
     'real-time-quote': createEmptyInvestorUpdateDraft('real-time-quote'),
   });
-  const [portfolioByInvestorId, setPortfolioByInvestorId] = useState<
-    Record<number, InvestmentPortfolioResponse | null | undefined>
-  >({});
-  const [activePortfolioAction, setActivePortfolioAction] = useState<string | null>(null);
-  const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null);
-  const [reportGenerationMessage, setReportGenerationMessage] = useState<string | null>(null);
-  const [reportCenterReports, setReportCenterReports] = useState<AdminInvestmentReportRecord[]>([]);
-  const [isReportCenterLoading, setIsReportCenterLoading] = useState(true);
-  const [activeReportSaveKey, setActiveReportSaveKey] = useState<string | null>(null);
-  const [activeReportRegenerateKey, setActiveReportRegenerateKey] = useState<string | null>(null);
-
-  const createReportActionKey = (report: Pick<AdminInvestmentReportRecord, 'id' | 'monthKey'>) =>
-    `${report.monthKey}:${report.id}`;
+  const [newFeaturedReelDrafts, setNewFeaturedReelDrafts] = useState<
+    Record<FeaturedReelPlacement, FeaturedReelDraft>
+  >({
+    featured: createEmptyFeaturedReelDraft('featured'),
+    supporting: createEmptyFeaturedReelDraft('supporting'),
+  });
 
   const stats = useMemo(
     () => ({
@@ -236,12 +270,7 @@ export default function AdminPage() {
   );
 
   const dancerUsers = useMemo(
-    () => users.filter((user) => user.role !== 'admin' && user.memberType !== 'investor'),
-    [users]
-  );
-
-  const investorUsers = useMemo(
-    () => users.filter((user) => user.role !== 'admin' && user.memberType === 'investor'),
+    () => users.filter((user) => user.role !== 'admin'),
     [users]
   );
 
@@ -252,6 +281,11 @@ export default function AdminPage() {
       description: 'Homepage event list and ordering',
     },
     {
+      id: 'content' as const,
+      label: 'Content',
+      description: 'Homepage reels and featured media modules',
+    },
+    {
       id: 'dancer' as const,
       label: 'Dancer',
       description: 'Admin accounts and private video management',
@@ -259,7 +293,7 @@ export default function AdminPage() {
     {
       id: 'investor' as const,
       label: 'Investor',
-      description: 'Investor portfolios, reports, and page updates',
+      description: 'Reserved for investor tools and reporting',
     },
   ];
 
@@ -276,7 +310,22 @@ export default function AdminPage() {
           'real-time-quote': [],
         }
       ),
-    [investorUpdates]
+    [investorCategories, investorUpdates]
+  );
+
+  const featuredReelsByPlacement = useMemo(
+    () =>
+      (['featured', 'supporting'] as const).reduce<Record<FeaturedReelPlacement, FeaturedReelRecord[]>>(
+        (grouped, placement) => {
+          grouped[placement] = featuredReels.filter((reel) => reel.placement === placement);
+          return grouped;
+        },
+        {
+          featured: [],
+          supporting: [],
+        }
+      ),
+    [featuredReels]
   );
 
   const videosByUser = useMemo(() => {
@@ -305,23 +354,22 @@ export default function AdminPage() {
     setError(null);
 
     try {
-      const [usersResponse, videosResponse, reportsResponse, comingUpEventsResponse, investorUpdatesResponse] = await Promise.all([
+      const [usersResponse, videosResponse, comingUpEventsResponse, featuredReelsResponse, investorUpdatesResponse] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
-        fetchAdminInvestmentReports(),
         fetchAdminComingUpEvents(),
+        fetchAdminFeaturedReels(),
         fetchAdminInvestorUpdates(),
       ]);
 
       setUsers(usersResponse.users);
       setVideos(videosResponse.videos);
-      setReportCenterReports(reportsResponse);
       setComingUpEvents(comingUpEventsResponse.events);
+      setFeaturedReels(featuredReelsResponse.reels);
       setInvestorUpdates(investorUpdatesResponse.updates);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
-      setIsReportCenterLoading(false);
       if (keepLoadingState) {
         setIsLoading(false);
       }
@@ -345,6 +393,18 @@ export default function AdminPage() {
   }, [comingUpEvents]);
 
   useEffect(() => {
+    setFeaturedReelDrafts((current) => {
+      const nextDrafts: Record<number, FeaturedReelDraft> = {};
+
+      featuredReels.forEach((reel) => {
+        nextDrafts[reel.id] = current[reel.id] ?? createFeaturedReelDraftFromRecord(reel);
+      });
+
+      return nextDrafts;
+    });
+  }, [featuredReels]);
+
+  useEffect(() => {
     setInvestorUpdateDrafts((current) => {
       const nextDrafts: Record<number, InvestorUpdateDraft> = {};
 
@@ -356,41 +416,13 @@ export default function AdminPage() {
     });
   }, [investorUpdates]);
 
-  useEffect(() => {
-    const loadInvestorPortfolios = async () => {
-      if (investorUsers.length === 0) {
-        setPortfolioByInvestorId({});
-        return;
-      }
-
-      const entries = await Promise.all(
-        investorUsers.map(async (user) => {
-          try {
-            const response = await fetchAdminInvestmentPortfolio(user.id);
-            return [user.id, response] as const;
-          } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unable to load portfolio.';
-            if (message.toLowerCase().includes('portfolio not found')) {
-              return [user.id, null] as const;
-            }
-
-            throw err;
-          }
-        })
-      );
-
-      setPortfolioByInvestorId(Object.fromEntries(entries));
-    };
-
-    void loadInvestorPortfolios().catch((err) => {
-      setError(err instanceof Error ? err.message : 'Unable to load investor portfolios.');
-    });
-  }, [investorUsers]);
-
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
   const getComingUpEventDraft = (event: ComingUpEventRecord) =>
     comingUpEventDrafts[event.id] ?? createComingUpEventDraftFromRecord(event);
+
+  const getFeaturedReelDraft = (reel: FeaturedReelRecord) =>
+    featuredReelDrafts[reel.id] ?? createFeaturedReelDraftFromRecord(reel);
 
   const getInvestorUpdateDraft = (update: InvestorUpdateRecord) =>
     investorUpdateDrafts[update.id] ?? createInvestorUpdateDraftFromRecord(update);
@@ -430,6 +462,29 @@ export default function AdminPage() {
     setNewComingUpEventDraft((current) => ({
       ...current,
       ...patch,
+    }));
+  };
+
+  const updateFeaturedReelDraft = (reelId: number, patch: Partial<FeaturedReelDraft>) => {
+    setFeaturedReelDrafts((current) => ({
+      ...current,
+      [reelId]: {
+        ...(current[reelId] ?? createEmptyFeaturedReelDraft('featured')),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewFeaturedReelDraft = (
+    placement: FeaturedReelPlacement,
+    patch: Partial<FeaturedReelDraft>
+  ) => {
+    setNewFeaturedReelDrafts((current) => ({
+      ...current,
+      [placement]: {
+        ...current[placement],
+        ...patch,
+      },
     }));
   };
 
@@ -505,101 +560,6 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Unable to delete user.');
     } finally {
       setActiveDeleteKey(null);
-    }
-  };
-
-  const handleGenerateLatestReports = async () => {
-    setActivePortfolioAction('generate-reports');
-    setError(null);
-    setReportGenerationMessage(null);
-
-    try {
-      const response = await generateAdminInvestmentReports();
-      await loadDashboard();
-      setReportGenerationMessage(
-        `Saved ${response.summary.generated + response.summary.updated} investor report${
-          response.summary.generated + response.summary.updated === 1 ? '' : 's'
-        } for ${response.monthKey}. Skipped ${response.summary.skipped}, failed ${response.summary.failed}.`
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate investor reports.');
-    } finally {
-      setActivePortfolioAction(null);
-    }
-  };
-
-  const handleSaveReportNotes = async (
-    report: AdminInvestmentReportRecord,
-    notes: {
-      investorNote: string | null;
-      adminNote: string | null;
-    }
-  ) => {
-    const actionKey = createReportActionKey(report);
-    setActiveReportSaveKey(actionKey);
-    setError(null);
-    setReportGenerationMessage(null);
-
-    try {
-      const savedReport = await updateAdminInvestmentReportNotes(report.monthKey, report.id, notes);
-      setReportCenterReports((current) =>
-        current.map((entry) => (entry.id === savedReport.id ? savedReport : entry))
-      );
-      setReportGenerationMessage(
-        `Saved notes for ${savedReport.investorEmail} (${savedReport.label}).`
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save report notes.');
-      throw err;
-    } finally {
-      setActiveReportSaveKey(null);
-    }
-  };
-
-  const handleRegenerateReport = async (report: AdminInvestmentReportRecord) => {
-    const actionKey = createReportActionKey(report);
-    setActiveReportRegenerateKey(actionKey);
-    setError(null);
-    setReportGenerationMessage(null);
-
-    try {
-      const refreshedReport = await regenerateAdminInvestmentReport(report.monthKey, report.id);
-      setReportCenterReports((current) =>
-        current.map((entry) => (entry.id === refreshedReport.id ? refreshedReport : entry))
-      );
-      setReportGenerationMessage(
-        `Regenerated ${refreshedReport.label} for ${refreshedReport.investorEmail}.`
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to regenerate this saved report.');
-      throw err;
-    } finally {
-      setActiveReportRegenerateKey(null);
-    }
-  };
-
-  const handleMemberTypeChange = async (
-    user: AdminUserRecord,
-    memberType: 'dancer' | 'investor'
-  ) => {
-    if (user.memberType === memberType) {
-      return;
-    }
-
-    setActiveMemberTypeUserId(user.id);
-    setError(null);
-
-    try {
-      const response = await updateAdminUserMemberType(user.id, { memberType });
-      setUsers((current) =>
-        current.map((entry) =>
-          entry.id === user.id ? { ...entry, memberType: response.user.memberType } : entry
-        )
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update member type.');
-    } finally {
-      setActiveMemberTypeUserId(null);
     }
   };
 
@@ -770,6 +730,122 @@ export default function AdminPage() {
     }
   };
 
+  const toFeaturedReelPayload = (draft: FeaturedReelDraft): AdminFeaturedReelPayload => ({
+    placement: draft.placement,
+    youtubeId: draft.youtubeId.trim(),
+    videoSrc: draft.videoSrc.trim(),
+    metaLabel: draft.metaLabel.trim(),
+    metaLabelZh: draft.metaLabelZh.trim(),
+    title: draft.title.trim(),
+    titleZh: draft.titleZh.trim(),
+    description: draft.description.trim(),
+    descriptionZh: draft.descriptionZh.trim(),
+    thumbnail: draft.thumbnail.trim(),
+  });
+
+  const handleCreateFeaturedReel = async (placement: FeaturedReelPlacement) => {
+    const draft = newFeaturedReelDrafts[placement];
+    updateNewFeaturedReelDraft(placement, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminFeaturedReel(toFeaturedReelPayload(draft));
+      setFeaturedReels((current) => [...current, response.reel]);
+      updateNewFeaturedReelDraft(placement, createEmptyFeaturedReelDraft(placement));
+      await loadDashboard();
+    } catch (err) {
+      updateNewFeaturedReelDraft(placement, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this reel.',
+      });
+      return;
+    }
+
+    updateNewFeaturedReelDraft(placement, { isSubmitting: false });
+  };
+
+  const handleSaveFeaturedReel = async (reel: FeaturedReelRecord) => {
+    const draft = getFeaturedReelDraft(reel);
+    updateFeaturedReelDraft(reel.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminFeaturedReel(reel.id, toFeaturedReelPayload(draft));
+      setFeaturedReels((current) =>
+        current.map((entry) => (entry.id === reel.id ? response.reel : entry))
+      );
+      setFeaturedReelDrafts((current) => ({
+        ...current,
+        [reel.id]: createFeaturedReelDraftFromRecord(response.reel),
+      }));
+      await loadDashboard();
+    } catch (err) {
+      updateFeaturedReelDraft(reel.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this reel.',
+      });
+      return;
+    }
+
+    updateFeaturedReelDraft(reel.id, { isSubmitting: false });
+  };
+
+  const handleDeleteFeaturedReel = async (reel: FeaturedReelRecord) => {
+    if (!window.confirm(`Delete "${reel.title}" from ${reel.placement} reels?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`featured-reel-delete-${reel.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminFeaturedReel(reel.id);
+      setFeaturedReels((current) => current.filter((entry) => entry.id !== reel.id));
+      setFeaturedReelDrafts((current) => {
+        const nextDrafts = { ...current };
+        delete nextDrafts[reel.id];
+        return nextDrafts;
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this reel.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveFeaturedReel = async (
+    placement: FeaturedReelPlacement,
+    reelId: number,
+    direction: -1 | 1
+  ) => {
+    const placementReels = featuredReelsByPlacement[placement];
+    const currentIndex = placementReels.findIndex((entry) => entry.id === reelId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= placementReels.length) {
+      return;
+    }
+
+    const reorderedIds = [...placementReels.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`featured-reel-move-${reelId}`);
+    setError(null);
+
+    try {
+      await reorderAdminFeaturedReels(placement, reorderedIds);
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder featured reels.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
   const toInvestorUpdatePayload = (draft: InvestorUpdateDraft): AdminInvestorUpdatePayload => ({
     category: draft.category,
     title: draft.title.trim(),
@@ -883,125 +959,6 @@ export default function AdminPage() {
     }
   };
 
-  const loadInvestorPortfolio = async (userId: number) => {
-    const response = await fetchAdminInvestmentPortfolio(userId);
-    setPortfolioByInvestorId((current) => ({
-      ...current,
-      [userId]: response,
-    }));
-  };
-
-  const handleCreateInvestorPortfolio = async (user: AdminUserRecord) => {
-    setActivePortfolioAction(`create-${user.id}`);
-    setError(null);
-
-    try {
-      const response = await createAdminInvestmentPortfolio(user.id, {
-        displayName: `${user.email.split('@')[0]} Portfolio`,
-      });
-
-      setPortfolioByInvestorId((current) => ({
-        ...current,
-        [user.id]: {
-          portfolio: response.portfolio,
-          summary: {
-            totalInvested: 0,
-            portfolioValue: 0,
-            unrealizedPnL: 0,
-            totalReturnPercent: 0,
-          },
-          holdings: [],
-          transactions: [],
-        },
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create investor portfolio.');
-    } finally {
-      setActivePortfolioAction(null);
-    }
-  };
-
-  const handleCreateInvestorTransaction = async (
-    user: AdminUserRecord,
-    payload: {
-      assetSymbol: string;
-      amountInvested: number;
-      purchasePrice: number;
-      purchaseShares: number;
-      purchaseDate: string;
-      notes: string | null;
-    }
-  ) => {
-    setActivePortfolioAction(`transaction-${user.id}`);
-    setError(null);
-
-    try {
-      await createAdminInvestmentTransaction(user.id, payload);
-      await loadInvestorPortfolio(user.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create investment transaction.');
-      throw err;
-    } finally {
-      setActivePortfolioAction(null);
-    }
-  };
-
-  const handleUpdateInvestorTransaction = async (
-    user: AdminUserRecord,
-    transactionId: number,
-    payload: {
-      assetSymbol: string;
-      amountInvested: number;
-      purchasePrice: number;
-      purchaseShares: number;
-      purchaseDate: string;
-      notes: string | null;
-    }
-  ) => {
-    setActivePortfolioAction(`transaction-${transactionId}`);
-    setError(null);
-
-    try {
-      await updateAdminInvestmentTransaction(transactionId, payload);
-      await loadInvestorPortfolio(user.id);
-      setEditingTransactionId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update investment transaction.');
-      throw err;
-    } finally {
-      setActivePortfolioAction(null);
-    }
-  };
-
-  const handleDeleteInvestorTransaction = async (
-    user: AdminUserRecord,
-    transaction: InvestmentTransaction
-  ) => {
-    if (
-      !window.confirm(
-        `Delete the ${transaction.assetSymbol} transaction from ${formatDate(transaction.purchaseDate)}?`
-      )
-    ) {
-      return;
-    }
-
-    setActivePortfolioAction(`delete-transaction-${transaction.id}`);
-    setError(null);
-
-    try {
-      await deleteAdminInvestmentTransaction(transaction.id);
-      await loadInvestorPortfolio(user.id);
-
-      if (editingTransactionId === transaction.id) {
-        setEditingTransactionId(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete investment transaction.');
-    } finally {
-      setActivePortfolioAction(null);
-    }
-  };
-
   const renderVideoCard = (video: AdminVideoRecord, compact = false) => {
     const isDeleting = activeDeleteKey === `video-${video.id}`;
 
@@ -1108,7 +1065,7 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.5)] p-3 shadow-[0_14px_36px_rgba(68,102,136,0.08)]">
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-4">
               {adminTabs.map((tab) => {
                 const isActive = activeTab === tab.id;
 
@@ -1353,6 +1310,159 @@ export default function AdminPage() {
               </section>
               ) : null}
 
+              {activeTab === 'content' ? (
+              <section aria-labelledby="admin-content-heading">
+                <div className="space-y-6">
+                  <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-8">
+                    <p className="eyebrow">Homepage Content</p>
+                    <h2 id="admin-content-heading" className="mt-3 text-4xl text-[var(--text)]">
+                      Featured Performance Reels
+                    </h2>
+                    <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
+                      Manage the reels shown on the public homepage. Featured reels feed the large cards on the left, and supporting reels feed the smaller cards on the right.
+                    </p>
+                  </div>
+
+                  {(['featured', 'supporting'] as const).map((placement) => {
+                    const placementReels = featuredReelsByPlacement[placement];
+                    const newDraft = newFeaturedReelDrafts[placement];
+
+                    return (
+                      <article
+                        key={placement}
+                        className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
+                      >
+                        <div className="flex flex-wrap items-end justify-between gap-4">
+                          <div>
+                            <p className="eyebrow">{placement === 'featured' ? 'Featured column' : 'Supporting column'}</p>
+                            <h3 className="mt-3 text-3xl text-[var(--text)]">
+                              {placement === 'featured' ? 'Large reel cards' : 'Small reel cards'}
+                            </h3>
+                            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                              {placement === 'featured'
+                                ? 'These entries appear as the large primary reels on the left side of the media section.'
+                                : 'These entries appear as the stacked supporting reels on the right side of the media section.'}
+                            </p>
+                          </div>
+                          <p className="text-sm text-[var(--text-muted)]">
+                            {placementReels.length} item{placementReels.length === 1 ? '' : 's'}
+                          </p>
+                        </div>
+
+                        <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                          <p className="eyebrow text-[10px]">New reel</p>
+                          <h4 className="mt-3 text-2xl text-[var(--text)]">Add homepage reel</h4>
+
+                          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Meta label (EN)</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newDraft.metaLabel} onChange={(event) => updateNewFeaturedReelDraft(placement, { metaLabel: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Meta label (ZH)</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newDraft.metaLabelZh} onChange={(event) => updateNewFeaturedReelDraft(placement, { metaLabelZh: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Title (EN)</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newDraft.title} onChange={(event) => updateNewFeaturedReelDraft(placement, { title: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Title (ZH)</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newDraft.titleZh} onChange={(event) => updateNewFeaturedReelDraft(placement, { titleZh: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">YouTube id</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="ZINiS_mTgd0" type="text" value={newDraft.youtubeId} onChange={(event) => updateNewFeaturedReelDraft(placement, { youtubeId: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                              <span className="eyebrow text-[10px]">Local video path (optional)</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="/crystal-prix-de-lausanne.mp4" type="text" value={newDraft.videoSrc} onChange={(event) => updateNewFeaturedReelDraft(placement, { videoSrc: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                              <span className="eyebrow text-[10px]">Thumbnail path</span>
+                              <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="/crystal-press-moscow-gala-2.png" type="text" value={newDraft.thumbnail} onChange={(event) => updateNewFeaturedReelDraft(placement, { thumbnail: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                              <span className="eyebrow text-[10px]">Description (EN)</span>
+                              <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newDraft.description} onChange={(event) => updateNewFeaturedReelDraft(placement, { description: event.target.value })} />
+                            </label>
+                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                              <span className="eyebrow text-[10px]">Description (ZH)</span>
+                              <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newDraft.descriptionZh} onChange={(event) => updateNewFeaturedReelDraft(placement, { descriptionZh: event.target.value })} />
+                            </label>
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm text-[var(--text-muted)]">
+                              New reels are appended to the end of this column.
+                            </p>
+                            <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={newDraft.isSubmitting} onClick={() => void handleCreateFeaturedReel(placement)} type="button">
+                              {newDraft.isSubmitting ? 'Adding...' : 'Add reel'}
+                            </button>
+                          </div>
+
+                          {newDraft.error ? (
+                            <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                              {newDraft.error}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        {placementReels.length === 0 ? (
+                          <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                            No reels in this column yet.
+                          </div>
+                        ) : (
+                          <div className="mt-6 space-y-4">
+                            {placementReels.map((reel, index) => {
+                              const draft = getFeaturedReelDraft(reel);
+                              const isDeleting = activeEventActionKey === `featured-reel-delete-${reel.id}`;
+                              const isMoving = activeEventActionKey === `featured-reel-move-${reel.id}`;
+
+                              return (
+                                <article key={reel.id} className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                                  <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                      <p className="eyebrow text-[10px]">Position {index + 1} · {formatDate(reel.updatedAt)}</p>
+                                      <h4 className="mt-3 text-2xl text-[var(--text)]">{draft.title || 'Untitled reel'}</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === 0 || isMoving} onClick={() => void handleMoveFeaturedReel(placement, reel.id, -1)} type="button">{isMoving ? 'Moving...' : 'Up'}</button>
+                                      <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === placementReels.length - 1 || isMoving} onClick={() => void handleMoveFeaturedReel(placement, reel.id, 1)} type="button">{isMoving ? 'Moving...' : 'Down'}</button>
+                                      <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={draft.isSubmitting} onClick={() => void handleSaveFeaturedReel(reel)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                      <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isDeleting} onClick={() => void handleDeleteFeaturedReel(reel)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Meta label (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.metaLabel} onChange={(event) => updateFeaturedReelDraft(reel.id, { metaLabel: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Meta label (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.metaLabelZh} onChange={(event) => updateFeaturedReelDraft(reel.id, { metaLabelZh: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.title} onChange={(event) => updateFeaturedReelDraft(reel.id, { title: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.titleZh} onChange={(event) => updateFeaturedReelDraft(reel.id, { titleZh: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">YouTube id</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.youtubeId} onChange={(event) => updateFeaturedReelDraft(reel.id, { youtubeId: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Local video path</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.videoSrc} onChange={(event) => updateFeaturedReelDraft(reel.id, { videoSrc: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Thumbnail path</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.thumbnail} onChange={(event) => updateFeaturedReelDraft(reel.id, { thumbnail: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Description (EN)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.description} onChange={(event) => updateFeaturedReelDraft(reel.id, { description: event.target.value })} /></label>
+                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Description (ZH)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.descriptionZh} onChange={(event) => updateFeaturedReelDraft(reel.id, { descriptionZh: event.target.value })} /></label>
+                                  </div>
+
+                                  {draft.error ? (
+                                    <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                      {draft.error}
+                                    </p>
+                                  ) : null}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+              ) : null}
+
               {activeTab === 'dancer' ? (
               <>
               <section aria-labelledby="admin-users-heading">
@@ -1437,7 +1547,6 @@ export default function AdminPage() {
                     {dancerUsers.map((user) => {
                       const userVideos = videosByUser.get(user.id) ?? [];
                       const isDeleting = activeDeleteKey === `user-${user.id}`;
-                      const isUpdatingMemberType = activeMemberTypeUserId === user.id;
                       const draft = getDraft(user.id);
                       const isAssigningYoutube = draft.mode === 'youtube';
 
@@ -1465,30 +1574,9 @@ export default function AdminPage() {
 
                           <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                             <span>Role: {user.role}</span>
-                            <span>Member type: {user.memberType}</span>
                             <span>Uploads: {user.uploadCount}</span>
                             <span>Joined: {formatDate(user.createdAt)}</span>
                           </div>
-
-                          <label className="mt-5 block">
-                            <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                              Member type
-                            </span>
-                            <select
-                              className="mt-2 w-full rounded-2xl border border-[var(--line)] bg-white/90 px-4 py-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
-                              disabled={isUpdatingMemberType}
-                              onChange={(event) =>
-                                void handleMemberTypeChange(
-                                  user,
-                                  event.target.value as 'dancer' | 'investor'
-                                )
-                              }
-                              value={user.memberType}
-                            >
-                              <option value="dancer">Dancer</option>
-                              <option value="investor">Investor</option>
-                            </select>
-                          </label>
 
                           <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                             <div className="flex flex-wrap items-end justify-between gap-4">
@@ -1637,421 +1725,248 @@ export default function AdminPage() {
               ) : null}
 
               {activeTab === 'investor' ? (
-              <section aria-labelledby="admin-investors-heading">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
+              <section aria-labelledby="admin-investor-placeholder-heading">
+                <div className="space-y-6">
+                  <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-8">
                     <p className="eyebrow">Investor</p>
-                    <h2 id="admin-investors-heading" className="mt-3 text-4xl text-[var(--text)]">
-                      Investor Portfolios
-                    </h2>
-                  </div>
-                  <div className="flex flex-col items-start gap-3 sm:items-end">
-                    <button
-                      className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={investorUsers.length === 0 || activePortfolioAction === 'generate-reports'}
-                      onClick={() => void handleGenerateLatestReports()}
-                      type="button"
+                    <h2
+                      id="admin-investor-placeholder-heading"
+                      className="mt-3 text-4xl text-[var(--text)]"
                     >
-                      {activePortfolioAction === 'generate-reports'
-                        ? 'Generating reports...'
-                        : 'Generate latest reports'}
-                    </button>
-                    <p className="text-sm text-[var(--text-muted)]">
-                      {investorUsers.length} account{investorUsers.length === 1 ? '' : 's'}
+                      Investor tools
+                    </h2>
+                    <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
+                      Manage investor-facing updates in three structured sections. Each module below supports
+                      add, edit, delete, and manual sort controls so future investor pages can read from the
+                      same source of truth.
                     </p>
                   </div>
-                </div>
 
-                <div className="mt-6 grid gap-4 lg:grid-cols-3">
-                  {investorCategories.map((category) => (
-                    <article
-                      key={category.id}
-                      className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
-                    >
-                      <p className="eyebrow">Investor Module</p>
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <h3 className="text-2xl text-[var(--text)]">{category.label}</h3>
-                        <span className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                          {investorUpdatesByCategory[category.id].length} item
-                          {investorUpdatesByCategory[category.id].length === 1 ? '' : 's'}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">
-                        {category.description}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-
-                {reportGenerationMessage ? (
-                  <p className="mt-4 rounded-2xl border border-[rgba(74,155,127,0.24)] bg-[rgba(74,155,127,0.10)] px-4 py-3 text-sm text-[var(--text)]">
-                    {reportGenerationMessage}
-                  </p>
-                ) : null}
-
-                <div className="mt-6 space-y-6">
-                  {investorCategories.map((category) => {
-                    const categoryUpdates = investorUpdatesByCategory[category.id];
-                    const newDraft = newInvestorUpdateDrafts[category.id];
-
-                    return (
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {investorCategories.map((category) => (
                       <article
                         key={category.id}
-                        className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
+                        className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_16px_40px_rgba(68,102,136,0.08)]"
                       >
-                        <div className="flex flex-wrap items-end justify-between gap-4">
-                          <div>
-                            <p className="eyebrow">{category.label}</p>
-                            <h3 className="mt-3 text-3xl text-[var(--text)]">{category.label}</h3>
-                            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
-                              {category.description}
-                            </p>
-                          </div>
-                          <p className="text-sm text-[var(--text-muted)]">
-                            {categoryUpdates.length} item{categoryUpdates.length === 1 ? '' : 's'}
-                          </p>
+                        <p className="eyebrow">Investor Module</p>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <h3 className="text-2xl text-[var(--text)]">{category.label}</h3>
+                          <span className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                            {investorUpdatesByCategory[category.id].length} item
+                            {investorUpdatesByCategory[category.id].length === 1 ? '' : 's'}
+                          </span>
                         </div>
-
-                        <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
-                          <p className="eyebrow text-[10px]">New entry</p>
-                          <h4 className="mt-3 text-2xl text-[var(--text)]">Add investor update</h4>
-
-                          <div className="mt-5 grid gap-4 xl:grid-cols-2">
-                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-                              <span className="eyebrow text-[10px]">Title</span>
-                              <input
-                                className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                onChange={(event) =>
-                                  updateNewInvestorUpdateDraft(category.id, { title: event.target.value })
-                                }
-                                placeholder="Enter an investor-facing title"
-                                type="text"
-                                value={newDraft.title}
-                              />
-                            </label>
-
-                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-                              <span className="eyebrow text-[10px]">Link (optional)</span>
-                              <input
-                                className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                onChange={(event) =>
-                                  updateNewInvestorUpdateDraft(category.id, { href: event.target.value })
-                                }
-                                placeholder="https://..."
-                                type="url"
-                                value={newDraft.href}
-                              />
-                            </label>
-
-                            <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
-                              <span className="eyebrow text-[10px]">Summary</span>
-                              <textarea
-                                className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                onChange={(event) =>
-                                  updateNewInvestorUpdateDraft(category.id, { summary: event.target.value })
-                                }
-                                placeholder="Write the investor update summary"
-                                value={newDraft.summary}
-                              />
-                            </label>
-                          </div>
-
-                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                            <p className="text-sm text-[var(--text-muted)]">
-                              New entries are appended to the end of this module.
-                            </p>
-                            <button
-                              className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-                              disabled={newDraft.isSubmitting}
-                              onClick={() => void handleCreateInvestorUpdate(category.id)}
-                              type="button"
-                            >
-                              {newDraft.isSubmitting ? 'Adding...' : 'Add update'}
-                            </button>
-                          </div>
-
-                          {newDraft.error ? (
-                            <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
-                              {newDraft.error}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        {categoryUpdates.length === 0 ? (
-                          <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
-                            No investor updates in this module yet.
-                          </div>
-                        ) : (
-                          <div className="mt-6 space-y-4">
-                            {categoryUpdates.map((update, index) => {
-                              const draft = getInvestorUpdateDraft(update);
-                              const isSaving = draft.isSubmitting;
-                              const isDeleting = activeEventActionKey === `investor-delete-${update.id}`;
-                              const isMoving = activeEventActionKey === `investor-move-${update.id}`;
-
-                              return (
-                                <article
-                                  key={update.id}
-                                  className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]"
-                                >
-                                  <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                      <p className="eyebrow text-[10px]">
-                                        Position {index + 1} · {formatDate(update.updatedAt)}
-                                      </p>
-                                      <h4 className="mt-3 text-2xl text-[var(--text)]">{update.title}</h4>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      <button
-                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
-                                        disabled={index === 0 || isMoving}
-                                        onClick={() => void handleMoveInvestorUpdate(category.id, update.id, -1)}
-                                        type="button"
-                                      >
-                                        Up
-                                      </button>
-                                      <button
-                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
-                                        disabled={index === categoryUpdates.length - 1 || isMoving}
-                                        onClick={() => void handleMoveInvestorUpdate(category.id, update.id, 1)}
-                                        type="button"
-                                      >
-                                        Down
-                                      </button>
-                                      <button
-                                        className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
-                                        disabled={isSaving}
-                                        onClick={() => void handleSaveInvestorUpdate(update)}
-                                        type="button"
-                                      >
-                                        {isSaving ? 'Saving...' : 'Save'}
-                                      </button>
-                                      <button
-                                        className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
-                                        disabled={isDeleting}
-                                        onClick={() => void handleDeleteInvestorUpdate(update)}
-                                        type="button"
-                                      >
-                                        {isDeleting ? 'Deleting...' : 'Delete'}
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
-                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-                                      <span className="eyebrow text-[10px]">Title</span>
-                                      <input
-                                        className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                        onChange={(event) =>
-                                          updateInvestorUpdateDraft(update.id, { title: event.target.value })
-                                        }
-                                        type="text"
-                                        value={draft.title}
-                                      />
-                                    </label>
-
-                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
-                                      <span className="eyebrow text-[10px]">Link (optional)</span>
-                                      <input
-                                        className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                        onChange={(event) =>
-                                          updateInvestorUpdateDraft(update.id, { href: event.target.value })
-                                        }
-                                        type="url"
-                                        value={draft.href}
-                                      />
-                                    </label>
-
-                                    <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
-                                      <span className="eyebrow text-[10px]">Summary</span>
-                                      <textarea
-                                        className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
-                                        onChange={(event) =>
-                                          updateInvestorUpdateDraft(update.id, { summary: event.target.value })
-                                        }
-                                        value={draft.summary}
-                                      />
-                                    </label>
-                                  </div>
-
-                                  {draft.error ? (
-                                    <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
-                                      {draft.error}
-                                    </p>
-                                  ) : null}
-                                </article>
-                              );
-                            })}
-                          </div>
-                        )}
+                        <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">
+                          {category.description}
+                        </p>
                       </article>
-                    );
-                  })}
-                </div>
-
-                <AdminReportCenter
-                  activeRegenerateKey={activeReportRegenerateKey}
-                  activeSaveKey={activeReportSaveKey}
-                  isLoading={isReportCenterLoading}
-                  onRegenerate={handleRegenerateReport}
-                  onSave={handleSaveReportNotes}
-                  reports={reportCenterReports}
-                />
-
-                {investorUsers.length === 0 ? (
-                  <div className="mt-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
-                    <p className="text-sm text-[var(--text-muted)]">No investor accounts yet.</p>
+                    ))}
                   </div>
-                ) : (
-                  <div className="mt-6 space-y-6">
-                    {investorUsers.map((user) => {
-                      const portfolio = portfolioByInvestorId[user.id];
-                      const isCreatingPortfolio = activePortfolioAction === `create-${user.id}`;
-                      const isCreatingTransaction = activePortfolioAction === `transaction-${user.id}`;
-                      const safeSummary =
-                        portfolio && portfolio !== null
-                          ? portfolio.summary ?? {
-                              totalInvested: 0,
-                              portfolioValue: 0,
-                              unrealizedPnL: 0,
-                              totalReturnPercent: 0,
-                            }
-                          : null;
-                      const safeHoldings =
-                        portfolio && portfolio !== null && Array.isArray(portfolio.holdings)
-                          ? portfolio.holdings
-                          : [];
-                      const safeTransactions =
-                        portfolio && portfolio !== null && Array.isArray(portfolio.transactions)
-                          ? portfolio.transactions
-                          : [];
-                      const editingTransaction =
-                        portfolio && portfolio !== null
-                          ? safeTransactions.find(
-                              (transaction) => transaction.id === editingTransactionId
-                            ) ?? null
-                          : null;
-                      const isUpdatingTransaction =
-                        editingTransactionId != null &&
-                        activePortfolioAction === `transaction-${editingTransactionId}`;
-                      const activeDeleteTransactionId = activePortfolioAction?.startsWith(
-                        'delete-transaction-'
-                      )
-                        ? Number(activePortfolioAction.replace('delete-transaction-', ''))
-                        : null;
+
+                  <div className="space-y-6">
+                    {investorCategories.map((category) => {
+                      const categoryUpdates = investorUpdatesByCategory[category.id];
+                      const newDraft = newInvestorUpdateDrafts[category.id];
 
                       return (
                         <article
-                          key={user.id}
+                          key={category.id}
                           className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="flex flex-wrap items-end justify-between gap-4">
                             <div>
-                              <p className="eyebrow text-[10px]">Investor account</p>
-                              <h3 className="mt-3 text-3xl text-[var(--text)]">{user.email}</h3>
+                              <p className="eyebrow">{category.label}</p>
+                              <h3 className="mt-3 text-3xl text-[var(--text)]">{category.label}</h3>
+                              <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                                {category.description}
+                              </p>
                             </div>
-                            {portfolio === null ? (
+                            <p className="text-sm text-[var(--text-muted)]">
+                              {categoryUpdates.length} item{categoryUpdates.length === 1 ? '' : 's'}
+                            </p>
+                          </div>
+
+                          <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                            <div className="flex flex-wrap items-end justify-between gap-4">
+                              <div>
+                                <p className="eyebrow text-[10px]">New entry</p>
+                                <h4 className="mt-3 text-2xl text-[var(--text)]">Add investor update</h4>
+                              </div>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Title</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(event) =>
+                                    updateNewInvestorUpdateDraft(category.id, { title: event.target.value })
+                                  }
+                                  placeholder="Enter an investor-facing title"
+                                  type="text"
+                                  value={newDraft.title}
+                                />
+                              </label>
+
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                <span className="eyebrow text-[10px]">Link (optional)</span>
+                                <input
+                                  className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(event) =>
+                                    updateNewInvestorUpdateDraft(category.id, { href: event.target.value })
+                                  }
+                                  placeholder="https://..."
+                                  type="url"
+                                  value={newDraft.href}
+                                />
+                              </label>
+
+                              <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                                <span className="eyebrow text-[10px]">Summary</span>
+                                <textarea
+                                  className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                  onChange={(event) =>
+                                    updateNewInvestorUpdateDraft(category.id, { summary: event.target.value })
+                                  }
+                                  placeholder="Write the investor update summary"
+                                  value={newDraft.summary}
+                                />
+                              </label>
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                              <p className="text-sm text-[var(--text-muted)]">
+                                New entries are appended to the end of this module.
+                              </p>
                               <button
                                 className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-                                disabled={isCreatingPortfolio}
-                                onClick={() => void handleCreateInvestorPortfolio(user)}
+                                disabled={newDraft.isSubmitting}
+                                onClick={() => void handleCreateInvestorUpdate(category.id)}
                                 type="button"
                               >
-                                {isCreatingPortfolio ? 'Creating...' : 'Create portfolio'}
+                                {newDraft.isSubmitting ? 'Adding...' : 'Add update'}
                               </button>
+                            </div>
+
+                            {newDraft.error ? (
+                              <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                {newDraft.error}
+                              </p>
                             ) : null}
                           </div>
 
-                          <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                            <span>Role: {user.role}</span>
-                            <span>Member type: {user.memberType}</span>
-                            <span>Joined: {formatDate(user.createdAt)}</span>
-                          </div>
-
-                          {portfolio === undefined ? (
-                            <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
-                              Loading portfolio...
-                            </div>
-                          ) : portfolio === null ? (
-                            <div className="mt-5 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
-                              No portfolio created yet.
+                          {categoryUpdates.length === 0 ? (
+                            <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                              No investor updates in this module yet.
                             </div>
                           ) : (
-                            <>
-                              <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
-                                <p className="eyebrow text-[10px]">Portfolio summary</p>
-                                <h4 className="mt-3 text-2xl text-[var(--text)]">
-                                  {portfolio.portfolio.displayName || 'Investor Portfolio'}
-                                </h4>
-                                <PortfolioSummary summary={safeSummary ?? {
-                                  totalInvested: 0,
-                                  portfolioValue: 0,
-                                  unrealizedPnL: 0,
-                                  totalReturnPercent: 0,
-                                }} />
-                                <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                                  <div>
-                                    <p className="text-sm text-[var(--text-muted)]">Holdings</p>
-                                    <HoldingsTable holdings={safeHoldings} />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-[var(--text-muted)]">Transactions</p>
-                                    <TransactionTable
-                                      activeDeleteId={activeDeleteTransactionId}
-                                      activeEditId={editingTransactionId}
-                                      onDelete={(transaction) =>
-                                        void handleDeleteInvestorTransaction(user, transaction)
-                                      }
-                                      onEdit={(transaction) => setEditingTransactionId(transaction.id)}
-                                      transactions={safeTransactions}
-                                    />
-                                    {editingTransaction ? (
-                                      <div className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white p-5">
-                                        <p className="eyebrow text-[10px]">Edit transaction</p>
-                                        <h5 className="mt-3 text-xl text-[var(--text)]">
-                                          Update {editingTransaction.assetSymbol} purchase
-                                        </h5>
-                                        <TransactionForm
-                                          initialValues={{
-                                            assetSymbol: editingTransaction.assetSymbol,
-                                            amountInvested: String(editingTransaction.amountInvested),
-                                            purchasePrice: String(editingTransaction.purchasePrice),
-                                            purchaseShares: String(editingTransaction.purchaseShares),
-                                            purchaseDate: editingTransaction.purchaseDate,
-                                            notes: editingTransaction.notes ?? '',
-                                          }}
-                                          isSubmitting={isUpdatingTransaction}
-                                          onCancel={() => setEditingTransactionId(null)}
-                                          onSubmit={(payload) =>
-                                            handleUpdateInvestorTransaction(
-                                              user,
-                                              editingTransaction.id,
-                                              payload
-                                            )
-                                          }
-                                          submitLabel="Save changes"
-                                        />
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </div>
+                            <div className="mt-6 space-y-4">
+                              {categoryUpdates.map((update, index) => {
+                                const draft = getInvestorUpdateDraft(update);
+                                const isSaving = draft.isSubmitting;
+                                const isDeleting = activeEventActionKey === `investor-delete-${update.id}`;
+                                const isMoving = activeEventActionKey === `investor-move-${update.id}`;
 
-                              <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
-                                <p className="eyebrow text-[10px]">Add buy transaction</p>
-                                <h4 className="mt-3 text-2xl text-[var(--text)]">Record a purchase</h4>
-                                <TransactionForm
-                                  isSubmitting={isCreatingTransaction}
-                                  onSubmit={(payload) => handleCreateInvestorTransaction(user, payload)}
-                                />
-                              </div>
-                            </>
+                                return (
+                                  <article
+                                    key={update.id}
+                                    className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]"
+                                  >
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                      <div>
+                                        <p className="eyebrow text-[10px]">
+                                          Position {index + 1} · {formatDate(update.updatedAt)}
+                                        </p>
+                                        <h4 className="mt-3 text-2xl text-[var(--text)]">{update.title}</h4>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <button
+                                          className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                          disabled={index === 0 || isMoving}
+                                          onClick={() => void handleMoveInvestorUpdate(category.id, update.id, -1)}
+                                          type="button"
+                                        >
+                                          Up
+                                        </button>
+                                        <button
+                                          className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                          disabled={index === categoryUpdates.length - 1 || isMoving}
+                                          onClick={() => void handleMoveInvestorUpdate(category.id, update.id, 1)}
+                                          type="button"
+                                        >
+                                          Down
+                                        </button>
+                                        <button
+                                          className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60"
+                                          disabled={isSaving}
+                                          onClick={() => void handleSaveInvestorUpdate(update)}
+                                          type="button"
+                                        >
+                                          {isSaving ? 'Saving...' : 'Save'}
+                                        </button>
+                                        <button
+                                          className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60"
+                                          disabled={isDeleting}
+                                          onClick={() => void handleDeleteInvestorUpdate(update)}
+                                          type="button"
+                                        >
+                                          {isDeleting ? 'Deleting...' : 'Delete'}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                        <span className="eyebrow text-[10px]">Title</span>
+                                        <input
+                                          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                          onChange={(event) =>
+                                            updateInvestorUpdateDraft(update.id, { title: event.target.value })
+                                          }
+                                          type="text"
+                                          value={draft.title}
+                                        />
+                                      </label>
+
+                                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                                        <span className="eyebrow text-[10px]">Link (optional)</span>
+                                        <input
+                                          className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                          onChange={(event) =>
+                                            updateInvestorUpdateDraft(update.id, { href: event.target.value })
+                                          }
+                                          type="url"
+                                          value={draft.href}
+                                        />
+                                      </label>
+
+                                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                                        <span className="eyebrow text-[10px]">Summary</span>
+                                        <textarea
+                                          className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]"
+                                          onChange={(event) =>
+                                            updateInvestorUpdateDraft(update.id, { summary: event.target.value })
+                                          }
+                                          value={draft.summary}
+                                        />
+                                      </label>
+                                    </div>
+
+                                    {draft.error ? (
+                                      <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                        {draft.error}
+                                      </p>
+                                    ) : null}
+                                  </article>
+                                );
+                              })}
+                            </div>
                           )}
                         </article>
                       );
                     })}
                   </div>
-                )}
+                </div>
               </section>
               ) : null}
             </div>

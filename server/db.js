@@ -23,6 +23,98 @@ const defaultComingUpEvents = [
     sortOrder: 2,
   },
 ];
+const defaultFeaturedReels = [
+  {
+    placement: 'featured',
+    youtubeId: '_1p3Udn_SZY',
+    videoSrc: null,
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Round 2 Contemporary',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽第二輪當代舞',
+    description:
+      'Crystal Huang performs her round 2 contemporary selection at the XV Moscow Ballet Competition in July 2026.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年 7 月在第十五屆莫斯科國際芭蕾舞大賽演出第二輪當代舞作品。',
+    thumbnail: '/crystal-press-moscow-vx.png',
+    sortOrder: 0,
+  },
+  {
+    placement: 'featured',
+    youtubeId: 'ZINiS_mTgd0',
+    videoSrc: null,
+    metaLabel: 'XV Moscow Ballet Competition Gala · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽晚會演出 · 2026年7月',
+    title: '2026 XV Moscow International Ballet Competition Gala Performance',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽晚會演出',
+    description:
+      'Crystal Huang performs in the 2026 XV Moscow International Ballet Competition gala presentation.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽晚會演出中登台演出。',
+    thumbnail: '/crystal-press-moscow-gala-2.png',
+    sortOrder: 1,
+  },
+  {
+    placement: 'featured',
+    youtubeId: 'e2Z9UXevvIg',
+    videoSrc: '/crystal-prix-de-lausanne.mp4',
+    metaLabel: 'Prix de Lausanne · 2024',
+    metaLabelZh: '洛桑國際芭蕾舞比賽 · 2024',
+    title: 'Prix de Lausanne 2024 Contemporary Dance Award and Prize Winner',
+    titleZh: '2024 洛桑國際芭蕾舞比賽當代舞特別獎與得獎者',
+    description:
+      "Contemporary variation that earned Crystal the Female Contemporary Dance Award at one of the world's most prestigious ballet competitions.",
+    descriptionZh:
+      '贏得洛桑女子當代舞蹈特別獎的演出片段，這是全球最具聲望的芭蕾舞比賽之一。',
+    thumbnail: '/crystal-contemporary.jpg',
+    sortOrder: 2,
+  },
+  {
+    placement: 'supporting',
+    youtubeId: 'JpP-JRj3LMw',
+    videoSrc: null,
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Harlequinade Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪 - Harlequinade 變奏',
+    description:
+      'Crystal Huang performs the Harlequinade variation in junior solo round 3 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪演出 Harlequinade 變奏。',
+    thumbnail: '/crystal-press-moscow-harlequinade.png',
+    sortOrder: 0,
+  },
+  {
+    placement: 'supporting',
+    youtubeId: '3i5ap93thF0',
+    videoSrc: null,
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 3 - Sugar Plum Fairy Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪 - 糖梅仙子變奏',
+    description:
+      'Crystal Huang performs the Sugar Plum Fairy variation in junior solo round 3 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第三輪演出糖梅仙子變奏。',
+    thumbnail: '/crystal-press-moscow-sugar-plum.png',
+    sortOrder: 1,
+  },
+  {
+    placement: 'supporting',
+    youtubeId: 'iA3sQ5TDgu0',
+    videoSrc: null,
+    metaLabel: 'XV Moscow Ballet Competition · July 2026',
+    metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+    title: '2026 XV Moscow Ballet Competition, Junior Solo Round 1 - Gulnare Variation',
+    titleZh: '2026 第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第一輪 - Gulnare 變奏',
+    description:
+      'Crystal Huang performs the Gulnare variation in junior solo round 1 at the 2026 XV Moscow Ballet Competition.',
+    descriptionZh:
+      'Crystal Huang 於 2026 年第十五屆莫斯科國際芭蕾舞大賽少年女子獨舞第一輪演出 Gulnare 變奏。',
+    thumbnail: '/crystal-press-moscow-gulnare-2.png',
+    sortOrder: 2,
+  },
+];
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
     return;
@@ -50,7 +142,6 @@ export function createDatabase(filename) {
   db.exec(schemaSql);
 
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
-  ensureColumn(db, 'users', 'member_type', "TEXT NOT NULL DEFAULT 'dancer'");
   ensureColumn(db, 'users', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'videos', 'original_filename', 'TEXT');
   ensureColumn(db, 'videos', 'duration_seconds', 'INTEGER');
@@ -58,418 +149,29 @@ export function createDatabase(filename) {
   ensureColumn(db, 'videos', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS investment_portfolios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-      base_currency TEXT NOT NULL DEFAULT 'USD',
-      display_name TEXT,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS investment_transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
-      asset_symbol TEXT NOT NULL,
-      asset_name TEXT NOT NULL,
-      transaction_type TEXT NOT NULL DEFAULT 'buy',
-      amount_invested REAL NOT NULL,
-      purchase_price REAL NOT NULL,
-      purchase_shares REAL NOT NULL,
-      purchase_date TEXT NOT NULL,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS investment_monthly_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
-      month_key TEXT NOT NULL,
-      portfolio_value REAL NOT NULL,
-      snapshot_date TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (portfolio_id, month_key)
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS investment_monthly_reports (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      portfolio_id INTEGER NOT NULL REFERENCES investment_portfolios(id) ON DELETE CASCADE,
-      month_key TEXT NOT NULL,
-      snapshot_date TEXT NOT NULL,
-      file_name TEXT NOT NULL,
-      file_path TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'ready',
-      generated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      error_message TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (portfolio_id, month_key)
-    )
-  `);
-
-  ensureColumn(db, 'investment_monthly_reports', 'investor_note', 'TEXT');
-  ensureColumn(db, 'investment_monthly_reports', 'admin_note', 'TEXT');
-
   const statements = {
     createUser: db.prepare(
-      `INSERT INTO users (email, password_hash, role, member_type)
-       VALUES (@email, @passwordHash, @role, @memberType)
-       RETURNING id, email, role, member_type AS memberType`
+      `INSERT INTO users (email, password_hash, role)
+       VALUES (@email, @passwordHash, @role)
+       RETURNING id, email, role`
     ),
     findUserByEmail: db.prepare(
-      'SELECT id, email, role, member_type AS memberType, password_hash AS passwordHash FROM users WHERE email = ?'
+      'SELECT id, email, role, password_hash AS passwordHash FROM users WHERE email = ?'
     ),
-    findUserById: db.prepare(
-      'SELECT id, email, role, member_type AS memberType FROM users WHERE id = ?'
-    ),
-    createInvestmentPortfolio: db.prepare(
-      `INSERT INTO investment_portfolios (user_id, base_currency, display_name, notes)
-       VALUES (@userId, @baseCurrency, @displayName, @notes)
-       RETURNING
-         id,
-         user_id AS userId,
-         base_currency AS baseCurrency,
-         display_name AS displayName,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    findInvestmentPortfolioByUserId: db.prepare(
-      `SELECT
-         id,
-         user_id AS userId,
-         base_currency AS baseCurrency,
-         display_name AS displayName,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_portfolios
-       WHERE user_id = ?`
-    ),
-    listInvestmentPortfoliosForInvestors: db.prepare(
-      `SELECT
-         portfolios.id,
-         portfolios.user_id AS userId,
-         portfolios.base_currency AS baseCurrency,
-         portfolios.display_name AS displayName,
-         portfolios.notes,
-         portfolios.created_at AS createdAt,
-         portfolios.updated_at AS updatedAt
-       FROM investment_portfolios portfolios
-       INNER JOIN users ON users.id = portfolios.user_id
-       WHERE users.member_type = 'investor'
-       ORDER BY portfolios.id ASC`
-    ),
-    createInvestmentTransaction: db.prepare(
-      `INSERT INTO investment_transactions (
-         portfolio_id,
-         asset_symbol,
-         asset_name,
-         transaction_type,
-         amount_invested,
-         purchase_price,
-         purchase_shares,
-         purchase_date,
-         notes
-       ) VALUES (
-         @portfolioId,
-         @assetSymbol,
-         @assetName,
-         @transactionType,
-         @amountInvested,
-         @purchasePrice,
-         @purchaseShares,
-         @purchaseDate,
-         @notes
-       )
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         asset_symbol AS assetSymbol,
-         asset_name AS assetName,
-         transaction_type AS transactionType,
-         amount_invested AS amountInvested,
-         purchase_price AS purchasePrice,
-         purchase_shares AS purchaseShares,
-         purchase_date AS purchaseDate,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    findInvestmentTransactionById: db.prepare(
-      `SELECT
-         id,
-         portfolio_id AS portfolioId,
-         asset_symbol AS assetSymbol,
-         asset_name AS assetName,
-         transaction_type AS transactionType,
-         amount_invested AS amountInvested,
-         purchase_price AS purchasePrice,
-         purchase_shares AS purchaseShares,
-         purchase_date AS purchaseDate,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_transactions
-       WHERE id = ?`
-    ),
-    updateInvestmentTransaction: db.prepare(
-      `UPDATE investment_transactions
-       SET asset_symbol = @assetSymbol,
-           asset_name = @assetName,
-           transaction_type = @transactionType,
-           amount_invested = @amountInvested,
-           purchase_price = @purchasePrice,
-           purchase_shares = @purchaseShares,
-           purchase_date = @purchaseDate,
-           notes = @notes,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = @id
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         asset_symbol AS assetSymbol,
-         asset_name AS assetName,
-         transaction_type AS transactionType,
-         amount_invested AS amountInvested,
-         purchase_price AS purchasePrice,
-         purchase_shares AS purchaseShares,
-         purchase_date AS purchaseDate,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    deleteInvestmentTransactionById: db.prepare(
-      `DELETE FROM investment_transactions
-       WHERE id = ?
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         asset_symbol AS assetSymbol,
-         asset_name AS assetName,
-         transaction_type AS transactionType,
-         amount_invested AS amountInvested,
-         purchase_price AS purchasePrice,
-         purchase_shares AS purchaseShares,
-         purchase_date AS purchaseDate,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    listInvestmentTransactionsByPortfolioId: db.prepare(
-      `SELECT
-         id,
-         portfolio_id AS portfolioId,
-         asset_symbol AS assetSymbol,
-         asset_name AS assetName,
-         transaction_type AS transactionType,
-         amount_invested AS amountInvested,
-         purchase_price AS purchasePrice,
-         purchase_shares AS purchaseShares,
-         purchase_date AS purchaseDate,
-         notes,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_transactions
-       WHERE portfolio_id = ?
-       ORDER BY date(purchase_date) DESC, id DESC`
-    ),
-    listInvestmentMonthlyHistoryByPortfolioId: db.prepare(
-      `SELECT
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS month,
-         portfolio_value AS portfolioValue,
-         snapshot_date AS snapshotDate,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_monthly_history
-       WHERE portfolio_id = ?
-       ORDER BY month_key ASC, id ASC`
-    ),
-    upsertInvestmentMonthlyHistory: db.prepare(
-      `INSERT INTO investment_monthly_history (
-         portfolio_id,
-         month_key,
-         portfolio_value,
-         snapshot_date
-       ) VALUES (
-         @portfolioId,
-         @month,
-         @portfolioValue,
-         @snapshotDate
-       )
-       ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
-         portfolio_value = excluded.portfolio_value,
-         snapshot_date = excluded.snapshot_date,
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS month,
-         portfolio_value AS portfolioValue,
-         snapshot_date AS snapshotDate,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    listInvestmentMonthlyReportsByPortfolioId: db.prepare(
-      `SELECT
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS monthKey,
-         snapshot_date AS snapshotDate,
-         file_name AS fileName,
-         file_path AS filePath,
-         status,
-         generated_at AS generatedAt,
-         error_message AS errorMessage,
-         investor_note AS investorNote,
-         admin_note AS adminNote,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_monthly_reports
-       WHERE portfolio_id = ?
-       ORDER BY month_key DESC, id DESC`
-    ),
-    findInvestmentMonthlyReportByPortfolioIdAndMonth: db.prepare(
-      `SELECT
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS monthKey,
-         snapshot_date AS snapshotDate,
-         file_name AS fileName,
-         file_path AS filePath,
-         status,
-         generated_at AS generatedAt,
-         error_message AS errorMessage,
-         investor_note AS investorNote,
-         admin_note AS adminNote,
-         created_at AS createdAt,
-         updated_at AS updatedAt
-       FROM investment_monthly_reports
-       WHERE portfolio_id = ? AND month_key = ?`
-    ),
-    upsertInvestmentMonthlyReport: db.prepare(
-      `INSERT INTO investment_monthly_reports (
-         portfolio_id,
-         month_key,
-         snapshot_date,
-         file_name,
-         file_path,
-         status,
-         error_message,
-         investor_note,
-         admin_note
-       ) VALUES (
-         @portfolioId,
-         @monthKey,
-         @snapshotDate,
-         @fileName,
-         @filePath,
-         @status,
-         @errorMessage,
-         @investorNote,
-         @adminNote
-       )
-       ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
-         snapshot_date = excluded.snapshot_date,
-         file_name = excluded.file_name,
-         file_path = excluded.file_path,
-         status = excluded.status,
-         error_message = excluded.error_message,
-         investor_note = COALESCE(excluded.investor_note, investment_monthly_reports.investor_note),
-         admin_note = COALESCE(excluded.admin_note, investment_monthly_reports.admin_note),
-         generated_at = CURRENT_TIMESTAMP,
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS monthKey,
-         snapshot_date AS snapshotDate,
-         file_name AS fileName,
-         file_path AS filePath,
-         status,
-         generated_at AS generatedAt,
-         error_message AS errorMessage,
-         investor_note AS investorNote,
-         admin_note AS adminNote,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
-    listInvestmentMonthlyReportsForAdmin: db.prepare(
-      `SELECT
-         reports.id,
-         reports.portfolio_id AS portfolioId,
-         reports.month_key AS monthKey,
-         reports.snapshot_date AS snapshotDate,
-         reports.file_name AS fileName,
-         reports.file_path AS filePath,
-         reports.status,
-         reports.generated_at AS generatedAt,
-         reports.error_message AS errorMessage,
-         reports.investor_note AS investorNote,
-         reports.admin_note AS adminNote,
-         reports.created_at AS createdAt,
-         reports.updated_at AS updatedAt,
-         portfolios.user_id AS investorUserId,
-         portfolios.display_name AS portfolioDisplayName,
-         users.email AS investorEmail
-       FROM investment_monthly_reports reports
-       INNER JOIN investment_portfolios portfolios ON portfolios.id = reports.portfolio_id
-       INNER JOIN users ON users.id = portfolios.user_id
-       ORDER BY reports.month_key DESC, users.email ASC, reports.id DESC`
-    ),
-    updateInvestmentMonthlyReportNotes: db.prepare(
-      `UPDATE investment_monthly_reports
-       SET investor_note = @investorNote,
-           admin_note = @adminNote,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = @reportId AND month_key = @monthKey
-       RETURNING
-         id,
-         portfolio_id AS portfolioId,
-         month_key AS monthKey,
-         snapshot_date AS snapshotDate,
-         file_name AS fileName,
-         file_path AS filePath,
-         status,
-         generated_at AS generatedAt,
-         error_message AS errorMessage,
-         investor_note AS investorNote,
-         admin_note AS adminNote,
-         created_at AS createdAt,
-         updated_at AS updatedAt`
-    ),
+    findUserById: db.prepare('SELECT id, email, role FROM users WHERE id = ?'),
     setUserRoleByEmail: db.prepare(
       `UPDATE users
        SET role = @role,
            updated_at = CURRENT_TIMESTAMP
        WHERE email = @email
-       RETURNING id, email, role, member_type AS memberType`
-    ),
-    setUserMemberTypeById: db.prepare(
-      `UPDATE users
-       SET member_type = @memberType,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = @userId
-       RETURNING id, email, role, member_type AS memberType`
+       RETURNING id, email, role`
     ),
     updateUserPasswordHash: db.prepare(
       `UPDATE users
        SET password_hash = @passwordHash,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @userId
-       RETURNING id, email, role, member_type AS memberType`
+       RETURNING id, email, role`
     ),
     createVideo: db.prepare(
       `INSERT INTO videos (
@@ -529,7 +231,6 @@ export function createDatabase(filename) {
           users.id,
           users.email,
           users.role,
-          users.member_type AS memberType,
           users.created_at AS createdAt,
           users.updated_at AS updatedAt,
           COUNT(videos.id) AS uploadCount
@@ -596,7 +297,7 @@ export function createDatabase(filename) {
     deleteUserById: db.prepare(
       `DELETE FROM users
        WHERE id = ?
-       RETURNING id, email, role, member_type AS memberType`
+       RETURNING id, email, role`
     ),
     insertPasswordResetToken: db.prepare(
       `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
@@ -786,6 +487,152 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    listFeaturedReels: db.prepare(
+      `SELECT
+          id,
+          placement,
+          youtube_id AS youtubeId,
+          video_src AS videoSrc,
+          meta_label AS metaLabel,
+          meta_label_zh AS metaLabelZh,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          thumbnail,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM featured_reels
+       ORDER BY
+         CASE placement
+           WHEN 'featured' THEN 0
+           WHEN 'supporting' THEN 1
+           ELSE 99
+         END ASC,
+         sort_order ASC,
+         id ASC`
+    ),
+    countFeaturedReelsByPlacement: db.prepare(
+      'SELECT COUNT(*) AS count FROM featured_reels WHERE placement = ?'
+    ),
+    findFeaturedReelById: db.prepare(
+      `SELECT
+          id,
+          placement,
+          youtube_id AS youtubeId,
+          video_src AS videoSrc,
+          meta_label AS metaLabel,
+          meta_label_zh AS metaLabelZh,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          thumbnail,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM featured_reels
+       WHERE id = ?`
+    ),
+    createFeaturedReel: db.prepare(
+      `INSERT INTO featured_reels (
+          placement,
+          youtube_id,
+          video_src,
+          meta_label,
+          meta_label_zh,
+          title,
+          title_zh,
+          description,
+          description_zh,
+          thumbnail,
+          sort_order
+        ) VALUES (
+          @placement,
+          @youtubeId,
+          @videoSrc,
+          @metaLabel,
+          @metaLabelZh,
+          @title,
+          @titleZh,
+          @description,
+          @descriptionZh,
+          @thumbnail,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          placement,
+          youtube_id AS youtubeId,
+          video_src AS videoSrc,
+          meta_label AS metaLabel,
+          meta_label_zh AS metaLabelZh,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          thumbnail,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateFeaturedReel: db.prepare(
+      `UPDATE featured_reels
+       SET placement = @placement,
+           youtube_id = @youtubeId,
+           video_src = @videoSrc,
+           meta_label = @metaLabel,
+           meta_label_zh = @metaLabelZh,
+           title = @title,
+           title_zh = @titleZh,
+           description = @description,
+           description_zh = @descriptionZh,
+           thumbnail = @thumbnail,
+           sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          placement,
+          youtube_id AS youtubeId,
+          video_src AS videoSrc,
+          meta_label AS metaLabel,
+          meta_label_zh AS metaLabelZh,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          thumbnail,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteFeaturedReel: db.prepare(
+      `DELETE FROM featured_reels
+       WHERE id = ?
+       RETURNING
+          id,
+          placement,
+          youtube_id AS youtubeId,
+          video_src AS videoSrc,
+          meta_label AS metaLabel,
+          meta_label_zh AS metaLabelZh,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          thumbnail,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateFeaturedReelSortOrder: db.prepare(
+      `UPDATE featured_reels
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -840,6 +687,20 @@ export function createDatabase(filename) {
       .filter((entry) => entry.category === category);
   });
 
+  const reorderFeaturedReels = db.transaction((placement, orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateFeaturedReelSortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements
+      .listFeaturedReels
+      .all()
+      .filter((entry) => entry.placement === placement);
+  });
+
   function seedComingUpEvents() {
     const { count } = statements.countComingUpEvents.get();
 
@@ -852,12 +713,26 @@ export function createDatabase(filename) {
     }
   }
 
+  function seedFeaturedReels() {
+    const featuredCount = statements.countFeaturedReelsByPlacement.get('featured');
+    const supportingCount = statements.countFeaturedReelsByPlacement.get('supporting');
+
+    if (Number(featuredCount.count) + Number(supportingCount.count) > 0) {
+      return;
+    }
+
+    for (const reel of defaultFeaturedReels) {
+      statements.createFeaturedReel.get(reel);
+    }
+  }
+
   seedComingUpEvents();
+  seedFeaturedReels();
 
   return {
     raw: db,
-    createUser({ email, passwordHash, role = 'user', memberType = 'dancer' }) {
-      return statements.createUser.get({ email, passwordHash, role, memberType });
+    createUser({ email, passwordHash, role = 'user' }) {
+      return statements.createUser.get({ email, passwordHash, role });
     },
     findUserByEmail(email) {
       return statements.findUserByEmail.get(email) ?? null;
@@ -865,117 +740,8 @@ export function createDatabase(filename) {
     findUserById(id) {
       return statements.findUserById.get(id) ?? null;
     },
-    createInvestmentPortfolio({
-      userId,
-      displayName = null,
-      baseCurrency = 'USD',
-      notes = null,
-    }) {
-      return statements.createInvestmentPortfolio.get({
-        userId,
-        displayName,
-        baseCurrency,
-        notes,
-      });
-    },
-    findInvestmentPortfolioByUserId(userId) {
-      return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
-    },
-    listInvestmentPortfoliosForInvestors() {
-      return statements.listInvestmentPortfoliosForInvestors.all();
-    },
-    createInvestmentTransaction({
-      portfolioId,
-      assetSymbol,
-      assetName,
-      transactionType = 'buy',
-      amountInvested,
-      purchasePrice,
-      purchaseShares,
-      purchaseDate,
-      notes = null,
-    }) {
-      return statements.createInvestmentTransaction.get({
-        portfolioId,
-        assetSymbol,
-        assetName,
-        transactionType,
-        amountInvested,
-        purchasePrice,
-        purchaseShares,
-        purchaseDate,
-        notes,
-      });
-    },
-    findInvestmentTransactionById(transactionId) {
-      return statements.findInvestmentTransactionById.get(transactionId) ?? null;
-    },
-    updateInvestmentTransaction({
-      id,
-      assetSymbol,
-      assetName,
-      transactionType = 'buy',
-      amountInvested,
-      purchasePrice,
-      purchaseShares,
-      purchaseDate,
-      notes = null,
-    }) {
-      return statements.updateInvestmentTransaction.get({
-        id,
-        assetSymbol,
-        assetName,
-        transactionType,
-        amountInvested,
-        purchasePrice,
-        purchaseShares,
-        purchaseDate,
-        notes,
-      }) ?? null;
-    },
-    deleteInvestmentTransactionById(transactionId) {
-      return statements.deleteInvestmentTransactionById.get(transactionId) ?? null;
-    },
-    listInvestmentTransactionsByPortfolioId(portfolioId) {
-      return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);
-    },
-    listInvestmentMonthlyHistoryByPortfolioId(portfolioId) {
-      return statements.listInvestmentMonthlyHistoryByPortfolioId.all(portfolioId);
-    },
-    upsertInvestmentMonthlyHistory(input) {
-      return statements.upsertInvestmentMonthlyHistory.get(input);
-    },
-    listInvestmentMonthlyReportsByPortfolioId(portfolioId) {
-      return statements.listInvestmentMonthlyReportsByPortfolioId.all(portfolioId);
-    },
-    findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolioId, monthKey) {
-      return statements.findInvestmentMonthlyReportByPortfolioIdAndMonth.get(portfolioId, monthKey) ?? null;
-    },
-    upsertInvestmentMonthlyReport(input) {
-      return statements.upsertInvestmentMonthlyReport.get({
-        investorNote: null,
-        adminNote: null,
-        ...input,
-      });
-    },
-    listInvestmentMonthlyReportsForAdmin() {
-      return statements.listInvestmentMonthlyReportsForAdmin.all();
-    },
-    updateInvestmentMonthlyReportNotes(reportId, monthKey, investorNote, adminNote) {
-      return (
-        statements.updateInvestmentMonthlyReportNotes.get({
-          reportId,
-          monthKey,
-          investorNote,
-          adminNote,
-        }) ?? null
-      );
-    },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
-    },
-    setUserMemberTypeById(userId, memberType) {
-      return statements.setUserMemberTypeById.get({ userId, memberType }) ?? null;
     },
     createPasswordResetToken(passwordResetToken) {
       return replacePasswordResetToken(passwordResetToken);
@@ -1052,6 +818,28 @@ export function createDatabase(filename) {
     },
     reorderInvestorUpdates(category, orderedIds) {
       return reorderInvestorUpdates(category, orderedIds);
+    },
+    listFeaturedReels() {
+      return statements.listFeaturedReels.all();
+    },
+    countFeaturedReelsByPlacement(placement) {
+      const { count } = statements.countFeaturedReelsByPlacement.get(placement);
+      return Number(count);
+    },
+    findFeaturedReelById(id) {
+      return statements.findFeaturedReelById.get(id) ?? null;
+    },
+    createFeaturedReel(reel) {
+      return statements.createFeaturedReel.get(reel);
+    },
+    updateFeaturedReel(reel) {
+      return statements.updateFeaturedReel.get(reel) ?? null;
+    },
+    deleteFeaturedReel(reelId) {
+      return statements.deleteFeaturedReel.get(reelId) ?? null;
+    },
+    reorderFeaturedReels(placement, orderedIds) {
+      return reorderFeaturedReels(placement, orderedIds);
     },
     close() {
       db.close();
