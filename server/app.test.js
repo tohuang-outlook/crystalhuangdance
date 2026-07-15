@@ -890,6 +890,74 @@ describe('auth and video backend foundation', () => {
     expect(db.findFeaturedReelById(createdId)).toBeNull();
   });
 
+  it('lists press highlights publicly and lets admins manage their order', async () => {
+    const publicResponse = await request(app).get('/api/press-highlights');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.highlights.length).toBeGreaterThan(0);
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createResponse = await adminAgent.post('/api/admin/press-highlights').send({
+      source: 'Test Publication',
+      sourceZh: '測試刊物',
+      dateLabel: 'August 2026',
+      dateLabelZh: '2026 年 8 月',
+      title: 'Test Press Highlight',
+      titleZh: '測試媒體焦點',
+      description: 'English summary',
+      descriptionZh: '中文摘要',
+      href: 'https://example.com/feature',
+      imageSrc: '/test-press.png',
+      imageAlt: 'Test press image',
+      imageAltZh: '測試媒體圖片',
+      imageHref: 'https://example.com/video',
+    });
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.highlight).toMatchObject({
+      source: 'Test Publication',
+      title: 'Test Press Highlight',
+    });
+
+    const createdId = createResponse.body.highlight.id;
+    const updateResponse = await adminAgent.put(`/api/admin/press-highlights/${createdId}`).send({
+      source: 'Updated Publication',
+      sourceZh: '更新刊物',
+      dateLabel: 'September 2026',
+      dateLabelZh: '2026 年 9 月',
+      title: 'Updated Press Highlight',
+      titleZh: '更新媒體焦點',
+      description: 'Updated English summary',
+      descriptionZh: '更新中文摘要',
+      href: 'https://example.com/updated-feature',
+      imageSrc: '/updated-press.png',
+      imageAlt: 'Updated press image',
+      imageAltZh: '更新媒體圖片',
+      imageHref: '',
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.highlight).toMatchObject({
+      id: createdId,
+      source: 'Updated Publication',
+      imageHref: null,
+    });
+
+    const highlightIds = db.listPressHighlights().map((entry) => entry.id);
+    const reorderedIds = [...highlightIds].reverse();
+    const reorderResponse = await adminAgent.post('/api/admin/press-highlights/reorder').send({
+      orderedIds: reorderedIds,
+    });
+    expect(reorderResponse.status).toBe(200);
+    expect(reorderResponse.body.highlights.map((entry) => entry.id)).toEqual(reorderedIds);
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/press-highlights/${createdId}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ deletedHighlightId: createdId });
+    expect(db.findPressHighlightById(createdId)).toBeNull();
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

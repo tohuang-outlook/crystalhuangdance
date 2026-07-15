@@ -72,6 +72,26 @@ export interface FeaturedReelRecord {
   updatedAt: string;
 }
 
+export interface PressHighlightRecord {
+  id: number;
+  source: string;
+  sourceZh: string;
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  imageHref: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -86,6 +106,10 @@ interface AdminInvestorUpdatesEnvelope {
 
 interface AdminFeaturedReelsEnvelope {
   reels: FeaturedReelRecord[];
+}
+
+interface AdminPressHighlightsEnvelope {
+  highlights: PressHighlightRecord[];
 }
 
 interface AdminVideosEnvelope {
@@ -106,6 +130,10 @@ interface AdminInvestorUpdateEnvelope {
 
 interface AdminFeaturedReelEnvelope {
   reel: FeaturedReelRecord;
+}
+
+interface AdminPressHighlightEnvelope {
+  highlight: PressHighlightRecord;
 }
 
 interface ApiErrorPayload {
@@ -166,6 +194,10 @@ export function fetchAdminFeaturedReels() {
   return request<AdminFeaturedReelsEnvelope>('/api/admin/featured-reels', { method: 'GET' });
 }
 
+export function fetchAdminPressHighlights() {
+  return request<AdminPressHighlightsEnvelope>('/api/admin/press-highlights', { method: 'GET' });
+}
+
 export function deleteAdminUser(userId: number) {
   return request<{ deletedUserId: number; deletedVideoCount: number }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -192,6 +224,12 @@ export function deleteAdminInvestorUpdate(updateId: number) {
 
 export function deleteAdminFeaturedReel(reelId: number) {
   return request<{ deletedReelId: number }>(`/api/admin/featured-reels/${reelId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminPressHighlight(highlightId: number) {
+  return request<{ deletedHighlightId: number }>(`/api/admin/press-highlights/${highlightId}`, {
     method: 'DELETE',
   });
 }
@@ -241,6 +279,22 @@ export interface AdminFeaturedReelPayload {
   description: string;
   descriptionZh: string;
   thumbnail: string;
+}
+
+export interface AdminPressHighlightPayload {
+  source: string;
+  sourceZh: string;
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  imageHref: string;
 }
 
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
@@ -294,6 +348,23 @@ export function updateAdminFeaturedReel(
   });
 }
 
+export function createAdminPressHighlight(payload: AdminPressHighlightPayload) {
+  return request<AdminPressHighlightEnvelope>('/api/admin/press-highlights', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminPressHighlight(
+  highlightId: number,
+  payload: AdminPressHighlightPayload
+) {
+  return request<AdminPressHighlightEnvelope>(`/api/admin/press-highlights/${highlightId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function reorderAdminComingUpEvents(orderedIds: number[]) {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
     method: 'POST',
@@ -318,5 +389,12 @@ export function reorderAdminFeaturedReels(
   return request<AdminFeaturedReelsEnvelope>('/api/admin/featured-reels/reorder', {
     method: 'POST',
     body: JSON.stringify({ placement, orderedIds }),
+  });
+}
+
+export function reorderAdminPressHighlights(orderedIds: number[]) {
+  return request<AdminPressHighlightsEnvelope>('/api/admin/press-highlights/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ orderedIds }),
   });
 }

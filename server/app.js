@@ -150,6 +150,28 @@ function serializeFeaturedReel(reel) {
   };
 }
 
+function serializePressHighlight(highlight) {
+  return {
+    id: highlight.id,
+    source: highlight.source,
+    sourceZh: highlight.sourceZh,
+    dateLabel: highlight.dateLabel,
+    dateLabelZh: highlight.dateLabelZh,
+    title: highlight.title,
+    titleZh: highlight.titleZh,
+    description: highlight.description,
+    descriptionZh: highlight.descriptionZh,
+    href: highlight.href,
+    imageSrc: highlight.imageSrc,
+    imageAlt: highlight.imageAlt,
+    imageAltZh: highlight.imageAltZh,
+    imageHref: highlight.imageHref,
+    sortOrder: highlight.sortOrder,
+    createdAt: highlight.createdAt,
+    updatedAt: highlight.updatedAt,
+  };
+}
+
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -234,6 +256,24 @@ function parseFeaturedReelPayload(body) {
     description: parseRequiredTrimmedString(body?.description),
     descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
     thumbnail: parseRequiredTrimmedString(body?.thumbnail),
+  };
+}
+
+function parsePressHighlightPayload(body) {
+  return {
+    source: parseRequiredTrimmedString(body?.source),
+    sourceZh: parseRequiredTrimmedString(body?.sourceZh),
+    dateLabel: parseRequiredTrimmedString(body?.dateLabel),
+    dateLabelZh: parseRequiredTrimmedString(body?.dateLabelZh),
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    description: parseRequiredTrimmedString(body?.description),
+    descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
+    href: parseRequiredTrimmedString(body?.href),
+    imageSrc: parseRequiredTrimmedString(body?.imageSrc),
+    imageAlt: parseRequiredTrimmedString(body?.imageAlt),
+    imageAltZh: parseRequiredTrimmedString(body?.imageAltZh),
+    imageHref: trimOptionalString(body?.imageHref),
   };
 }
 
@@ -487,6 +527,11 @@ export function createApp({
   app.get('/api/featured-reels', (_req, res) => {
     const reels = db.listFeaturedReels().map(serializeFeaturedReel);
     res.json({ reels });
+  });
+
+  app.get('/api/press-highlights', (_req, res) => {
+    const highlights = db.listPressHighlights().map(serializePressHighlight);
+    res.json({ highlights });
   });
 
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
@@ -746,6 +791,11 @@ export function createApp({
     res.json({ reels });
   });
 
+  app.get('/api/admin/press-highlights', requireAdmin, (_req, res) => {
+    const highlights = db.listPressHighlights().map(serializePressHighlight);
+    res.json({ highlights });
+  });
+
   app.post('/api/admin/featured-reels', requireAdmin, (req, res) => {
     const payload = parseFeaturedReelPayload(req.body);
 
@@ -897,6 +947,138 @@ export function createApp({
 
     const reels = db.reorderFeaturedReels(placement, orderedIds).map(serializeFeaturedReel);
     return res.json({ reels });
+  });
+
+  app.post('/api/admin/press-highlights', requireAdmin, (req, res) => {
+    const payload = parsePressHighlightPayload(req.body);
+
+    if (!payload.source || !payload.sourceZh) {
+      return res.status(400).json({ error: 'Both English and Chinese publication names are required.' });
+    }
+
+    if (!payload.dateLabel || !payload.dateLabelZh) {
+      return res.status(400).json({ error: 'Both English and Chinese date labels are required.' });
+    }
+
+    if (!payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese titles are required.' });
+    }
+
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
+    }
+
+    if (!payload.href) {
+      return res.status(400).json({ error: 'A feature link is required.' });
+    }
+
+    if (!payload.imageSrc) {
+      return res.status(400).json({ error: 'An image path is required.' });
+    }
+
+    if (!payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'Both English and Chinese image alt labels are required.' });
+    }
+
+    const highlight = db.createPressHighlight({
+      ...payload,
+      sortOrder: db.countPressHighlights(),
+    });
+
+    return res.status(201).json({ highlight: serializePressHighlight(highlight) });
+  });
+
+  app.put('/api/admin/press-highlights/:highlightId', requireAdmin, (req, res) => {
+    const highlightId = parseIdParam(req.params.highlightId);
+
+    if (!highlightId) {
+      return res.status(400).json({ error: 'A valid press highlight id is required.' });
+    }
+
+    const payload = parsePressHighlightPayload(req.body);
+
+    if (!payload.source || !payload.sourceZh) {
+      return res.status(400).json({ error: 'Both English and Chinese publication names are required.' });
+    }
+
+    if (!payload.dateLabel || !payload.dateLabelZh) {
+      return res.status(400).json({ error: 'Both English and Chinese date labels are required.' });
+    }
+
+    if (!payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese titles are required.' });
+    }
+
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
+    }
+
+    if (!payload.href) {
+      return res.status(400).json({ error: 'A feature link is required.' });
+    }
+
+    if (!payload.imageSrc) {
+      return res.status(400).json({ error: 'An image path is required.' });
+    }
+
+    if (!payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'Both English and Chinese image alt labels are required.' });
+    }
+
+    const highlight = db.updatePressHighlight({
+      id: highlightId,
+      ...payload,
+    });
+
+    if (!highlight) {
+      return res.status(404).json({ error: 'Press highlight not found.' });
+    }
+
+    return res.json({ highlight: serializePressHighlight(highlight) });
+  });
+
+  app.delete('/api/admin/press-highlights/:highlightId', requireAdmin, (req, res) => {
+    const highlightId = parseIdParam(req.params.highlightId);
+
+    if (!highlightId) {
+      return res.status(400).json({ error: 'A valid press highlight id is required.' });
+    }
+
+    const deletedHighlight = db.deletePressHighlight(highlightId);
+
+    if (!deletedHighlight) {
+      return res.status(404).json({ error: 'Press highlight not found.' });
+    }
+
+    const remainingIds = db.listPressHighlights().map((entry) => entry.id);
+    db.reorderPressHighlights(remainingIds);
+
+    return res.json({ deletedHighlightId: deletedHighlight.id });
+  });
+
+  app.post('/api/admin/press-highlights/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid press highlight ids.' });
+    }
+
+    const currentIds = db.listPressHighlights().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current press highlight ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current press highlight ids.' });
+    }
+
+    const highlights = db.reorderPressHighlights(orderedIds).map(serializePressHighlight);
+    return res.json({ highlights });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {

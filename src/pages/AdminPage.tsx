@@ -3,20 +3,25 @@ import {
   createAdminFeaturedReel,
   createAdminComingUpEvent,
   createAdminInvestorUpdate,
+  createAdminPressHighlight,
   createAdminYoutubeVideo,
   deleteAdminFeaturedReel,
   deleteAdminComingUpEvent,
   deleteAdminInvestorUpdate,
+  deleteAdminPressHighlight,
   deleteAdminUser,
   deleteAdminVideo,
   fetchAdminFeaturedReels,
   fetchAdminComingUpEvents,
   fetchAdminInvestorUpdates,
+  fetchAdminPressHighlights,
   fetchAdminUsers,
   fetchAdminVideos,
   reorderAdminFeaturedReels,
+  reorderAdminPressHighlights,
   type AdminFeaturedReelPayload,
   type AdminInvestorUpdatePayload,
+  type AdminPressHighlightPayload,
   type AdminUserRecord,
   type AdminVideoRecord,
   type ComingUpEventRecord,
@@ -24,11 +29,13 @@ import {
   type FeaturedReelRecord,
   type InvestorUpdateCategory,
   type InvestorUpdateRecord,
+  type PressHighlightRecord,
   reorderAdminComingUpEvents,
   reorderAdminInvestorUpdates,
   updateAdminFeaturedReel,
   updateAdminComingUpEvent,
   updateAdminInvestorUpdate,
+  updateAdminPressHighlight,
   uploadAdminVideoFile,
 } from '../services/admin';
 
@@ -117,6 +124,24 @@ interface FeaturedReelDraft {
   error: string | null;
 }
 
+interface PressHighlightDraft {
+  source: string;
+  sourceZh: string;
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  imageHref: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
 function createEmptyComingUpEventDraft(): ComingUpEventDraft {
   return {
     dateLabel: '',
@@ -182,6 +207,26 @@ function createEmptyFeaturedReelDraft(
   };
 }
 
+function createEmptyPressHighlightDraft(): PressHighlightDraft {
+  return {
+    source: '',
+    sourceZh: '',
+    dateLabel: '',
+    dateLabelZh: '',
+    title: '',
+    titleZh: '',
+    description: '',
+    descriptionZh: '',
+    href: '',
+    imageSrc: '',
+    imageAlt: '',
+    imageAltZh: '',
+    imageHref: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 function createFeaturedReelDraftFromRecord(
   reel: FeaturedReelRecord
 ): FeaturedReelDraft {
@@ -196,6 +241,28 @@ function createFeaturedReelDraftFromRecord(
     description: reel.description,
     descriptionZh: reel.descriptionZh,
     thumbnail: reel.thumbnail,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createPressHighlightDraftFromRecord(
+  highlight: PressHighlightRecord
+): PressHighlightDraft {
+  return {
+    source: highlight.source,
+    sourceZh: highlight.sourceZh,
+    dateLabel: highlight.dateLabel,
+    dateLabelZh: highlight.dateLabelZh,
+    title: highlight.title,
+    titleZh: highlight.titleZh,
+    description: highlight.description,
+    descriptionZh: highlight.descriptionZh,
+    href: highlight.href,
+    imageSrc: highlight.imageSrc,
+    imageAlt: highlight.imageAlt,
+    imageAltZh: highlight.imageAltZh,
+    imageHref: highlight.imageHref ?? '',
     isSubmitting: false,
     error: null,
   };
@@ -229,6 +296,7 @@ export default function AdminPage() {
   const [comingUpEvents, setComingUpEvents] = useState<ComingUpEventRecord[]>([]);
   const [featuredReels, setFeaturedReels] = useState<FeaturedReelRecord[]>([]);
   const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdateRecord[]>([]);
+  const [pressHighlights, setPressHighlights] = useState<PressHighlightRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,8 +306,12 @@ export default function AdminPage() {
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
   const [investorUpdateDrafts, setInvestorUpdateDrafts] = useState<Record<number, InvestorUpdateDraft>>({});
+  const [pressHighlightDrafts, setPressHighlightDrafts] = useState<Record<number, PressHighlightDraft>>({});
   const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
     createEmptyComingUpEventDraft()
+  );
+  const [newPressHighlightDraft, setNewPressHighlightDraft] = useState<PressHighlightDraft>(
+    createEmptyPressHighlightDraft()
   );
   const [newInvestorUpdateDrafts, setNewInvestorUpdateDrafts] = useState<
     Record<InvestorUpdateCategory, InvestorUpdateDraft>
@@ -328,6 +400,16 @@ export default function AdminPage() {
     [featuredReels]
   );
 
+  const recentPressHighlights = useMemo(
+    () => pressHighlights.slice(0, 3),
+    [pressHighlights]
+  );
+
+  const archivePressHighlights = useMemo(
+    () => pressHighlights.slice(3),
+    [pressHighlights]
+  );
+
   const videosByUser = useMemo(() => {
     const grouped = new Map<number, AdminVideoRecord[]>();
 
@@ -354,12 +436,20 @@ export default function AdminPage() {
     setError(null);
 
     try {
-      const [usersResponse, videosResponse, comingUpEventsResponse, featuredReelsResponse, investorUpdatesResponse] = await Promise.all([
+      const [
+        usersResponse,
+        videosResponse,
+        comingUpEventsResponse,
+        featuredReelsResponse,
+        investorUpdatesResponse,
+        pressHighlightsResponse,
+      ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
         fetchAdminComingUpEvents(),
         fetchAdminFeaturedReels(),
         fetchAdminInvestorUpdates(),
+        fetchAdminPressHighlights(),
       ]);
 
       setUsers(usersResponse.users);
@@ -367,6 +457,7 @@ export default function AdminPage() {
       setComingUpEvents(comingUpEventsResponse.events);
       setFeaturedReels(featuredReelsResponse.reels);
       setInvestorUpdates(investorUpdatesResponse.updates);
+      setPressHighlights(pressHighlightsResponse.highlights);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -416,6 +507,19 @@ export default function AdminPage() {
     });
   }, [investorUpdates]);
 
+  useEffect(() => {
+    setPressHighlightDrafts((current) => {
+      const nextDrafts: Record<number, PressHighlightDraft> = {};
+
+      pressHighlights.forEach((highlight) => {
+        nextDrafts[highlight.id] =
+          current[highlight.id] ?? createPressHighlightDraftFromRecord(highlight);
+      });
+
+      return nextDrafts;
+    });
+  }, [pressHighlights]);
+
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
   const getComingUpEventDraft = (event: ComingUpEventRecord) =>
@@ -426,6 +530,9 @@ export default function AdminPage() {
 
   const getInvestorUpdateDraft = (update: InvestorUpdateRecord) =>
     investorUpdateDrafts[update.id] ?? createInvestorUpdateDraftFromRecord(update);
+
+  const getPressHighlightDraft = (highlight: PressHighlightRecord) =>
+    pressHighlightDrafts[highlight.id] ?? createPressHighlightDraftFromRecord(highlight);
 
   const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
     setUploadDrafts((current) => ({
@@ -485,6 +592,23 @@ export default function AdminPage() {
         ...current[placement],
         ...patch,
       },
+    }));
+  };
+
+  const updatePressHighlightDraft = (highlightId: number, patch: Partial<PressHighlightDraft>) => {
+    setPressHighlightDrafts((current) => ({
+      ...current,
+      [highlightId]: {
+        ...(current[highlightId] ?? createEmptyPressHighlightDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewPressHighlightDraft = (patch: Partial<PressHighlightDraft>) => {
+    setNewPressHighlightDraft((current) => ({
+      ...current,
+      ...patch,
     }));
   };
 
@@ -743,6 +867,22 @@ export default function AdminPage() {
     thumbnail: draft.thumbnail.trim(),
   });
 
+  const toPressHighlightPayload = (draft: PressHighlightDraft): AdminPressHighlightPayload => ({
+    source: draft.source.trim(),
+    sourceZh: draft.sourceZh.trim(),
+    dateLabel: draft.dateLabel.trim(),
+    dateLabelZh: draft.dateLabelZh.trim(),
+    title: draft.title.trim(),
+    titleZh: draft.titleZh.trim(),
+    description: draft.description.trim(),
+    descriptionZh: draft.descriptionZh.trim(),
+    href: draft.href.trim(),
+    imageSrc: draft.imageSrc.trim(),
+    imageAlt: draft.imageAlt.trim(),
+    imageAltZh: draft.imageAltZh.trim(),
+    imageHref: draft.imageHref.trim(),
+  });
+
   const handleCreateFeaturedReel = async (placement: FeaturedReelPlacement) => {
     const draft = newFeaturedReelDrafts[placement];
     updateNewFeaturedReelDraft(placement, { isSubmitting: true, error: null });
@@ -841,6 +981,105 @@ export default function AdminPage() {
       await loadDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reorder featured reels.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleCreatePressHighlight = async () => {
+    updateNewPressHighlightDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminPressHighlight(toPressHighlightPayload(newPressHighlightDraft));
+      setPressHighlights((current) => [...current, response.highlight]);
+      setNewPressHighlightDraft(createEmptyPressHighlightDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewPressHighlightDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this press highlight.',
+      });
+      return;
+    }
+
+    updateNewPressHighlightDraft({ isSubmitting: false });
+  };
+
+  const handleSavePressHighlight = async (highlight: PressHighlightRecord) => {
+    const draft = getPressHighlightDraft(highlight);
+    updatePressHighlightDraft(highlight.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminPressHighlight(
+        highlight.id,
+        toPressHighlightPayload(draft)
+      );
+      setPressHighlights((current) =>
+        current.map((entry) => (entry.id === highlight.id ? response.highlight : entry))
+      );
+      setPressHighlightDrafts((current) => ({
+        ...current,
+        [highlight.id]: createPressHighlightDraftFromRecord(response.highlight),
+      }));
+    } catch (err) {
+      updatePressHighlightDraft(highlight.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this press highlight.',
+      });
+      return;
+    }
+
+    updatePressHighlightDraft(highlight.id, { isSubmitting: false });
+  };
+
+  const handleDeletePressHighlight = async (highlight: PressHighlightRecord) => {
+    if (!window.confirm(`Delete "${highlight.title}" from Press Highlight?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`press-highlight-delete-${highlight.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminPressHighlight(highlight.id);
+      setPressHighlights((current) => current.filter((entry) => entry.id !== highlight.id));
+      setPressHighlightDrafts((current) => {
+        const nextDrafts = { ...current };
+        delete nextDrafts[highlight.id];
+        return nextDrafts;
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this press highlight.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMovePressHighlight = async (highlightId: number, direction: -1 | 1) => {
+    const currentIndex = pressHighlights.findIndex((entry) => entry.id === highlightId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= pressHighlights.length) {
+      return;
+    }
+
+    const reorderedIds = [...pressHighlights.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`press-highlight-move-${highlightId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminPressHighlights(reorderedIds);
+      setPressHighlights(response.highlights);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder press highlights.');
     } finally {
       setActiveEventActionKey(null);
     }
@@ -1316,12 +1555,179 @@ export default function AdminPage() {
                   <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-8">
                     <p className="eyebrow">Homepage Content</p>
                     <h2 id="admin-content-heading" className="mt-3 text-4xl text-[var(--text)]">
-                      Featured Performance Reels
+                      Homepage Content Modules
                     </h2>
                     <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
-                      Manage the reels shown on the public homepage. Featured reels feed the large cards on the left, and supporting reels feed the smaller cards on the right.
+                      Manage the homepage modules that visitors see first. Press Highlight controls the editorial cards in the press section, and Featured Performance Reels controls the media section.
                     </p>
                   </div>
+
+                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Press Highlight</p>
+                        <h3 className="mt-3 text-3xl text-[var(--text)]">Homepage editorial cards</h3>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                          The first 3 entries become the large left-side cards in Press Highlight. Everything after that becomes the smaller archive cards on the right.
+                        </p>
+                      </div>
+                      <div className="text-sm text-[var(--text-muted)]">
+                        {pressHighlights.length} item{pressHighlights.length === 1 ? '' : 's'} total
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.42)] p-4 sm:grid-cols-3">
+                      {[
+                        { label: 'Featured left cards', value: recentPressHighlights.length },
+                        { label: 'Right archive cards', value: archivePressHighlights.length },
+                        { label: 'Display rule', value: 'Top 3 featured' },
+                      ].map((stat) => (
+                        <div
+                          key={stat.label}
+                          className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--surface)] px-4 py-4"
+                        >
+                          <p className="eyebrow text-[10px]">{stat.label}</p>
+                          <p className="mt-3 text-xl text-[var(--text)]">{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                      <p className="eyebrow text-[10px]">New press highlight</p>
+                      <h4 className="mt-3 text-2xl text-[var(--text)]">Add homepage press entry</h4>
+
+                      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Publication (EN)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.source} onChange={(event) => updateNewPressHighlightDraft({ source: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Publication (ZH)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.sourceZh} onChange={(event) => updateNewPressHighlightDraft({ sourceZh: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Date label (EN)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.dateLabel} onChange={(event) => updateNewPressHighlightDraft({ dateLabel: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Date label (ZH)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.dateLabelZh} onChange={(event) => updateNewPressHighlightDraft({ dateLabelZh: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Title (EN)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.title} onChange={(event) => updateNewPressHighlightDraft({ title: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Title (ZH)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.titleZh} onChange={(event) => updateNewPressHighlightDraft({ titleZh: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Feature link</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="https://..." type="text" value={newPressHighlightDraft.href} onChange={(event) => updateNewPressHighlightDraft({ href: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Image path</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="/crystal-press-example.png" type="text" value={newPressHighlightDraft.imageSrc} onChange={(event) => updateNewPressHighlightDraft({ imageSrc: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Image click link (optional)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" placeholder="https://..." type="text" value={newPressHighlightDraft.imageHref} onChange={(event) => updateNewPressHighlightDraft({ imageHref: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Image alt (EN)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.imageAlt} onChange={(event) => updateNewPressHighlightDraft({ imageAlt: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Image alt (ZH)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newPressHighlightDraft.imageAltZh} onChange={(event) => updateNewPressHighlightDraft({ imageAltZh: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Summary (EN)</span>
+                          <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newPressHighlightDraft.description} onChange={(event) => updateNewPressHighlightDraft({ description: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Summary (ZH)</span>
+                          <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newPressHighlightDraft.descriptionZh} onChange={(event) => updateNewPressHighlightDraft({ descriptionZh: event.target.value })} />
+                        </label>
+                      </div>
+
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-[var(--text-muted)]">
+                          New entries are appended to the end. Use the move buttons below to reposition them.
+                        </p>
+                        <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={newPressHighlightDraft.isSubmitting} onClick={() => void handleCreatePressHighlight()} type="button">
+                          {newPressHighlightDraft.isSubmitting ? 'Adding...' : 'Add press highlight'}
+                        </button>
+                      </div>
+
+                      {newPressHighlightDraft.error ? (
+                        <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                          {newPressHighlightDraft.error}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {pressHighlights.length === 0 ? (
+                      <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                        No press highlights yet.
+                      </div>
+                    ) : (
+                      <div className="mt-6 space-y-4">
+                        {pressHighlights.map((highlight, index) => {
+                          const draft = getPressHighlightDraft(highlight);
+                          const isDeleting = activeEventActionKey === `press-highlight-delete-${highlight.id}`;
+                          const isMoving = activeEventActionKey === `press-highlight-move-${highlight.id}`;
+                          const zoneLabel =
+                            index < 3
+                              ? `Featured left card ${index + 1}`
+                              : `Right archive card ${index - 2}`;
+
+                          return (
+                            <article key={highlight.id} className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                              <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                  <p className="eyebrow text-[10px]">
+                                    Position {index + 1} · {zoneLabel} · {formatDate(highlight.updatedAt)}
+                                  </p>
+                                  <h4 className="mt-3 text-2xl text-[var(--text)]">
+                                    {draft.title || 'Untitled press highlight'}
+                                  </h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === 0 || isMoving} onClick={() => void handleMovePressHighlight(highlight.id, -1)} type="button">{isMoving ? 'Moving...' : 'Up'}</button>
+                                  <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === pressHighlights.length - 1 || isMoving} onClick={() => void handleMovePressHighlight(highlight.id, 1)} type="button">{isMoving ? 'Moving...' : 'Down'}</button>
+                                  <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={draft.isSubmitting} onClick={() => void handleSavePressHighlight(highlight)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                  <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isDeleting} onClick={() => void handleDeletePressHighlight(highlight)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                </div>
+                              </div>
+
+                              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Publication (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.source} onChange={(event) => updatePressHighlightDraft(highlight.id, { source: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Publication (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.sourceZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { sourceZh: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Date label (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.dateLabel} onChange={(event) => updatePressHighlightDraft(highlight.id, { dateLabel: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Date label (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.dateLabelZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { dateLabelZh: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.title} onChange={(event) => updatePressHighlightDraft(highlight.id, { title: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.titleZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { titleZh: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Feature link</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.href} onChange={(event) => updatePressHighlightDraft(highlight.id, { href: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Image path</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.imageSrc} onChange={(event) => updatePressHighlightDraft(highlight.id, { imageSrc: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Image click link (optional)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.imageHref} onChange={(event) => updatePressHighlightDraft(highlight.id, { imageHref: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Image alt (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.imageAlt} onChange={(event) => updatePressHighlightDraft(highlight.id, { imageAlt: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Image alt (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.imageAltZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { imageAltZh: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Summary (EN)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.description} onChange={(event) => updatePressHighlightDraft(highlight.id, { description: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Summary (ZH)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.descriptionZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { descriptionZh: event.target.value })} /></label>
+                              </div>
+
+                              {draft.error ? (
+                                <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                  {draft.error}
+                                </p>
+                              ) : null}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </article>
 
                   {(['featured', 'supporting'] as const).map((placement) => {
                     const placementReels = featuredReelsByPlacement[placement];

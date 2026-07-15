@@ -70,3 +70,23 @@ CREATE TABLE IF NOT EXISTS featured_reels (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS press_highlights (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,
+  source_zh TEXT NOT NULL,
+  date_label TEXT NOT NULL,
+  date_label_zh TEXT NOT NULL,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  description TEXT NOT NULL,
+  description_zh TEXT NOT NULL,
+  href TEXT NOT NULL,
+  image_src TEXT NOT NULL,
+  image_alt TEXT NOT NULL,
+  image_alt_zh TEXT NOT NULL,
+  image_href TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
