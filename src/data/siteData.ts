@@ -8,7 +8,9 @@ export interface DanceStyle {
 export interface Achievement {
   year: string;
   title: string;
+  titleZh?: string;
   description: string;
+  descriptionZh?: string;
   highlight?: boolean;
   latest?: boolean;
 }

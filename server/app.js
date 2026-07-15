@@ -172,6 +172,22 @@ function serializePressHighlight(highlight) {
   };
 }
 
+function serializeAchievementEntry(entry) {
+  return {
+    id: entry.id,
+    year: entry.year,
+    title: entry.title,
+    titleZh: entry.titleZh,
+    description: entry.description,
+    descriptionZh: entry.descriptionZh,
+    highlight: Boolean(entry.highlight),
+    latest: Boolean(entry.latest),
+    sortOrder: entry.sortOrder,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  };
+}
+
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -274,6 +290,18 @@ function parsePressHighlightPayload(body) {
     imageAlt: parseRequiredTrimmedString(body?.imageAlt),
     imageAltZh: parseRequiredTrimmedString(body?.imageAltZh),
     imageHref: trimOptionalString(body?.imageHref),
+  };
+}
+
+function parseAchievementEntryPayload(body) {
+  return {
+    year: parseRequiredTrimmedString(body?.year),
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    description: parseRequiredTrimmedString(body?.description),
+    descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
+    highlight: Boolean(body?.highlight),
+    latest: Boolean(body?.latest),
   };
 }
 
@@ -532,6 +560,11 @@ export function createApp({
   app.get('/api/press-highlights', (_req, res) => {
     const highlights = db.listPressHighlights().map(serializePressHighlight);
     res.json({ highlights });
+  });
+
+  app.get('/api/achievements', (_req, res) => {
+    const achievements = db.listAchievementEntries().map(serializeAchievementEntry);
+    res.json({ achievements });
   });
 
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
@@ -794,6 +827,11 @@ export function createApp({
   app.get('/api/admin/press-highlights', requireAdmin, (_req, res) => {
     const highlights = db.listPressHighlights().map(serializePressHighlight);
     res.json({ highlights });
+  });
+
+  app.get('/api/admin/achievements', requireAdmin, (_req, res) => {
+    const achievements = db.listAchievementEntries().map(serializeAchievementEntry);
+    res.json({ achievements });
   });
 
   app.post('/api/admin/featured-reels', requireAdmin, (req, res) => {
@@ -1079,6 +1117,106 @@ export function createApp({
 
     const highlights = db.reorderPressHighlights(orderedIds).map(serializePressHighlight);
     return res.json({ highlights });
+  });
+
+  app.post('/api/admin/achievements', requireAdmin, (req, res) => {
+    const payload = parseAchievementEntryPayload(req.body);
+
+    if (!payload.year) {
+      return res.status(400).json({ error: 'A year is required.' });
+    }
+
+    if (!payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese titles are required.' });
+    }
+
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
+    }
+
+    const achievement = db.createAchievementEntry({
+      ...payload,
+      sortOrder: db.countAchievementEntries(),
+    });
+
+    return res.status(201).json({ achievement: serializeAchievementEntry(achievement) });
+  });
+
+  app.put('/api/admin/achievements/:achievementId', requireAdmin, (req, res) => {
+    const achievementId = parseIdParam(req.params.achievementId);
+
+    if (!achievementId) {
+      return res.status(400).json({ error: 'A valid achievement id is required.' });
+    }
+
+    const payload = parseAchievementEntryPayload(req.body);
+
+    if (!payload.year) {
+      return res.status(400).json({ error: 'A year is required.' });
+    }
+
+    if (!payload.title || !payload.titleZh) {
+      return res.status(400).json({ error: 'Both English and Chinese titles are required.' });
+    }
+
+    if (!payload.description || !payload.descriptionZh) {
+      return res.status(400).json({ error: 'Both English and Chinese descriptions are required.' });
+    }
+
+    const achievement = db.updateAchievementEntry({
+      id: achievementId,
+      ...payload,
+    });
+
+    if (!achievement) {
+      return res.status(404).json({ error: 'Achievement entry not found.' });
+    }
+
+    return res.json({ achievement: serializeAchievementEntry(achievement) });
+  });
+
+  app.delete('/api/admin/achievements/:achievementId', requireAdmin, (req, res) => {
+    const achievementId = parseIdParam(req.params.achievementId);
+
+    if (!achievementId) {
+      return res.status(400).json({ error: 'A valid achievement id is required.' });
+    }
+
+    const deletedAchievement = db.deleteAchievementEntry(achievementId);
+
+    if (!deletedAchievement) {
+      return res.status(404).json({ error: 'Achievement entry not found.' });
+    }
+
+    const remainingIds = db.listAchievementEntries().map((entry) => entry.id);
+    db.reorderAchievementEntries(remainingIds);
+
+    return res.json({ deletedAchievementId: deletedAchievement.id });
+  });
+
+  app.post('/api/admin/achievements/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid achievement ids.' });
+    }
+
+    const currentIds = db.listAchievementEntries().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current achievement ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current achievement ids.' });
+    }
+
+    const achievements = db.reorderAchievementEntries(orderedIds).map(serializeAchievementEntry);
+    return res.json({ achievements });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {

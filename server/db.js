@@ -222,6 +222,153 @@ const defaultPressHighlights = [
     sortOrder: 5,
   },
 ];
+const defaultAchievementEntries = [
+  {
+    year: '2026',
+    title: 'XV Moscow International Ballet Competition — Junior Group Girls Solo First Prize & Gold Medal Winner',
+    titleZh: '第十五屆莫斯科國際芭蕾舞大賽 — 青少年女子獨舞組第一名暨金牌',
+    description:
+      'Won First Prize and Gold Medal in the junior group girls solo division at the XV Moscow International Ballet Competition.',
+    descriptionZh: '於第十五屆莫斯科國際芭蕾舞大賽獲得青少年女子獨舞組第一名與金牌。',
+    highlight: 1,
+    latest: 1,
+    sortOrder: 0,
+  },
+  {
+    year: '2025',
+    title: 'T.O.P. Awards — 2025 Asian American Outstanding Dancer',
+    titleZh: 'T.O.P. Awards — 2025 亞裔美國傑出舞者',
+    description: 'Honored as the 2025 Asian American Outstanding Dancer.',
+    descriptionZh: '獲頒 2025 年亞裔美國傑出舞者榮譽。',
+    highlight: 1,
+    latest: 0,
+    sortOrder: 1,
+  },
+  {
+    year: '2024',
+    title: 'SAIBC International Finals — Senior Women Grand Prix Winner',
+    titleZh: 'SAIBC 國際總決賽 — 高級女子組大獎',
+    description:
+      'Top honor in the senior women division at the South Africa International Ballet Competition.',
+    descriptionZh: '南非國際芭蕾舞比賽高級女子組最高榮譽。',
+    highlight: 1,
+    latest: 0,
+    sortOrder: 2,
+  },
+  {
+    year: '2024',
+    title: 'YAGP NYC Finals — Senior Women Silver Medal Winner',
+    titleZh: 'YAGP 紐約總決賽 — 高級女子組銀牌',
+    description: 'Silver Medal winner in the senior women division at YAGP New York City Finals.',
+    descriptionZh: '於 YAGP 紐約總決賽高級女子組獲銀牌。',
+    highlight: 1,
+    latest: 0,
+    sortOrder: 3,
+  },
+  {
+    year: '2024',
+    title: 'Prix de Lausanne — Prize Winner #4 & Contemporary Dance Award Winner',
+    titleZh: '洛桑國際芭蕾舞比賽 — 第四名得獎者暨當代舞特別獎',
+    description:
+      'Recognized as Prize Winner #4 and recipient of the Contemporary Dance Award at Prix de Lausanne.',
+    descriptionZh: '於 2024 洛桑國際芭蕾舞比賽獲 Prize Winner #4，並同時獲得當代舞特別獎。',
+    highlight: 1,
+    latest: 0,
+    sortOrder: 4,
+  },
+  {
+    year: '2024',
+    title: 'YoungArts — Winner of Distinction in Ballet',
+    titleZh: 'YoungArts — 芭蕾傑出得獎者',
+    description: 'National recognition from YoungArts for distinction in ballet.',
+    descriptionZh: '獲美國國家青年藝術基金會授予芭蕾 Winner of Distinction。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 5,
+  },
+  {
+    year: '2023',
+    title: 'NYCDA Nationals — Teen Female Outstanding Dancer Winner',
+    titleZh: 'NYCDA 全國賽 — 青少年女子傑出舞者',
+    description: 'National titleholder at NYCDA Finals with subsequent touring appearances.',
+    descriptionZh: '贏得 NYCDA 全國賽青少年女子傑出舞者頭銜並展開巡演。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 6,
+  },
+  {
+    year: '2023',
+    title: 'The Dance Awards Las Vegas Nationals — Teen Female Best Dancer Winner',
+    titleZh: 'The Dance Awards 拉斯維加斯總決賽 — 青少年女子最佳舞者',
+    description:
+      'Teen Female Best Dancer title at the Las Vegas nationals and nationwide touring appearances.',
+    descriptionZh: '於拉斯維加斯總決賽奪得青少年女子最佳舞者並展開全美巡演。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 7,
+  },
+  {
+    year: '2023',
+    title: 'YAGP Tampa Finals — Junior Bronze Medal Winner',
+    titleZh: 'YAGP 坦帕總決賽 — 青少年組銅牌',
+    description: 'Bronze Medal winner at YAGP Tampa Finals in the junior division.',
+    descriptionZh: '於 YAGP 坦帕總決賽青少年組獲銅牌。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 8,
+  },
+  {
+    year: '2022',
+    title: 'YAGP Tampa Finals — Junior Bronze Medal Winner',
+    titleZh: 'YAGP 坦帕總決賽 — 青少年組銅牌',
+    description: 'Bronze Medal winner at YAGP Tampa Finals in the junior division.',
+    descriptionZh: '於 YAGP 坦帕總決賽青少年組獲銅牌。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 9,
+  },
+  {
+    year: '2021',
+    title: 'The Dance Awards Las Vegas Nationals — Junior Female Best Dancer Winner',
+    titleZh: 'The Dance Awards 拉斯維加斯總決賽 — 青少年女子最佳舞者',
+    description:
+      'Junior Female Best Dancer titleholder with touring appearances through the 2021–22 season.',
+    descriptionZh: '於拉斯維加斯總決賽奪得青少年女子最佳舞者並於 2021 至 2022 年巡演。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 10,
+  },
+  {
+    year: '2021',
+    title: 'Radix Nationals — Junior Female Core Performer Winner',
+    titleZh: 'Radix 全國賽 — 青少年女子核心表演者',
+    description: 'National junior titleholder at Radix Dance Convention.',
+    descriptionZh: '獲得 Radix 全國賽青少年女子核心表演者頭銜。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 11,
+  },
+  {
+    year: '2019',
+    title: 'The Dance Awards Las Vegas Nationals — Mini Female Best Dancer Winner',
+    titleZh: 'The Dance Awards 拉斯維加斯總決賽 — 幼年女子最佳舞者',
+    description: 'Won the mini female Best Dancer title in Las Vegas at age 10.',
+    descriptionZh: '10 歲時即奪下拉斯維加斯總決賽幼年女子最佳舞者。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 12,
+  },
+  {
+    year: '2019',
+    title: 'Radix Nationals — Mini Female Core Performer Winner',
+    titleZh: 'Radix 全國賽 — 幼年女子核心表演者',
+    description: 'National mini titleholder at Radix Dance Convention.',
+    descriptionZh: '獲得 Radix 全國賽幼年女子核心表演者頭銜。',
+    highlight: 0,
+    latest: 0,
+    sortOrder: 13,
+  },
+];
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
     return;
@@ -900,6 +1047,124 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    listAchievementEntries: db.prepare(
+      `SELECT
+          id,
+          year,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          highlight,
+          latest,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM achievement_entries
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countAchievementEntries: db.prepare('SELECT COUNT(*) AS count FROM achievement_entries'),
+    findAchievementEntryById: db.prepare(
+      `SELECT
+          id,
+          year,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          highlight,
+          latest,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM achievement_entries
+       WHERE id = ?`
+    ),
+    createAchievementEntry: db.prepare(
+      `INSERT INTO achievement_entries (
+          year,
+          title,
+          title_zh,
+          description,
+          description_zh,
+          highlight,
+          latest,
+          sort_order
+        ) VALUES (
+          @year,
+          @title,
+          @titleZh,
+          @description,
+          @descriptionZh,
+          @highlight,
+          @latest,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          year,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          highlight,
+          latest,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateAchievementEntry: db.prepare(
+      `UPDATE achievement_entries
+       SET year = @year,
+           title = @title,
+           title_zh = @titleZh,
+           description = @description,
+           description_zh = @descriptionZh,
+           highlight = @highlight,
+           latest = @latest,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          year,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          highlight,
+          latest,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteAchievementEntry: db.prepare(
+      `DELETE FROM achievement_entries
+       WHERE id = ?
+       RETURNING
+          id,
+          year,
+          title,
+          title_zh AS titleZh,
+          description,
+          description_zh AS descriptionZh,
+          highlight,
+          latest,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    clearLatestAchievementFlag: db.prepare(
+      `UPDATE achievement_entries
+       SET latest = 0,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE latest != 0`
+    ),
+    updateAchievementEntrySortOrder: db.prepare(
+      `UPDATE achievement_entries
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -979,6 +1244,33 @@ export function createDatabase(filename) {
     return statements.listPressHighlights.all();
   });
 
+  const reorderAchievementEntries = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateAchievementEntrySortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listAchievementEntries.all();
+  });
+
+  const createAchievementEntry = db.transaction((entry) => {
+    if (entry.latest) {
+      statements.clearLatestAchievementFlag.run();
+    }
+
+    return statements.createAchievementEntry.get(entry);
+  });
+
+  const updateAchievementEntry = db.transaction((entry) => {
+    if (entry.latest) {
+      statements.clearLatestAchievementFlag.run();
+    }
+
+    return statements.updateAchievementEntry.get(entry) ?? null;
+  });
+
   function seedComingUpEvents() {
     const { count } = statements.countComingUpEvents.get();
 
@@ -1016,9 +1308,22 @@ export function createDatabase(filename) {
     }
   }
 
+  function seedAchievementEntries() {
+    const { count } = statements.countAchievementEntries.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const entry of defaultAchievementEntries) {
+      statements.createAchievementEntry.get(entry);
+    }
+  }
+
   seedComingUpEvents();
   seedFeaturedReels();
   seedPressHighlights();
+  seedAchievementEntries();
 
   return {
     raw: db,
@@ -1153,6 +1458,70 @@ export function createDatabase(filename) {
     },
     reorderPressHighlights(orderedIds) {
       return reorderPressHighlights(orderedIds);
+    },
+    listAchievementEntries() {
+      return statements.listAchievementEntries.all().map((entry) => ({
+        ...entry,
+        highlight: Boolean(entry.highlight),
+        latest: Boolean(entry.latest),
+      }));
+    },
+    countAchievementEntries() {
+      const { count } = statements.countAchievementEntries.get();
+      return Number(count);
+    },
+    findAchievementEntryById(id) {
+      const entry = statements.findAchievementEntryById.get(id);
+      return entry
+        ? {
+            ...entry,
+            highlight: Boolean(entry.highlight),
+            latest: Boolean(entry.latest),
+          }
+        : null;
+    },
+    createAchievementEntry(entry) {
+      const created = createAchievementEntry({
+        ...entry,
+        highlight: entry.highlight ? 1 : 0,
+        latest: entry.latest ? 1 : 0,
+      });
+      return {
+        ...created,
+        highlight: Boolean(created.highlight),
+        latest: Boolean(created.latest),
+      };
+    },
+    updateAchievementEntry(entry) {
+      const updated = updateAchievementEntry({
+        ...entry,
+        highlight: entry.highlight ? 1 : 0,
+        latest: entry.latest ? 1 : 0,
+      });
+      return updated
+        ? {
+            ...updated,
+            highlight: Boolean(updated.highlight),
+            latest: Boolean(updated.latest),
+          }
+        : null;
+    },
+    deleteAchievementEntry(entryId) {
+      const deleted = statements.deleteAchievementEntry.get(entryId);
+      return deleted
+        ? {
+            ...deleted,
+            highlight: Boolean(deleted.highlight),
+            latest: Boolean(deleted.latest),
+          }
+        : null;
+    },
+    reorderAchievementEntries(orderedIds) {
+      return reorderAchievementEntries(orderedIds).map((entry) => ({
+        ...entry,
+        highlight: Boolean(entry.highlight),
+        latest: Boolean(entry.latest),
+      }));
     },
     close() {
       db.close();

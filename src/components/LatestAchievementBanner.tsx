@@ -1,12 +1,42 @@
-import { achievements } from '../data/siteData';
+import { useEffect, useMemo, useState } from 'react';
+import { achievements as fallbackAchievements } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 import { reelVideos } from '../data/reels';
 import { getLocalizedAchievement } from '../lib/achievementLocalization';
+import { fetchAchievements } from '../services/achievements';
 
 export default function LatestAchievementBanner() {
   const { t } = useLanguage();
-  const latestAchievement = achievements.find((achievement) => achievement.latest);
+  const [achievements, setAchievements] = useState(fallbackAchievements);
+  const latestAchievement = useMemo(
+    () => achievements.find((achievement) => achievement.latest),
+    [achievements]
+  );
   const moscowVideos = reelVideos.filter((video) => video.event === 'moscow');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAchievements = async () => {
+      try {
+        const response = await fetchAchievements();
+
+        if (!isMounted || response.length === 0) {
+          return;
+        }
+
+        setAchievements(response);
+      } catch {
+        // Fall back to static data when the admin-managed feed is unavailable.
+      }
+    };
+
+    void loadAchievements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (!latestAchievement) {
     return null;

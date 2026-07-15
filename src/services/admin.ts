@@ -92,6 +92,20 @@ export interface PressHighlightRecord {
   updatedAt: string;
 }
 
+export interface AchievementRecord {
+  id: number;
+  year: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  highlight: boolean;
+  latest: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -110,6 +124,10 @@ interface AdminFeaturedReelsEnvelope {
 
 interface AdminPressHighlightsEnvelope {
   highlights: PressHighlightRecord[];
+}
+
+interface AdminAchievementsEnvelope {
+  achievements: AchievementRecord[];
 }
 
 interface AdminVideosEnvelope {
@@ -134,6 +152,10 @@ interface AdminFeaturedReelEnvelope {
 
 interface AdminPressHighlightEnvelope {
   highlight: PressHighlightRecord;
+}
+
+interface AdminAchievementEnvelope {
+  achievement: AchievementRecord;
 }
 
 interface ApiErrorPayload {
@@ -198,6 +220,10 @@ export function fetchAdminPressHighlights() {
   return request<AdminPressHighlightsEnvelope>('/api/admin/press-highlights', { method: 'GET' });
 }
 
+export function fetchAdminAchievements() {
+  return request<AdminAchievementsEnvelope>('/api/admin/achievements', { method: 'GET' });
+}
+
 export function deleteAdminUser(userId: number) {
   return request<{ deletedUserId: number; deletedVideoCount: number }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -230,6 +256,12 @@ export function deleteAdminFeaturedReel(reelId: number) {
 
 export function deleteAdminPressHighlight(highlightId: number) {
   return request<{ deletedHighlightId: number }>(`/api/admin/press-highlights/${highlightId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminAchievement(achievementId: number) {
+  return request<{ deletedAchievementId: number }>(`/api/admin/achievements/${achievementId}`, {
     method: 'DELETE',
   });
 }
@@ -295,6 +327,16 @@ export interface AdminPressHighlightPayload {
   imageAlt: string;
   imageAltZh: string;
   imageHref: string;
+}
+
+export interface AdminAchievementPayload {
+  year: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  highlight: boolean;
+  latest: boolean;
 }
 
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
@@ -365,6 +407,23 @@ export function updateAdminPressHighlight(
   });
 }
 
+export function createAdminAchievement(payload: AdminAchievementPayload) {
+  return request<AdminAchievementEnvelope>('/api/admin/achievements', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminAchievement(
+  achievementId: number,
+  payload: AdminAchievementPayload
+) {
+  return request<AdminAchievementEnvelope>(`/api/admin/achievements/${achievementId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function reorderAdminComingUpEvents(orderedIds: number[]) {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
     method: 'POST',
@@ -394,6 +453,13 @@ export function reorderAdminFeaturedReels(
 
 export function reorderAdminPressHighlights(orderedIds: number[]) {
   return request<AdminPressHighlightsEnvelope>('/api/admin/press-highlights/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ orderedIds }),
+  });
+}
+
+export function reorderAdminAchievements(orderedIds: number[]) {
+  return request<AdminAchievementsEnvelope>('/api/admin/achievements/reorder', {
     method: 'POST',
     body: JSON.stringify({ orderedIds }),
   });

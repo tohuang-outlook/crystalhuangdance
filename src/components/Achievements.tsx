@@ -1,9 +1,36 @@
-import { achievements } from '../data/siteData';
+import { useEffect, useState } from 'react';
+import { achievements as fallbackAchievements } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedAchievement } from '../lib/achievementLocalization';
+import { fetchAchievements } from '../services/achievements';
 
 export default function Achievements() {
   const { t } = useLanguage();
+  const [achievements, setAchievements] = useState(fallbackAchievements);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAchievements = async () => {
+      try {
+        const response = await fetchAchievements();
+
+        if (!isMounted || response.length === 0) {
+          return;
+        }
+
+        setAchievements(response);
+      } catch {
+        // Fall back to static data when the admin-managed feed is unavailable.
+      }
+    };
+
+    void loadAchievements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section id="distinctions" className="section-padding section-divider">

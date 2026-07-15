@@ -958,6 +958,65 @@ describe('auth and video backend foundation', () => {
     expect(db.findPressHighlightById(createdId)).toBeNull();
   });
 
+  it('lists archive timeline entries publicly and lets admins manage latest ordering', async () => {
+    const publicResponse = await request(app).get('/api/achievements');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.achievements.length).toBeGreaterThan(0);
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createResponse = await adminAgent.post('/api/admin/achievements').send({
+      year: '2027',
+      title: 'Test Timeline Entry',
+      titleZh: '測試時間線條目',
+      description: 'English achievement summary',
+      descriptionZh: '中文成就摘要',
+      highlight: true,
+      latest: false,
+    });
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.achievement).toMatchObject({
+      year: '2027',
+      title: 'Test Timeline Entry',
+      latest: false,
+    });
+
+    const createdId = createResponse.body.achievement.id;
+    const updateResponse = await adminAgent.put(`/api/admin/achievements/${createdId}`).send({
+      year: '2027',
+      title: 'Updated Timeline Entry',
+      titleZh: '更新時間線條目',
+      description: 'Updated English summary',
+      descriptionZh: '更新中文摘要',
+      highlight: false,
+      latest: true,
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.achievement).toMatchObject({
+      id: createdId,
+      latest: true,
+      highlight: false,
+    });
+    expect(db.listAchievementEntries().filter((entry) => entry.latest)).toHaveLength(1);
+    expect(db.findAchievementEntryById(createdId)).toMatchObject({ latest: true });
+
+    const achievementIds = db.listAchievementEntries().map((entry) => entry.id);
+    const reorderedIds = [...achievementIds].reverse();
+    const reorderResponse = await adminAgent.post('/api/admin/achievements/reorder').send({
+      orderedIds: reorderedIds,
+    });
+    expect(reorderResponse.status).toBe(200);
+    expect(reorderResponse.body.achievements.map((entry) => entry.id)).toEqual(reorderedIds);
+
+    const deleteResponse = await adminAgent.delete(`/api/admin/achievements/${createdId}`);
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ deletedAchievementId: createdId });
+    expect(db.findAchievementEntryById(createdId)).toBeNull();
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

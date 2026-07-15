@@ -93,11 +93,13 @@ export function getLocalizedAchievement(
   return {
     title: t(
       achievement.title,
-      achievementTitlesZh[achievement.title] ?? achievement.title
+      achievement.titleZh ?? achievementTitlesZh[achievement.title] ?? achievement.title
     ),
     description: t(
       achievement.description,
-      achievementDescriptionsZh[achievement.title] ?? achievement.description
+      achievement.descriptionZh ??
+        achievementDescriptionsZh[achievement.title] ??
+        achievement.description
     ),
   };
 }

@@ -1,24 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   createAdminFeaturedReel,
+  createAdminAchievement,
   createAdminComingUpEvent,
   createAdminInvestorUpdate,
   createAdminPressHighlight,
   createAdminYoutubeVideo,
   deleteAdminFeaturedReel,
+  deleteAdminAchievement,
   deleteAdminComingUpEvent,
   deleteAdminInvestorUpdate,
   deleteAdminPressHighlight,
   deleteAdminUser,
   deleteAdminVideo,
   fetchAdminFeaturedReels,
+  fetchAdminAchievements,
   fetchAdminComingUpEvents,
   fetchAdminInvestorUpdates,
   fetchAdminPressHighlights,
   fetchAdminUsers,
   fetchAdminVideos,
   reorderAdminFeaturedReels,
+  reorderAdminAchievements,
   reorderAdminPressHighlights,
+  type AchievementRecord,
+  type AdminAchievementPayload,
   type AdminFeaturedReelPayload,
   type AdminInvestorUpdatePayload,
   type AdminPressHighlightPayload,
@@ -33,6 +39,7 @@ import {
   reorderAdminComingUpEvents,
   reorderAdminInvestorUpdates,
   updateAdminFeaturedReel,
+  updateAdminAchievement,
   updateAdminComingUpEvent,
   updateAdminInvestorUpdate,
   updateAdminPressHighlight,
@@ -138,6 +145,18 @@ interface PressHighlightDraft {
   imageAlt: string;
   imageAltZh: string;
   imageHref: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface AchievementDraft {
+  year: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  highlight: boolean;
+  latest: boolean;
   isSubmitting: boolean;
   error: string | null;
 }
@@ -268,6 +287,36 @@ function createPressHighlightDraftFromRecord(
   };
 }
 
+function createEmptyAchievementDraft(): AchievementDraft {
+  return {
+    year: '',
+    title: '',
+    titleZh: '',
+    description: '',
+    descriptionZh: '',
+    highlight: false,
+    latest: false,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createAchievementDraftFromRecord(
+  achievement: AchievementRecord
+): AchievementDraft {
+  return {
+    year: achievement.year,
+    title: achievement.title,
+    titleZh: achievement.titleZh,
+    description: achievement.description,
+    descriptionZh: achievement.descriptionZh,
+    highlight: achievement.highlight,
+    latest: achievement.latest,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
   const investorCategories: Array<{
     id: InvestorUpdateCategory;
@@ -297,6 +346,7 @@ export default function AdminPage() {
   const [featuredReels, setFeaturedReels] = useState<FeaturedReelRecord[]>([]);
   const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdateRecord[]>([]);
   const [pressHighlights, setPressHighlights] = useState<PressHighlightRecord[]>([]);
+  const [achievements, setAchievements] = useState<AchievementRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -307,11 +357,15 @@ export default function AdminPage() {
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
   const [investorUpdateDrafts, setInvestorUpdateDrafts] = useState<Record<number, InvestorUpdateDraft>>({});
   const [pressHighlightDrafts, setPressHighlightDrafts] = useState<Record<number, PressHighlightDraft>>({});
+  const [achievementDrafts, setAchievementDrafts] = useState<Record<number, AchievementDraft>>({});
   const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
     createEmptyComingUpEventDraft()
   );
   const [newPressHighlightDraft, setNewPressHighlightDraft] = useState<PressHighlightDraft>(
     createEmptyPressHighlightDraft()
+  );
+  const [newAchievementDraft, setNewAchievementDraft] = useState<AchievementDraft>(
+    createEmptyAchievementDraft()
   );
   const [newInvestorUpdateDrafts, setNewInvestorUpdateDrafts] = useState<
     Record<InvestorUpdateCategory, InvestorUpdateDraft>
@@ -410,6 +464,11 @@ export default function AdminPage() {
     [pressHighlights]
   );
 
+  const latestAchievementEntry = useMemo(
+    () => achievements.find((achievement) => achievement.latest) ?? null,
+    [achievements]
+  );
+
   const videosByUser = useMemo(() => {
     const grouped = new Map<number, AdminVideoRecord[]>();
 
@@ -443,6 +502,7 @@ export default function AdminPage() {
         featuredReelsResponse,
         investorUpdatesResponse,
         pressHighlightsResponse,
+        achievementsResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -450,6 +510,7 @@ export default function AdminPage() {
         fetchAdminFeaturedReels(),
         fetchAdminInvestorUpdates(),
         fetchAdminPressHighlights(),
+        fetchAdminAchievements(),
       ]);
 
       setUsers(usersResponse.users);
@@ -458,6 +519,7 @@ export default function AdminPage() {
       setFeaturedReels(featuredReelsResponse.reels);
       setInvestorUpdates(investorUpdatesResponse.updates);
       setPressHighlights(pressHighlightsResponse.highlights);
+      setAchievements(achievementsResponse.achievements);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -520,6 +582,19 @@ export default function AdminPage() {
     });
   }, [pressHighlights]);
 
+  useEffect(() => {
+    setAchievementDrafts((current) => {
+      const nextDrafts: Record<number, AchievementDraft> = {};
+
+      achievements.forEach((achievement) => {
+        nextDrafts[achievement.id] =
+          current[achievement.id] ?? createAchievementDraftFromRecord(achievement);
+      });
+
+      return nextDrafts;
+    });
+  }, [achievements]);
+
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
   const getComingUpEventDraft = (event: ComingUpEventRecord) =>
@@ -533,6 +608,9 @@ export default function AdminPage() {
 
   const getPressHighlightDraft = (highlight: PressHighlightRecord) =>
     pressHighlightDrafts[highlight.id] ?? createPressHighlightDraftFromRecord(highlight);
+
+  const getAchievementDraft = (achievement: AchievementRecord) =>
+    achievementDrafts[achievement.id] ?? createAchievementDraftFromRecord(achievement);
 
   const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
     setUploadDrafts((current) => ({
@@ -607,6 +685,23 @@ export default function AdminPage() {
 
   const updateNewPressHighlightDraft = (patch: Partial<PressHighlightDraft>) => {
     setNewPressHighlightDraft((current) => ({
+      ...current,
+      ...patch,
+    }));
+  };
+
+  const updateAchievementDraft = (achievementId: number, patch: Partial<AchievementDraft>) => {
+    setAchievementDrafts((current) => ({
+      ...current,
+      [achievementId]: {
+        ...(current[achievementId] ?? createEmptyAchievementDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewAchievementDraft = (patch: Partial<AchievementDraft>) => {
+    setNewAchievementDraft((current) => ({
       ...current,
       ...patch,
     }));
@@ -883,6 +978,16 @@ export default function AdminPage() {
     imageHref: draft.imageHref.trim(),
   });
 
+  const toAchievementPayload = (draft: AchievementDraft): AdminAchievementPayload => ({
+    year: draft.year.trim(),
+    title: draft.title.trim(),
+    titleZh: draft.titleZh.trim(),
+    description: draft.description.trim(),
+    descriptionZh: draft.descriptionZh.trim(),
+    highlight: draft.highlight,
+    latest: draft.latest,
+  });
+
   const handleCreateFeaturedReel = async (placement: FeaturedReelPlacement) => {
     const draft = newFeaturedReelDrafts[placement];
     updateNewFeaturedReelDraft(placement, { isSubmitting: true, error: null });
@@ -1080,6 +1185,106 @@ export default function AdminPage() {
       setPressHighlights(response.highlights);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reorder press highlights.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleCreateAchievement = async () => {
+    updateNewAchievementDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminAchievement(toAchievementPayload(newAchievementDraft));
+      setAchievements((current) => [...current, response.achievement]);
+      setNewAchievementDraft(createEmptyAchievementDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewAchievementDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this achievement entry.',
+      });
+      return;
+    }
+
+    updateNewAchievementDraft({ isSubmitting: false });
+  };
+
+  const handleSaveAchievement = async (achievement: AchievementRecord) => {
+    const draft = getAchievementDraft(achievement);
+    updateAchievementDraft(achievement.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminAchievement(
+        achievement.id,
+        toAchievementPayload(draft)
+      );
+      setAchievements((current) =>
+        current.map((entry) => (entry.id === achievement.id ? response.achievement : entry))
+      );
+      setAchievementDrafts((current) => ({
+        ...current,
+        [achievement.id]: createAchievementDraftFromRecord(response.achievement),
+      }));
+      await loadDashboard();
+    } catch (err) {
+      updateAchievementDraft(achievement.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this achievement entry.',
+      });
+      return;
+    }
+
+    updateAchievementDraft(achievement.id, { isSubmitting: false });
+  };
+
+  const handleDeleteAchievement = async (achievement: AchievementRecord) => {
+    if (!window.confirm(`Delete "${achievement.title}" from Archive Timeline?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`achievement-delete-${achievement.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminAchievement(achievement.id);
+      setAchievements((current) => current.filter((entry) => entry.id !== achievement.id));
+      setAchievementDrafts((current) => {
+        const nextDrafts = { ...current };
+        delete nextDrafts[achievement.id];
+        return nextDrafts;
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this achievement entry.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveAchievement = async (achievementId: number, direction: -1 | 1) => {
+    const currentIndex = achievements.findIndex((entry) => entry.id === achievementId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= achievements.length) {
+      return;
+    }
+
+    const reorderedIds = [...achievements.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`achievement-move-${achievementId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminAchievements(reorderedIds);
+      setAchievements(response.achievements);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder archive timeline entries.');
     } finally {
       setActiveEventActionKey(null);
     }
@@ -1715,6 +1920,143 @@ export default function AdminPage() {
                                 <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Image alt (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.imageAltZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { imageAltZh: event.target.value })} /></label>
                                 <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Summary (EN)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.description} onChange={(event) => updatePressHighlightDraft(highlight.id, { description: event.target.value })} /></label>
                                 <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Summary (ZH)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.descriptionZh} onChange={(event) => updatePressHighlightDraft(highlight.id, { descriptionZh: event.target.value })} /></label>
+                              </div>
+
+                              {draft.error ? (
+                                <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                                  {draft.error}
+                                </p>
+                              ) : null}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </article>
+
+                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Archive Timeline</p>
+                        <h3 className="mt-3 text-3xl text-[var(--text)]">Timeline and latest achievement</h3>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                          Manage the chronological archive entries shown in the distinctions section. You can also choose which entry powers the Latest Achievement banner.
+                        </p>
+                      </div>
+                      <div className="text-sm text-[var(--text-muted)]">
+                        {achievements.length} item{achievements.length === 1 ? '' : 's'}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.42)] p-4 sm:grid-cols-3">
+                      {[
+                        { label: 'Latest Achievement', value: latestAchievementEntry?.year ?? 'Not set' },
+                        { label: 'Highlighted entries', value: achievements.filter((entry) => entry.highlight).length },
+                        { label: 'Timeline order', value: 'Manual' },
+                      ].map((stat) => (
+                        <div
+                          key={stat.label}
+                          className="rounded-[1.1rem] border border-[var(--line)] bg-[var(--surface)] px-4 py-4"
+                        >
+                          <p className="eyebrow text-[10px]">{stat.label}</p>
+                          <p className="mt-3 text-xl text-[var(--text)]">{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                      <p className="eyebrow text-[10px]">New archive entry</p>
+                      <h4 className="mt-3 text-2xl text-[var(--text)]">Add timeline milestone</h4>
+
+                      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Year</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newAchievementDraft.year} onChange={(event) => updateNewAchievementDraft({ year: event.target.value })} />
+                        </label>
+                        <div className="flex items-end gap-6 rounded-[1.1rem] border border-[var(--line)] bg-white px-4 py-4">
+                          <label className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                            <input checked={newAchievementDraft.highlight} onChange={(event) => updateNewAchievementDraft({ highlight: event.target.checked })} type="checkbox" />
+                            <span>Highlight</span>
+                          </label>
+                          <label className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                            <input checked={newAchievementDraft.latest} onChange={(event) => updateNewAchievementDraft({ latest: event.target.checked })} type="checkbox" />
+                            <span>Latest achievement</span>
+                          </label>
+                        </div>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Title (EN)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newAchievementDraft.title} onChange={(event) => updateNewAchievementDraft({ title: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                          <span className="eyebrow text-[10px]">Title (ZH)</span>
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={newAchievementDraft.titleZh} onChange={(event) => updateNewAchievementDraft({ titleZh: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Description (EN)</span>
+                          <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newAchievementDraft.description} onChange={(event) => updateNewAchievementDraft({ description: event.target.value })} />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                          <span className="eyebrow text-[10px]">Description (ZH)</span>
+                          <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={newAchievementDraft.descriptionZh} onChange={(event) => updateNewAchievementDraft({ descriptionZh: event.target.value })} />
+                        </label>
+                      </div>
+
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-[var(--text-muted)]">
+                          New entries are added to the bottom of the timeline. Move them afterward if needed.
+                        </p>
+                        <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={newAchievementDraft.isSubmitting} onClick={() => void handleCreateAchievement()} type="button">
+                          {newAchievementDraft.isSubmitting ? 'Adding...' : 'Add timeline entry'}
+                        </button>
+                      </div>
+
+                      {newAchievementDraft.error ? (
+                        <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                          {newAchievementDraft.error}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {achievements.length === 0 ? (
+                      <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-6 text-sm text-[var(--text-muted)]">
+                        No archive timeline entries yet.
+                      </div>
+                    ) : (
+                      <div className="mt-6 space-y-4">
+                        {achievements.map((achievement, index) => {
+                          const draft = getAchievementDraft(achievement);
+                          const isDeleting = activeEventActionKey === `achievement-delete-${achievement.id}`;
+                          const isMoving = activeEventActionKey === `achievement-move-${achievement.id}`;
+
+                          return (
+                            <article key={achievement.id} className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                              <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                  <p className="eyebrow text-[10px]">
+                                    Position {index + 1} · {draft.latest ? 'Latest achievement' : draft.highlight ? 'Highlighted entry' : 'Timeline entry'} · {formatDate(achievement.updatedAt)}
+                                  </p>
+                                  <h4 className="mt-3 text-2xl text-[var(--text)]">
+                                    {draft.title || 'Untitled achievement'}
+                                  </h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === 0 || isMoving} onClick={() => void handleMoveAchievement(achievement.id, -1)} type="button">{isMoving ? 'Moving...' : 'Up'}</button>
+                                  <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60" disabled={index === achievements.length - 1 || isMoving} onClick={() => void handleMoveAchievement(achievement.id, 1)} type="button">{isMoving ? 'Moving...' : 'Down'}</button>
+                                  <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={draft.isSubmitting} onClick={() => void handleSaveAchievement(achievement)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                  <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] transition hover:border-[rgba(255,107,107,0.48)] disabled:cursor-not-allowed disabled:opacity-60" disabled={isDeleting} onClick={() => void handleDeleteAchievement(achievement)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                </div>
+                              </div>
+
+                              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Year</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.year} onChange={(event) => updateAchievementDraft(achievement.id, { year: event.target.value })} /></label>
+                                <div className="flex items-end gap-6 rounded-[1.1rem] border border-[var(--line)] bg-white px-4 py-4">
+                                  <label className="flex items-center gap-3 text-sm text-[var(--text-muted)]"><input checked={draft.highlight} onChange={(event) => updateAchievementDraft(achievement.id, { highlight: event.target.checked })} type="checkbox" /><span>Highlight</span></label>
+                                  <label className="flex items-center gap-3 text-sm text-[var(--text-muted)]"><input checked={draft.latest} onChange={(event) => updateAchievementDraft(achievement.id, { latest: event.target.checked })} type="checkbox" /><span>Latest achievement</span></label>
+                                </div>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (EN)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.title} onChange={(event) => updateAchievementDraft(achievement.id, { title: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]"><span className="eyebrow text-[10px]">Title (ZH)</span><input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={draft.titleZh} onChange={(event) => updateAchievementDraft(achievement.id, { titleZh: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Description (EN)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.description} onChange={(event) => updateAchievementDraft(achievement.id, { description: event.target.value })} /></label>
+                                <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2"><span className="eyebrow text-[10px]">Description (ZH)</span><textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={draft.descriptionZh} onChange={(event) => updateAchievementDraft(achievement.id, { descriptionZh: event.target.value })} /></label>
                               </div>
 
                               {draft.error ? (
