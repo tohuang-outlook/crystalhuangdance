@@ -128,9 +128,9 @@ describe('App dossier layout', () => {
     render(<App />);
 
     expect(
-      await screen.findByText(/Curated Dossier/i)
+      await screen.findByRole('heading', { name: /My Videos/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /^Crystal Huang$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Signed in as/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /User and video oversight/i })).not.toBeInTheDocument();
   });
 
