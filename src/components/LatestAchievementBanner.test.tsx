@@ -76,6 +76,54 @@ describe('LatestAchievementBanner', () => {
     expect(screen.getByRole('link', { name: '查看成就' })).toHaveAttribute('href', '#distinctions');
   });
 
+  it('uses Moscow reels managed through the public featured-reels feed', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/featured-reels')) {
+        return new Response(
+          JSON.stringify({
+            reels: [
+              {
+                id: 901,
+                placement: 'supporting',
+                youtubeId: 'adminMoscowReel',
+                videoSrc: null,
+                metaLabel: 'XV Moscow Ballet Competition · July 2026',
+                metaLabelZh: '莫斯科國際芭蕾舞大賽 · 2026年7月',
+                title: 'Admin managed Moscow reel',
+                titleZh: '後台管理的莫斯科影片',
+                description: 'A homepage Moscow reel managed in Admin Console.',
+                descriptionZh: '由後台管理的首頁莫斯科影片。',
+                thumbnail: '/admin-moscow-reel.png',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(JSON.stringify({ achievements: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    try {
+      render(
+        <LanguageProvider>
+          <LatestAchievementBanner />
+        </LanguageProvider>
+      );
+
+      expect(
+        await screen.findByRole('link', { name: /admin managed Moscow reel/i })
+      ).toHaveAttribute('href', 'https://www.youtube.com/watch?v=adminMoscowReel');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it('renders a latest achievement banner section within the homepage with the distinctions CTA', () => {
     expect(latestAchievement).toBeDefined();
 

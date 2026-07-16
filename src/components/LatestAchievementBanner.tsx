@@ -4,15 +4,22 @@ import { useLanguage } from '../context/LanguageContext';
 import { reelVideos } from '../data/reels';
 import { getLocalizedAchievement } from '../lib/achievementLocalization';
 import { fetchAchievements } from '../services/achievements';
+import { fetchFeaturedReels } from '../services/featuredReels';
 
 export default function LatestAchievementBanner() {
   const { t } = useLanguage();
   const [achievements, setAchievements] = useState(fallbackAchievements);
+  const [reels, setReels] = useState(reelVideos);
   const latestAchievement = useMemo(
     () => achievements.find((achievement) => achievement.latest),
     [achievements]
   );
-  const moscowVideos = reelVideos.filter((video) => video.event === 'moscow');
+  const moscowVideos = reels.filter(
+    (video) =>
+      video.event === 'moscow' ||
+      video.metaLabel.toLowerCase().includes('moscow') ||
+      video.title.toLowerCase().includes('moscow')
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -32,6 +39,30 @@ export default function LatestAchievementBanner() {
     };
 
     void loadAchievements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMoscowReels = async () => {
+      try {
+        const response = await fetchFeaturedReels();
+
+        if (!isMounted || response.length === 0) {
+          return;
+        }
+
+        setReels(response);
+      } catch {
+        // Keep the static Moscow cards available if the admin feed is unavailable.
+      }
+    };
+
+    void loadMoscowReels();
 
     return () => {
       isMounted = false;
