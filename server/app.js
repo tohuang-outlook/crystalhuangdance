@@ -188,6 +188,22 @@ function serializeAchievementEntry(entry) {
   };
 }
 
+function serializeArtistProfile(profile) {
+  return {
+    coverIdentity: profile.coverIdentity,
+    coverIdentityZh: profile.coverIdentityZh,
+    coverStatement: profile.coverStatement,
+    coverStatementZh: profile.coverStatementZh,
+    aboutParagraph1: profile.aboutParagraph1,
+    aboutParagraph1Zh: profile.aboutParagraph1Zh,
+    aboutParagraph2: profile.aboutParagraph2,
+    aboutParagraph2Zh: profile.aboutParagraph2Zh,
+    aboutParagraph3: profile.aboutParagraph3,
+    aboutParagraph3Zh: profile.aboutParagraph3Zh,
+    updatedAt: profile.updatedAt,
+  };
+}
+
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -302,6 +318,21 @@ function parseAchievementEntryPayload(body) {
     descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
     highlight: Boolean(body?.highlight),
     latest: Boolean(body?.latest),
+  };
+}
+
+function parseArtistProfilePayload(body) {
+  return {
+    coverIdentity: parseRequiredTrimmedString(body?.coverIdentity),
+    coverIdentityZh: parseRequiredTrimmedString(body?.coverIdentityZh),
+    coverStatement: parseRequiredTrimmedString(body?.coverStatement),
+    coverStatementZh: parseRequiredTrimmedString(body?.coverStatementZh),
+    aboutParagraph1: parseRequiredTrimmedString(body?.aboutParagraph1),
+    aboutParagraph1Zh: parseRequiredTrimmedString(body?.aboutParagraph1Zh),
+    aboutParagraph2: parseRequiredTrimmedString(body?.aboutParagraph2),
+    aboutParagraph2Zh: parseRequiredTrimmedString(body?.aboutParagraph2Zh),
+    aboutParagraph3: parseRequiredTrimmedString(body?.aboutParagraph3),
+    aboutParagraph3Zh: parseRequiredTrimmedString(body?.aboutParagraph3Zh),
   };
 }
 
@@ -565,6 +596,16 @@ export function createApp({
   app.get('/api/achievements', (_req, res) => {
     const achievements = db.listAchievementEntries().map(serializeAchievementEntry);
     res.json({ achievements });
+  });
+
+  app.get('/api/artist-profile', (_req, res) => {
+    const profile = db.getArtistProfile();
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Artist profile not found.' });
+    }
+
+    return res.json({ profile: serializeArtistProfile(profile) });
   });
 
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
@@ -832,6 +873,16 @@ export function createApp({
   app.get('/api/admin/achievements', requireAdmin, (_req, res) => {
     const achievements = db.listAchievementEntries().map(serializeAchievementEntry);
     res.json({ achievements });
+  });
+
+  app.get('/api/admin/artist-profile', requireAdmin, (_req, res) => {
+    const profile = db.getArtistProfile();
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Artist profile not found.' });
+    }
+
+    return res.json({ profile: serializeArtistProfile(profile) });
   });
 
   app.post('/api/admin/featured-reels', requireAdmin, (req, res) => {
@@ -1217,6 +1268,33 @@ export function createApp({
 
     const achievements = db.reorderAchievementEntries(orderedIds).map(serializeAchievementEntry);
     return res.json({ achievements });
+  });
+
+  app.put('/api/admin/artist-profile', requireAdmin, (req, res) => {
+    const payload = parseArtistProfilePayload(req.body);
+
+    if (!payload.coverIdentity || !payload.coverIdentityZh) {
+      return res.status(400).json({ error: 'Both English and Chinese cover identities are required.' });
+    }
+
+    if (!payload.coverStatement || !payload.coverStatementZh) {
+      return res.status(400).json({ error: 'Both English and Chinese cover statements are required.' });
+    }
+
+    if (!payload.aboutParagraph1 || !payload.aboutParagraph1Zh) {
+      return res.status(400).json({ error: 'Both English and Chinese paragraph 1 values are required.' });
+    }
+
+    if (!payload.aboutParagraph2 || !payload.aboutParagraph2Zh) {
+      return res.status(400).json({ error: 'Both English and Chinese paragraph 2 values are required.' });
+    }
+
+    if (!payload.aboutParagraph3 || !payload.aboutParagraph3Zh) {
+      return res.status(400).json({ error: 'Both English and Chinese paragraph 3 values are required.' });
+    }
+
+    const profile = db.upsertArtistProfile(payload);
+    return res.json({ profile: serializeArtistProfile(profile) });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {

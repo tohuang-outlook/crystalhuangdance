@@ -15,6 +15,7 @@ import {
   deleteAdminVideo,
   fetchAdminFeaturedReels,
   fetchAdminAchievements,
+  fetchAdminArtistProfile,
   fetchAdminComingUpEvents,
   fetchAdminInvestorUpdates,
   fetchAdminPressHighlights,
@@ -25,6 +26,8 @@ import {
   reorderAdminPressHighlights,
   type AchievementRecord,
   type AdminAchievementPayload,
+  type AdminArtistProfilePayload,
+  type AdminArtistProfileRecord,
   type AdminFeaturedReelPayload,
   type AdminInvestorUpdatePayload,
   type AdminPressHighlightPayload,
@@ -40,6 +43,7 @@ import {
   reorderAdminInvestorUpdates,
   updateAdminFeaturedReel,
   updateAdminAchievement,
+  updateAdminArtistProfile,
   updateAdminComingUpEvent,
   updateAdminInvestorUpdate,
   updateAdminPressHighlight,
@@ -157,6 +161,21 @@ interface AchievementDraft {
   descriptionZh: string;
   highlight: boolean;
   latest: boolean;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface ArtistProfileDraft {
+  coverIdentity: string;
+  coverIdentityZh: string;
+  coverStatement: string;
+  coverStatementZh: string;
+  aboutParagraph1: string;
+  aboutParagraph1Zh: string;
+  aboutParagraph2: string;
+  aboutParagraph2Zh: string;
+  aboutParagraph3: string;
+  aboutParagraph3Zh: string;
   isSubmitting: boolean;
   error: string | null;
 }
@@ -317,6 +336,42 @@ function createAchievementDraftFromRecord(
   };
 }
 
+function createEmptyArtistProfileDraft(): ArtistProfileDraft {
+  return {
+    coverIdentity: '',
+    coverIdentityZh: '',
+    coverStatement: '',
+    coverStatementZh: '',
+    aboutParagraph1: '',
+    aboutParagraph1Zh: '',
+    aboutParagraph2: '',
+    aboutParagraph2Zh: '',
+    aboutParagraph3: '',
+    aboutParagraph3Zh: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createArtistProfileDraftFromRecord(
+  profile: AdminArtistProfileRecord
+): ArtistProfileDraft {
+  return {
+    coverIdentity: profile.coverIdentity,
+    coverIdentityZh: profile.coverIdentityZh,
+    coverStatement: profile.coverStatement,
+    coverStatementZh: profile.coverStatementZh,
+    aboutParagraph1: profile.aboutParagraph1,
+    aboutParagraph1Zh: profile.aboutParagraph1Zh,
+    aboutParagraph2: profile.aboutParagraph2,
+    aboutParagraph2Zh: profile.aboutParagraph2Zh,
+    aboutParagraph3: profile.aboutParagraph3,
+    aboutParagraph3Zh: profile.aboutParagraph3Zh,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
   const investorCategories: Array<{
     id: InvestorUpdateCategory;
@@ -347,6 +402,7 @@ export default function AdminPage() {
   const [investorUpdates, setInvestorUpdates] = useState<InvestorUpdateRecord[]>([]);
   const [pressHighlights, setPressHighlights] = useState<PressHighlightRecord[]>([]);
   const [achievements, setAchievements] = useState<AchievementRecord[]>([]);
+  const [artistProfile, setArtistProfile] = useState<AdminArtistProfileRecord | null>(null);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -366,6 +422,9 @@ export default function AdminPage() {
   );
   const [newAchievementDraft, setNewAchievementDraft] = useState<AchievementDraft>(
     createEmptyAchievementDraft()
+  );
+  const [artistProfileDraft, setArtistProfileDraft] = useState<ArtistProfileDraft>(
+    createEmptyArtistProfileDraft()
   );
   const [newInvestorUpdateDrafts, setNewInvestorUpdateDrafts] = useState<
     Record<InvestorUpdateCategory, InvestorUpdateDraft>
@@ -503,6 +562,7 @@ export default function AdminPage() {
         investorUpdatesResponse,
         pressHighlightsResponse,
         achievementsResponse,
+        artistProfileResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -511,6 +571,7 @@ export default function AdminPage() {
         fetchAdminInvestorUpdates(),
         fetchAdminPressHighlights(),
         fetchAdminAchievements(),
+        fetchAdminArtistProfile(),
       ]);
 
       setUsers(usersResponse.users);
@@ -520,6 +581,7 @@ export default function AdminPage() {
       setInvestorUpdates(investorUpdatesResponse.updates);
       setPressHighlights(pressHighlightsResponse.highlights);
       setAchievements(achievementsResponse.achievements);
+      setArtistProfile(artistProfileResponse.profile);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -594,6 +656,31 @@ export default function AdminPage() {
       return nextDrafts;
     });
   }, [achievements]);
+
+  useEffect(() => {
+    if (!artistProfile) {
+      return;
+    }
+
+    setArtistProfileDraft((current) => {
+      if (
+        current.coverIdentity ||
+        current.coverIdentityZh ||
+        current.coverStatement ||
+        current.coverStatementZh ||
+        current.aboutParagraph1 ||
+        current.aboutParagraph1Zh ||
+        current.aboutParagraph2 ||
+        current.aboutParagraph2Zh ||
+        current.aboutParagraph3 ||
+        current.aboutParagraph3Zh
+      ) {
+        return current;
+      }
+
+      return createArtistProfileDraftFromRecord(artistProfile);
+    });
+  }, [artistProfile]);
 
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
@@ -702,6 +789,13 @@ export default function AdminPage() {
 
   const updateNewAchievementDraft = (patch: Partial<AchievementDraft>) => {
     setNewAchievementDraft((current) => ({
+      ...current,
+      ...patch,
+    }));
+  };
+
+  const updateArtistProfileDraft = (patch: Partial<ArtistProfileDraft>) => {
+    setArtistProfileDraft((current) => ({
       ...current,
       ...patch,
     }));
@@ -986,6 +1080,19 @@ export default function AdminPage() {
     descriptionZh: draft.descriptionZh.trim(),
     highlight: draft.highlight,
     latest: draft.latest,
+  });
+
+  const toArtistProfilePayload = (draft: ArtistProfileDraft): AdminArtistProfilePayload => ({
+    coverIdentity: draft.coverIdentity.trim(),
+    coverIdentityZh: draft.coverIdentityZh.trim(),
+    coverStatement: draft.coverStatement.trim(),
+    coverStatementZh: draft.coverStatementZh.trim(),
+    aboutParagraph1: draft.aboutParagraph1.trim(),
+    aboutParagraph1Zh: draft.aboutParagraph1Zh.trim(),
+    aboutParagraph2: draft.aboutParagraph2.trim(),
+    aboutParagraph2Zh: draft.aboutParagraph2Zh.trim(),
+    aboutParagraph3: draft.aboutParagraph3.trim(),
+    aboutParagraph3Zh: draft.aboutParagraph3Zh.trim(),
   });
 
   const handleCreateFeaturedReel = async (placement: FeaturedReelPlacement) => {
@@ -1288,6 +1395,25 @@ export default function AdminPage() {
     } finally {
       setActiveEventActionKey(null);
     }
+  };
+
+  const handleSaveArtistProfile = async () => {
+    updateArtistProfileDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminArtistProfile(toArtistProfilePayload(artistProfileDraft));
+      setArtistProfile(response.profile);
+      setArtistProfileDraft(createArtistProfileDraftFromRecord(response.profile));
+    } catch (err) {
+      updateArtistProfileDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save the artist profile.',
+      });
+      return;
+    }
+
+    updateArtistProfileDraft({ isSubmitting: false });
   };
 
   const toInvestorUpdatePayload = (draft: InvestorUpdateDraft): AdminInvestorUpdatePayload => ({
@@ -1766,6 +1892,79 @@ export default function AdminPage() {
                       Manage the homepage modules that visitors see first. Press Highlight controls the editorial cards in the press section, and Featured Performance Reels controls the media section.
                     </p>
                   </div>
+
+                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Artist Profile</p>
+                        <h3 className="mt-3 text-3xl text-[var(--text)]">Hero identity and profile narrative</h3>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                          Manage the Hero identity line, Hero statement, and the three profile paragraphs shown in the Artist Profile section.
+                        </p>
+                      </div>
+                      <div className="text-sm text-[var(--text-muted)]">
+                        {artistProfile ? `Updated ${formatDate(artistProfile.updatedAt)}` : 'Loading profile'}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                        <span className="eyebrow text-[10px]">Cover identity (EN)</span>
+                        <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={artistProfileDraft.coverIdentity} onChange={(event) => updateArtistProfileDraft({ coverIdentity: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)]">
+                        <span className="eyebrow text-[10px]">Cover identity (ZH)</span>
+                        <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" type="text" value={artistProfileDraft.coverIdentityZh} onChange={(event) => updateArtistProfileDraft({ coverIdentityZh: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Hero statement (EN)</span>
+                        <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.coverStatement} onChange={(event) => updateArtistProfileDraft({ coverStatement: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Hero statement (ZH)</span>
+                        <textarea className="min-h-24 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.coverStatementZh} onChange={(event) => updateArtistProfileDraft({ coverStatementZh: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 1 (EN)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph1} onChange={(event) => updateArtistProfileDraft({ aboutParagraph1: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 1 (ZH)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph1Zh} onChange={(event) => updateArtistProfileDraft({ aboutParagraph1Zh: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 2 (EN)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph2} onChange={(event) => updateArtistProfileDraft({ aboutParagraph2: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 2 (ZH)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph2Zh} onChange={(event) => updateArtistProfileDraft({ aboutParagraph2Zh: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 3 (EN)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph3} onChange={(event) => updateArtistProfileDraft({ aboutParagraph3: event.target.value })} />
+                      </label>
+                      <label className="flex flex-col gap-2 text-sm text-[var(--text-muted)] xl:col-span-2">
+                        <span className="eyebrow text-[10px]">Artist Profile paragraph 3 (ZH)</span>
+                        <textarea className="min-h-28 rounded-[1.5rem] border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--text)] outline-none transition focus:border-[var(--text)]" value={artistProfileDraft.aboutParagraph3Zh} onChange={(event) => updateArtistProfileDraft({ aboutParagraph3Zh: event.target.value })} />
+                      </label>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-[var(--text-muted)]">
+                        Saving here updates both the Hero intro and the Artist Profile section on the public homepage.
+                      </p>
+                      <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)] disabled:cursor-not-allowed disabled:opacity-60" disabled={artistProfileDraft.isSubmitting} onClick={() => void handleSaveArtistProfile()} type="button">
+                        {artistProfileDraft.isSubmitting ? 'Saving...' : 'Save artist profile'}
+                      </button>
+                    </div>
+
+                    {artistProfileDraft.error ? (
+                      <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm text-[var(--text)]">
+                        {artistProfileDraft.error}
+                      </p>
+                    ) : null}
+                  </article>
 
                   <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">

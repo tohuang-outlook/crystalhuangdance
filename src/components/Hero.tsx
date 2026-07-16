@@ -1,15 +1,32 @@
 import { useEffect, useState } from 'react';
 import { siteConfig, type HeroUpcomingEvent } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchArtistProfile, type ArtistProfileRecord } from '../services/artistProfile';
 import { fetchComingUpEvents } from '../services/comingUpEvents';
 
 function createFallbackEvents(): HeroUpcomingEvent[] {
   return siteConfig.heroUpcomingEvents;
 }
 
+function createFallbackProfile(): ArtistProfileRecord {
+  return {
+    coverIdentity: siteConfig.coverIdentity,
+    coverIdentityZh: siteConfig.coverIdentityZh,
+    coverStatement: siteConfig.coverStatement,
+    coverStatementZh: siteConfig.coverStatementZh,
+    aboutParagraph1: siteConfig.aboutParagraphs[0] ?? '',
+    aboutParagraph1Zh: siteConfig.aboutParagraphsZh[0] ?? '',
+    aboutParagraph2: siteConfig.aboutParagraphs[1] ?? '',
+    aboutParagraph2Zh: siteConfig.aboutParagraphsZh[1] ?? '',
+    aboutParagraph3: siteConfig.aboutParagraphs[2] ?? '',
+    aboutParagraph3Zh: siteConfig.aboutParagraphsZh[2] ?? '',
+  };
+}
+
 export default function Hero() {
   const { t } = useLanguage();
   const [upcomingEvents, setUpcomingEvents] = useState<HeroUpcomingEvent[]>(createFallbackEvents);
+  const [profile, setProfile] = useState<ArtistProfileRecord>(createFallbackProfile);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
 
   const archiveHrefMap: Record<string, string> = {
@@ -44,6 +61,30 @@ export default function Hero() {
     }
 
     loadComingUpEvents();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadArtistProfile() {
+      try {
+        const response = await fetchArtistProfile();
+
+        if (!isActive || !response) {
+          return;
+        }
+
+        setProfile(response);
+      } catch {
+        // Keep the static hero copy fallback if the public endpoint is unavailable.
+      }
+    }
+
+    void loadArtistProfile();
 
     return () => {
       isActive = false;
@@ -107,13 +148,13 @@ export default function Hero() {
           <div className="space-y-4">
             <p className="eyebrow">{t('Curated Dossier', '策劃檔案')}</p>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--text-muted)]">
-              {t(siteConfig.coverIdentity, siteConfig.coverIdentityZh)}
+              {t(profile.coverIdentity, profile.coverIdentityZh)}
             </p>
             <h1 className="max-w-3xl text-6xl leading-none sm:text-7xl lg:text-8xl">
               {siteConfig.name}
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-[rgba(74,55,40,0.82)]">
-              {t(siteConfig.coverStatement, siteConfig.coverStatementZh)}
+              {t(profile.coverStatement, profile.coverStatementZh)}
             </p>
           </div>
 

@@ -369,6 +369,27 @@ const defaultAchievementEntries = [
     sortOrder: 13,
   },
 ];
+const defaultArtistProfile = {
+  id: 1,
+  coverIdentity: 'San Francisco Ballet School Trainee',
+  coverIdentityZh: '舊金山芭蕾舞學校培訓生',
+  coverStatement:
+    'San Francisco Ballet School trainee with international performance, touring, and competition experience across ballet, contemporary, and commercial work.',
+  coverStatementZh:
+    '具備國際演出、巡演與競賽經歷的舊金山芭蕾舞學校培訓生，橫跨古典芭蕾、當代與商業演出。',
+  aboutParagraph1:
+    "Crystal Huang is a San Francisco Ballet School trainee whose recent work spans elite conservatory training, international gala appearances, and national touring experience. Her current dossier includes 2026 XV Moscow Ballet Competition, Junior Group, Girls, Solo First Prize and Gold Medal Winner, Prix de Lausanne 2024 Prize Winner #4 and Contemporary Dance Award Winner, YAGP NYC Finals Senior Women Silver Medal Winner, SAIBC Senior Women Grand Prix Winner, and the 2025 T.O.P. Asian American Outstanding Dancer honor.",
+  aboutParagraph1Zh:
+    'Crystal Huang 現為舊金山芭蕾舞學校培訓生，近年的發展橫跨菁英舞蹈教育、國際舞台演出與全美巡演。她的代表經歷包括 2024 洛桑國際芭蕾舞比賽 Prize Winner #4 與當代舞特別獎、YAGP 紐約總決賽高級女子組銀牌、SAIBC 高級女子組大獎，以及 2025 年 T.O.P. 亞裔美國傑出舞者榮譽。',
+  aboutParagraph2:
+    "Her training path bridges classical rigor and wide stylistic range. She began at Yoko's Dance and Performing Arts Academy, trained extensively at The Rock Center for Dance and Nevada School of Ballet, refined her classical foundation at Bayer Ballet Academy, studied at the American Ballet Theatre Jacqueline Kennedy Onassis School, and now continues her development at San Francisco Ballet School under a distinguished faculty.",
+  aboutParagraph2Zh:
+    '她的訓練路徑兼具古典基礎與跨風格延展性。自 Yoko\'s Dance and Performing Arts Academy 啟蒙後，先後於 The Rock Center for Dance 與 Nevada School of Ballet 接受密集訓練，之後在 Bayer Ballet Academy 深化古典技法，並於 American Ballet Theatre Jacqueline Kennedy Onassis School 進一步進修，現持續於 San Francisco Ballet School 跟隨多位資深教師精進。',
+  aboutParagraph3:
+    'Alongside competition and conservatory work, Crystal has toured nationally as an NYCDA Outstanding Dancer, The Dance Awards Best Dancer, and Radix Core Performer, while also appearing in performances and galas across New York, Italy, Belgium, Switzerland, South Africa, China, and Japan. Her professional profile also includes choreography, master class teaching, and creative work for younger dancers across the United States.',
+  aboutParagraph3Zh:
+    '除比賽與學院訓練外，Crystal 亦曾以 NYCDA Outstanding Dancer、The Dance Awards Best Dancer 與 Radix Core Performer 身分於全美巡演，並參與紐約、義大利、比利時、瑞士、南非、中國與日本等地的演出與 gala。她的專業履歷也延伸至編舞、工作坊與教學型創作，持續將舞台經驗轉化為對年輕舞者的創作與分享。',
+};
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
     return;
@@ -1165,6 +1186,77 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    getArtistProfile: db.prepare(
+      `SELECT
+          id,
+          cover_identity AS coverIdentity,
+          cover_identity_zh AS coverIdentityZh,
+          cover_statement AS coverStatement,
+          cover_statement_zh AS coverStatementZh,
+          about_paragraph_1 AS aboutParagraph1,
+          about_paragraph_1_zh AS aboutParagraph1Zh,
+          about_paragraph_2 AS aboutParagraph2,
+          about_paragraph_2_zh AS aboutParagraph2Zh,
+          about_paragraph_3 AS aboutParagraph3,
+          about_paragraph_3_zh AS aboutParagraph3Zh,
+          updated_at AS updatedAt
+       FROM artist_profile
+       WHERE id = 1`
+    ),
+    upsertArtistProfile: db.prepare(
+      `INSERT INTO artist_profile (
+          id,
+          cover_identity,
+          cover_identity_zh,
+          cover_statement,
+          cover_statement_zh,
+          about_paragraph_1,
+          about_paragraph_1_zh,
+          about_paragraph_2,
+          about_paragraph_2_zh,
+          about_paragraph_3,
+          about_paragraph_3_zh,
+          updated_at
+        ) VALUES (
+          1,
+          @coverIdentity,
+          @coverIdentityZh,
+          @coverStatement,
+          @coverStatementZh,
+          @aboutParagraph1,
+          @aboutParagraph1Zh,
+          @aboutParagraph2,
+          @aboutParagraph2Zh,
+          @aboutParagraph3,
+          @aboutParagraph3Zh,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT(id) DO UPDATE SET
+          cover_identity = excluded.cover_identity,
+          cover_identity_zh = excluded.cover_identity_zh,
+          cover_statement = excluded.cover_statement,
+          cover_statement_zh = excluded.cover_statement_zh,
+          about_paragraph_1 = excluded.about_paragraph_1,
+          about_paragraph_1_zh = excluded.about_paragraph_1_zh,
+          about_paragraph_2 = excluded.about_paragraph_2,
+          about_paragraph_2_zh = excluded.about_paragraph_2_zh,
+          about_paragraph_3 = excluded.about_paragraph_3,
+          about_paragraph_3_zh = excluded.about_paragraph_3_zh,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING
+          id,
+          cover_identity AS coverIdentity,
+          cover_identity_zh AS coverIdentityZh,
+          cover_statement AS coverStatement,
+          cover_statement_zh AS coverStatementZh,
+          about_paragraph_1 AS aboutParagraph1,
+          about_paragraph_1_zh AS aboutParagraph1Zh,
+          about_paragraph_2 AS aboutParagraph2,
+          about_paragraph_2_zh AS aboutParagraph2Zh,
+          about_paragraph_3 AS aboutParagraph3,
+          about_paragraph_3_zh AS aboutParagraph3Zh,
+          updated_at AS updatedAt`
+    ),
   };
 
   const deleteUserWithVideos = db.transaction((userId) => {
@@ -1320,10 +1412,21 @@ export function createDatabase(filename) {
     }
   }
 
+  function seedArtistProfile() {
+    const existing = statements.getArtistProfile.get();
+
+    if (existing) {
+      return;
+    }
+
+    statements.upsertArtistProfile.get(defaultArtistProfile);
+  }
+
   seedComingUpEvents();
   seedFeaturedReels();
   seedPressHighlights();
   seedAchievementEntries();
+  seedArtistProfile();
 
   return {
     raw: db,
@@ -1522,6 +1625,12 @@ export function createDatabase(filename) {
         highlight: Boolean(entry.highlight),
         latest: Boolean(entry.latest),
       }));
+    },
+    getArtistProfile() {
+      return statements.getArtistProfile.get() ?? null;
+    },
+    upsertArtistProfile(profile) {
+      return statements.upsertArtistProfile.get(profile);
     },
     close() {
       db.close();

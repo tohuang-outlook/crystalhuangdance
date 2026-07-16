@@ -73,6 +73,7 @@ export interface SiteConfig {
   heroUpcomingEvents: HeroUpcomingEvent[];
   bio: string;
   aboutParagraphs: string[];
+  aboutParagraphsZh: string[];
   coverIdentity: string;
   coverIdentityZh: string;
   coverStatement: string;
@@ -122,6 +123,11 @@ export const siteConfig: SiteConfig = {
     `Crystal Huang is a San Francisco Ballet School trainee whose recent work spans elite conservatory training, international gala appearances, and national touring experience. Her current dossier includes 2026 XV Moscow Ballet Competition, Junior Group, Girls, Solo First Prize and Gold Medal Winner, Prix de Lausanne 2024 Prize Winner #4 and Contemporary Dance Award Winner, YAGP NYC Finals Senior Women Silver Medal Winner, SAIBC Senior Women Grand Prix Winner, and the 2025 T.O.P. Asian American Outstanding Dancer honor.`,
     `Her training path bridges classical rigor and wide stylistic range. She began at Yoko's Dance and Performing Arts Academy, trained extensively at The Rock Center for Dance and Nevada School of Ballet, refined her classical foundation at Bayer Ballet Academy, studied at the American Ballet Theatre Jacqueline Kennedy Onassis School, and now continues her development at San Francisco Ballet School under a distinguished faculty.`,
     `Alongside competition and conservatory work, Crystal has toured nationally as an NYCDA Outstanding Dancer, The Dance Awards Best Dancer, and Radix Core Performer, while also appearing in performances and galas across New York, Italy, Belgium, Switzerland, South Africa, China, and Japan. Her professional profile also includes choreography, master class teaching, and creative work for younger dancers across the United States.`,
+  ],
+  aboutParagraphsZh: [
+    `Crystal Huang 現為舊金山芭蕾舞學校培訓生，近年的發展橫跨菁英舞蹈教育、國際舞台演出與全美巡演。她的代表經歷包括 2024 洛桑國際芭蕾舞比賽 Prize Winner #4 與當代舞特別獎、YAGP 紐約總決賽高級女子組銀牌、SAIBC 高級女子組大獎，以及 2025 年 T.O.P. 亞裔美國傑出舞者榮譽。`,
+    `她的訓練路徑兼具古典基礎與跨風格延展性。自 Yoko's Dance and Performing Arts Academy 啟蒙後，先後於 The Rock Center for Dance 與 Nevada School of Ballet 接受密集訓練，之後在 Bayer Ballet Academy 深化古典技法，並於 American Ballet Theatre Jacqueline Kennedy Onassis School 進一步進修，現持續於 San Francisco Ballet School 跟隨多位資深教師精進。`,
+    `除比賽與學院訓練外，Crystal 亦曾以 NYCDA Outstanding Dancer、The Dance Awards Best Dancer 與 Radix Core Performer 身分於全美巡演，並參與紐約、義大利、比利時、瑞士、南非、中國與日本等地的演出與 gala。她的專業履歷也延伸至編舞、工作坊與教學型創作，持續將舞台經驗轉化為對年輕舞者的創作與分享。`,
   ],
   coverIdentity: 'San Francisco Ballet School Trainee',
   coverIdentityZh: '舊金山芭蕾舞學校培訓生',

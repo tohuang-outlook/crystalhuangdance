@@ -1017,6 +1017,43 @@ describe('auth and video backend foundation', () => {
     expect(db.findAchievementEntryById(createdId)).toBeNull();
   });
 
+  it('serves the artist profile publicly and lets admins update it', async () => {
+    const publicResponse = await request(app).get('/api/artist-profile');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.profile).toMatchObject({
+      coverIdentity: 'San Francisco Ballet School Trainee',
+    });
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const updateResponse = await adminAgent.put('/api/admin/artist-profile').send({
+      coverIdentity: 'International Ballet Artist',
+      coverIdentityZh: '國際芭蕾舞者',
+      coverStatement: 'Updated English cover statement',
+      coverStatementZh: '更新後的中文首頁身份敘述',
+      aboutParagraph1: 'Updated paragraph one',
+      aboutParagraph1Zh: '更新後第一段',
+      aboutParagraph2: 'Updated paragraph two',
+      aboutParagraph2Zh: '更新後第二段',
+      aboutParagraph3: 'Updated paragraph three',
+      aboutParagraph3Zh: '更新後第三段',
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.profile).toMatchObject({
+      coverIdentity: 'International Ballet Artist',
+      aboutParagraph2Zh: '更新後第二段',
+    });
+
+    const profile = db.getArtistProfile();
+    expect(profile).toMatchObject({
+      coverIdentity: 'International Ballet Artist',
+      coverStatementZh: '更新後的中文首頁身份敘述',
+    });
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

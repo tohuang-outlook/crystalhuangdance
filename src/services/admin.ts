@@ -106,6 +106,20 @@ export interface AchievementRecord {
   updatedAt: string;
 }
 
+export interface AdminArtistProfileRecord {
+  coverIdentity: string;
+  coverIdentityZh: string;
+  coverStatement: string;
+  coverStatementZh: string;
+  aboutParagraph1: string;
+  aboutParagraph1Zh: string;
+  aboutParagraph2: string;
+  aboutParagraph2Zh: string;
+  aboutParagraph3: string;
+  aboutParagraph3Zh: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -128,6 +142,10 @@ interface AdminPressHighlightsEnvelope {
 
 interface AdminAchievementsEnvelope {
   achievements: AchievementRecord[];
+}
+
+interface AdminArtistProfileEnvelope {
+  profile: AdminArtistProfileRecord;
 }
 
 interface AdminVideosEnvelope {
@@ -222,6 +240,10 @@ export function fetchAdminPressHighlights() {
 
 export function fetchAdminAchievements() {
   return request<AdminAchievementsEnvelope>('/api/admin/achievements', { method: 'GET' });
+}
+
+export function fetchAdminArtistProfile() {
+  return request<AdminArtistProfileEnvelope>('/api/admin/artist-profile', { method: 'GET' });
 }
 
 export function deleteAdminUser(userId: number) {
@@ -339,6 +361,19 @@ export interface AdminAchievementPayload {
   latest: boolean;
 }
 
+export interface AdminArtistProfilePayload {
+  coverIdentity: string;
+  coverIdentityZh: string;
+  coverStatement: string;
+  coverStatementZh: string;
+  aboutParagraph1: string;
+  aboutParagraph1Zh: string;
+  aboutParagraph2: string;
+  aboutParagraph2Zh: string;
+  aboutParagraph3: string;
+  aboutParagraph3Zh: string;
+}
+
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
   return request<AdminComingUpEventEnvelope>('/api/admin/coming-up-events', {
     method: 'POST',
@@ -419,6 +454,13 @@ export function updateAdminAchievement(
   payload: AdminAchievementPayload
 ) {
   return request<AdminAchievementEnvelope>(`/api/admin/achievements/${achievementId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminArtistProfile(payload: AdminArtistProfilePayload) {
+  return request<AdminArtistProfileEnvelope>('/api/admin/artist-profile', {
     method: 'PUT',
     body: JSON.stringify(payload),
   });

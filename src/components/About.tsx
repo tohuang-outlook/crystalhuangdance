@@ -1,16 +1,57 @@
+import { useEffect, useMemo, useState } from 'react';
 import { siteConfig, trainingTimeline } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchArtistProfile, type ArtistProfileRecord } from '../services/artistProfile';
+
+function createFallbackProfile(): ArtistProfileRecord {
+  return {
+    coverIdentity: siteConfig.coverIdentity,
+    coverIdentityZh: siteConfig.coverIdentityZh,
+    coverStatement: siteConfig.coverStatement,
+    coverStatementZh: siteConfig.coverStatementZh,
+    aboutParagraph1: siteConfig.aboutParagraphs[0] ?? '',
+    aboutParagraph1Zh: siteConfig.aboutParagraphsZh[0] ?? '',
+    aboutParagraph2: siteConfig.aboutParagraphs[1] ?? '',
+    aboutParagraph2Zh: siteConfig.aboutParagraphsZh[1] ?? '',
+    aboutParagraph3: siteConfig.aboutParagraphs[2] ?? '',
+    aboutParagraph3Zh: siteConfig.aboutParagraphsZh[2] ?? '',
+  };
+}
 
 export default function About() {
   const { t, lang } = useLanguage();
+  const [profile, setProfile] = useState<ArtistProfileRecord>(createFallbackProfile);
+  const paragraphs = useMemo(
+    () =>
+      lang === 'zh'
+        ? [profile.aboutParagraph1Zh, profile.aboutParagraph2Zh, profile.aboutParagraph3Zh]
+        : [profile.aboutParagraph1, profile.aboutParagraph2, profile.aboutParagraph3],
+    [lang, profile]
+  );
 
-  const aboutParagraphsZh = [
-    `Crystal Huang 現為舊金山芭蕾舞學校培訓生，近年的發展橫跨菁英舞蹈教育、國際舞台演出與全美巡演。她的代表經歷包括 2024 洛桑國際芭蕾舞比賽 Prize Winner #4 與當代舞特別獎、YAGP 紐約總決賽高級女子組銀牌、SAIBC 高級女子組大獎，以及 2025 年 T.O.P. 亞裔美國傑出舞者榮譽。`,
-    `她的訓練路徑兼具古典基礎與跨風格延展性。自 Yoko's Dance and Performing Arts Academy 啟蒙後，先後於 The Rock Center for Dance 與 Nevada School of Ballet 接受密集訓練，之後在 Bayer Ballet Academy 深化古典技法，並於 American Ballet Theatre Jacqueline Kennedy Onassis School 進一步進修，現持續於 San Francisco Ballet School 跟隨多位資深教師精進。`,
-    `除比賽與學院訓練外，Crystal 亦曾以 NYCDA Outstanding Dancer、The Dance Awards Best Dancer 與 Radix Core Performer 身分於全美巡演，並參與紐約、義大利、比利時、瑞士、南非、中國與日本等地的演出與 gala。她的專業履歷也延伸至編舞、工作坊與教學型創作，持續將舞台經驗轉化為對年輕舞者的創作與分享。`,
-  ];
+  useEffect(() => {
+    let isActive = true;
 
-  const paragraphs = lang === 'zh' ? aboutParagraphsZh : siteConfig.aboutParagraphs;
+    async function loadArtistProfile() {
+      try {
+        const response = await fetchArtistProfile();
+
+        if (!isActive || !response) {
+          return;
+        }
+
+        setProfile(response);
+      } catch {
+        // Keep the static profile fallback if the public endpoint is unavailable.
+      }
+    }
+
+    void loadArtistProfile();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   return (
     <section id="about" className="section-padding section-divider relative">

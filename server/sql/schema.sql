@@ -104,3 +104,18 @@ CREATE TABLE IF NOT EXISTS achievement_entries (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS artist_profile (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  cover_identity TEXT NOT NULL,
+  cover_identity_zh TEXT NOT NULL,
+  cover_statement TEXT NOT NULL,
+  cover_statement_zh TEXT NOT NULL,
+  about_paragraph_1 TEXT NOT NULL,
+  about_paragraph_1_zh TEXT NOT NULL,
+  about_paragraph_2 TEXT NOT NULL,
+  about_paragraph_2_zh TEXT NOT NULL,
+  about_paragraph_3 TEXT NOT NULL,
+  about_paragraph_3_zh TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
