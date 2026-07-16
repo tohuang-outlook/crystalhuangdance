@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { siteConfig, type HeroUpcomingEvent } from '../data/siteData';
+import { siteConfig, type ArchiveEntryPoint, type HeroUpcomingEvent } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 import { fetchArtistProfile, type ArtistProfileRecord } from '../services/artistProfile';
 import { fetchComingUpEvents } from '../services/comingUpEvents';
+import { fetchHeroEntryPoints } from '../services/heroEntryPoints';
 
 function createFallbackEvents(): HeroUpcomingEvent[] {
   return siteConfig.heroUpcomingEvents;
@@ -27,6 +28,7 @@ export default function Hero() {
   const { t } = useLanguage();
   const [upcomingEvents, setUpcomingEvents] = useState<HeroUpcomingEvent[]>(createFallbackEvents);
   const [profile, setProfile] = useState<ArtistProfileRecord>(createFallbackProfile);
+  const [entryPoints, setEntryPoints] = useState<ArchiveEntryPoint[]>(siteConfig.archiveEntryPoints);
   const [shouldLoadHeroVideo, setShouldLoadHeroVideo] = useState(false);
 
   const archiveHrefMap: Record<string, string> = {
@@ -65,6 +67,14 @@ export default function Hero() {
     return () => {
       isActive = false;
     };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    void fetchHeroEntryPoints().then((entries) => {
+      if (isActive && entries.length) setEntryPoints(entries);
+    }).catch(() => undefined);
+    return () => { isActive = false; };
   }, []);
 
   useEffect(() => {
@@ -159,7 +169,7 @@ export default function Hero() {
           </div>
 
           <div className="grid gap-4 border-t border-[var(--line)] pt-6 sm:grid-cols-2">
-            {siteConfig.archiveEntryPoints.map((entryPoint) => (
+            {entryPoints.map((entryPoint) => (
               <a
                 key={entryPoint.title}
                 href={archiveHrefMap[entryPoint.href] ?? entryPoint.href}

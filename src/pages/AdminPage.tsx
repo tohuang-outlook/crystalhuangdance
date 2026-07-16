@@ -78,6 +78,7 @@ import {
   updateAdminContactInquiryStatus,
   type ContactInquiryRecord,
 } from '../services/contactInquiries';
+import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -562,6 +563,7 @@ export default function AdminPage() {
   const [groupArchiveEntries, setGroupArchiveEntries] = useState<GroupChoreographyEntryRecord[]>([]);
   const [groupArchiveMoments, setGroupArchiveMoments] = useState<ArchiveMediaRecord[]>([]);
   const [contactInquiries, setContactInquiries] = useState<ContactInquiryRecord[]>([]);
+  const [heroEntryPoints, setHeroEntryPoints] = useState<HeroEntryPointRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -741,6 +743,7 @@ export default function AdminPage() {
         artistProfileResponse,
         galleryArchiveResponse,
         contactInquiriesResponse,
+        heroEntryPointsResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -752,6 +755,7 @@ export default function AdminPage() {
         fetchAdminArtistProfile(),
         fetchAdminGalleryArchive(),
         fetchAdminContactInquiries(),
+        fetchAdminHeroEntryPoints(),
       ]);
 
       setUsers(usersResponse.users);
@@ -767,6 +771,7 @@ export default function AdminPage() {
       setGroupArchiveEntries(galleryArchiveResponse.groupEntries);
       setGroupArchiveMoments(galleryArchiveResponse.groupMoments);
       setContactInquiries(contactInquiriesResponse.inquiries);
+      setHeroEntryPoints(heroEntryPointsResponse.entryPoints);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -3357,6 +3362,27 @@ export default function AdminPage() {
                   </article>
                 </div>
               </section>
+              ) : null}
+
+              {activeTab === 'content' ? (
+                <section aria-labelledby="hero-entry-points-heading">
+                  <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
+                    <p className="eyebrow">Homepage navigation</p>
+                    <h2 id="hero-entry-points-heading" className="mt-3 text-4xl text-[var(--text)]">Hero entry cards</h2>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-4"><p className="text-sm leading-6 text-[var(--text-muted)]">Edit the homepage cards, choose whether each one is visible, and use arrows to set the display order.</p><button type="button" className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white" onClick={() => void createAdminHeroEntryPoint().then((response) => setHeroEntryPoints((current) => [...current, response.entryPoint])).catch((err) => setError(err.message))}>Add card</button></div>
+                    <div className="mt-6 space-y-4">
+                      {heroEntryPoints.map((entry, index) => (
+                        <article key={entry.id} className="rounded-[1.25rem] border border-[var(--line)] bg-white p-5">
+                          <div className="flex flex-wrap items-center justify-between gap-3"><p className="eyebrow text-[10px]">Position {index + 1}</p><div className="flex gap-2"><button type="button" disabled={index === 0} className="rounded-full border border-[var(--line)] px-3 py-2 text-xs disabled:opacity-50" onClick={() => void reorderAdminHeroEntryPoints(heroEntryPoints.map((item) => item.id).map((id, position, ids) => position === index ? ids[index - 1] : position === index - 1 ? ids[index] : id)).then((response) => setHeroEntryPoints(response.entryPoints)).catch((err) => setError(err.message))}>Up</button><button type="button" disabled={index === heroEntryPoints.length - 1} className="rounded-full border border-[var(--line)] px-3 py-2 text-xs disabled:opacity-50" onClick={() => void reorderAdminHeroEntryPoints(heroEntryPoints.map((item) => item.id).map((id, position, ids) => position === index ? ids[index + 1] : position === index + 1 ? ids[index] : id)).then((response) => setHeroEntryPoints(response.entryPoints)).catch((err) => setError(err.message))}>Down</button><button type="button" className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white" onClick={() => void updateAdminHeroEntryPoint(entry.id, { title: entry.title, titleZh: entry.titleZh, description: entry.description, descriptionZh: entry.descriptionZh, href: entry.href, isVisible: entry.isVisible, createdAt: entry.createdAt, updatedAt: entry.updatedAt }).then((response) => setHeroEntryPoints((current) => current.map((item) => item.id === entry.id ? response.entryPoint : item))).catch((err) => setError(err.message))}>Save</button><button type="button" className="rounded-full border border-[rgba(255,107,107,0.24)] px-3 py-2 text-xs" onClick={() => void (window.confirm(`Delete ${entry.title}?`) && deleteAdminHeroEntryPoint(entry.id).then(() => setHeroEntryPoints((current) => current.filter((item) => item.id !== entry.id))).catch((err) => setError(err.message)))}>Delete</button></div></div>
+                          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                            {(['title', 'titleZh', 'description', 'descriptionZh', 'href'] as const).map((field) => <input key={field} className="rounded-2xl border border-[var(--line)] px-4 py-3 text-sm" value={entry[field]} onChange={(event) => setHeroEntryPoints((current) => current.map((item) => item.id === entry.id ? { ...item, [field]: event.target.value } : item))} placeholder={field} />)}
+                            <label className="flex items-center gap-3 text-sm text-[var(--text-muted)]"><input type="checkbox" checked={entry.isVisible} onChange={(event) => setHeroEntryPoints((current) => current.map((item) => item.id === entry.id ? { ...item, isVisible: event.target.checked } : item))} />Visible on homepage</label>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                </section>
               ) : null}
 
               {activeTab === 'dancer' ? (

@@ -23,6 +23,14 @@ const defaultComingUpEvents = [
     sortOrder: 2,
   },
 ];
+const defaultHeroEntryPoints = [
+  ['Press Highlight', '媒體亮點', 'Featured interviews, awards coverage, and recent spotlight stories.', '精選訪談、得獎報導與近期焦點媒體內容。', '#press'],
+  ['Archive Timeline', '檔案時間線', 'Training history, milestones, and development across seasons.', '依時間整理的訓練歷程、里程碑與成長軌跡。', '#archive-timeline'],
+  ['Artist Profile', '舞者檔案', 'Background, current identity, and professional profile overview.', '背景介紹、當前身份與專業檔案總覽。', '#profile'],
+  ['Artistic Range', '藝術風格跨度', 'Classical foundations and contemporary range.', '古典基礎與當代延展能力。', '#styles'],
+  ['Media', '影像', 'Performance reels and artistic range media.', '精選演出影片與舞作媒體內容。', '#videos'],
+  ['Master Class and Choreographer', '大師課與編舞', 'Master classes, teaching work, and choreography documentation.', '大師課、教學工作與編舞紀錄。', '#gallery'],
+].map(([title, titleZh, description, descriptionZh, href], sortOrder) => ({ title, titleZh, description, descriptionZh, href, sortOrder }));
 const defaultFeaturedReels = [
   {
     placement: 'featured',
@@ -653,6 +661,13 @@ export function createDatabase(filename) {
   ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
 
   const statements = {
+    listHeroEntryPoints: db.prepare(`SELECT id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt FROM hero_entry_points ORDER BY sort_order ASC, id ASC`),
+    countHeroEntryPoints: db.prepare('SELECT COUNT(*) AS count FROM hero_entry_points'),
+    findHeroEntryPointById: db.prepare(`SELECT id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt FROM hero_entry_points WHERE id = ?`),
+    createHeroEntryPoint: db.prepare(`INSERT INTO hero_entry_points (title, title_zh, description, description_zh, href, is_visible, sort_order) VALUES (@title, @titleZh, @description, @descriptionZh, @href, @isVisible, @sortOrder) RETURNING id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt`),
+    updateHeroEntryPoint: db.prepare(`UPDATE hero_entry_points SET title=@title, title_zh=@titleZh, description=@description, description_zh=@descriptionZh, href=@href, is_visible=@isVisible, sort_order=@sortOrder, updated_at=CURRENT_TIMESTAMP WHERE id=@id RETURNING id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt`),
+    deleteHeroEntryPoint: db.prepare('DELETE FROM hero_entry_points WHERE id = ? RETURNING id'),
+    updateHeroEntryPointSortOrder: db.prepare('UPDATE hero_entry_points SET sort_order=@sortOrder, updated_at=CURRENT_TIMESTAMP WHERE id=@id'),
     createContactInquiry: db.prepare(
       `INSERT INTO contact_inquiries (name, email, interest, message)
        VALUES (@name, @email, @interest, @message)
@@ -2212,7 +2227,14 @@ export function createDatabase(filename) {
     }
   }
 
+  function seedHeroEntryPoints() {
+    const { count } = statements.countHeroEntryPoints.get();
+    if (Number(count) > 0) return;
+    for (const entry of defaultHeroEntryPoints) statements.createHeroEntryPoint.get({ ...entry, isVisible: 1 });
+  }
+
   seedComingUpEvents();
+  seedHeroEntryPoints();
   seedFeaturedReels();
   seedPressHighlights();
   seedAchievementEntries();
@@ -2224,6 +2246,13 @@ export function createDatabase(filename) {
 
   return {
     raw: db,
+    listHeroEntryPoints() { return statements.listHeroEntryPoints.all().map((entry) => ({ ...entry, isVisible: Boolean(entry.isVisible) })); },
+    countHeroEntryPoints() { return Number(statements.countHeroEntryPoints.get().count); },
+    findHeroEntryPointById(id) { const entry = statements.findHeroEntryPointById.get(id); return entry ? { ...entry, isVisible: Boolean(entry.isVisible) } : null; },
+    createHeroEntryPoint(entry) { const created = statements.createHeroEntryPoint.get({ ...entry, isVisible: entry.isVisible ? 1 : 0 }); return { ...created, isVisible: Boolean(created.isVisible) }; },
+    updateHeroEntryPoint(entry) { const updated = statements.updateHeroEntryPoint.get({ ...entry, isVisible: entry.isVisible ? 1 : 0 }); return updated ? { ...updated, isVisible: Boolean(updated.isVisible) } : null; },
+    deleteHeroEntryPoint(id) { return statements.deleteHeroEntryPoint.get(id) ?? null; },
+    reorderHeroEntryPoints(orderedIds) { const update = db.transaction(() => orderedIds.forEach((id, sortOrder) => statements.updateHeroEntryPointSortOrder.run({ id, sortOrder }))); update(); return this.listHeroEntryPoints(); },
     createContactInquiry(inquiry) {
       return statements.createContactInquiry.get(inquiry);
     },

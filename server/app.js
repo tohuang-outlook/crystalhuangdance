@@ -132,6 +132,26 @@ function serializeContactInquiry(inquiry) {
   };
 }
 
+function serializeHeroEntryPoint(entry) {
+  return {
+    id: entry.id, title: entry.title, titleZh: entry.titleZh,
+    description: entry.description, descriptionZh: entry.descriptionZh,
+    href: entry.href, isVisible: entry.isVisible, sortOrder: entry.sortOrder,
+    createdAt: entry.createdAt, updatedAt: entry.updatedAt,
+  };
+}
+
+function parseHeroEntryPointPayload(body) {
+  return {
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    description: parseRequiredTrimmedString(body?.description),
+    descriptionZh: parseRequiredTrimmedString(body?.descriptionZh),
+    href: parseRequiredTrimmedString(body?.href),
+    isVisible: body?.isVisible !== false,
+  };
+}
+
 function serializeInvestorUpdate(update) {
   return {
     id: update.id,
@@ -674,6 +694,10 @@ export function createApp({
     res.json({ events });
   });
 
+  app.get('/api/hero-entry-points', (_req, res) => {
+    return res.json({ entryPoints: db.listHeroEntryPoints().filter((entry) => entry.isVisible).map(serializeHeroEntryPoint) });
+  });
+
   app.post('/api/contact-inquiries', (req, res) => {
     const name = parseRequiredTrimmedString(req.body?.name);
     const email = parseRequiredTrimmedString(req.body?.email)?.toLowerCase();
@@ -738,6 +762,42 @@ export function createApp({
 
   app.get('/api/admin/contact-inquiries', requireAdmin, (_req, res) => {
     return res.json({ inquiries: db.listContactInquiries().map(serializeContactInquiry) });
+  });
+
+  app.get('/api/admin/hero-entry-points', requireAdmin, (_req, res) => {
+    return res.json({ entryPoints: db.listHeroEntryPoints().map(serializeHeroEntryPoint) });
+  });
+
+  app.post('/api/admin/hero-entry-points', requireAdmin, (req, res) => {
+    const payload = parseHeroEntryPointPayload(req.body);
+    if (!payload.title || !payload.titleZh || !payload.description || !payload.descriptionZh || !payload.href) return res.status(400).json({ error: 'All hero entry point fields are required.' });
+    const entryPoint = db.createHeroEntryPoint({ ...payload, sortOrder: db.countHeroEntryPoints() });
+    return res.status(201).json({ entryPoint: serializeHeroEntryPoint(entryPoint) });
+  });
+
+  app.put('/api/admin/hero-entry-points/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+    const existing = entryId && db.findHeroEntryPointById(entryId);
+    const payload = parseHeroEntryPointPayload(req.body);
+    if (!existing) return res.status(404).json({ error: 'Hero entry point not found.' });
+    if (!payload.title || !payload.titleZh || !payload.description || !payload.descriptionZh || !payload.href) return res.status(400).json({ error: 'All hero entry point fields are required.' });
+    const entryPoint = db.updateHeroEntryPoint({ id: entryId, ...payload, sortOrder: existing.sortOrder });
+    return res.json({ entryPoint: serializeHeroEntryPoint(entryPoint) });
+  });
+
+  app.delete('/api/admin/hero-entry-points/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+    const deleted = entryId && db.deleteHeroEntryPoint(entryId);
+    if (!deleted) return res.status(404).json({ error: 'Hero entry point not found.' });
+    db.reorderHeroEntryPoints(db.listHeroEntryPoints().map((entry) => entry.id));
+    return res.json({ deletedEntryPointId: deleted.id });
+  });
+
+  app.post('/api/admin/hero-entry-points/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds) ? req.body.orderedIds.map((id) => parseIdParam(id)) : null;
+    const currentIds = db.listHeroEntryPoints().map((entry) => entry.id);
+    if (!orderedIds || orderedIds.some((id) => id === null) || orderedIds.length !== currentIds.length || new Set(orderedIds).size !== currentIds.length || currentIds.some((id) => !new Set(orderedIds).has(id))) return res.status(400).json({ error: 'orderedIds must exactly match the current hero entry points.' });
+    return res.json({ entryPoints: db.reorderHeroEntryPoints(orderedIds).map(serializeHeroEntryPoint) });
   });
 
   app.patch('/api/admin/contact-inquiries/:inquiryId', requireAdmin, (req, res) => {

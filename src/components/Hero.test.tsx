@@ -93,7 +93,7 @@ describe('Hero cover frame', () => {
     );
     expect(screen.getByText(/Coming Up Events/i)).toBeInTheDocument();
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
     expect(await screen.findByText(/September 2026 — Tokyo/i)).toBeInTheDocument();
     expect(screen.getByText(/^Tokyo International Gala$/i)).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('Hero cover frame', () => {
     );
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     expect(screen.getByText(/July 2026 — Las Vegas/i)).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('Hero cover frame', () => {
     );
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     expect(screen.getByText(/July 2026 — Las Vegas/i)).toBeInTheDocument();
