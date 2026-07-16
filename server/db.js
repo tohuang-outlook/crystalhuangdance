@@ -653,6 +653,22 @@ export function createDatabase(filename) {
   ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
 
   const statements = {
+    createContactInquiry: db.prepare(
+      `INSERT INTO contact_inquiries (name, email, interest, message)
+       VALUES (@name, @email, @interest, @message)
+       RETURNING id, name, email, interest, message, status, created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    listContactInquiries: db.prepare(
+      `SELECT id, name, email, interest, message, status, created_at AS createdAt, updated_at AS updatedAt
+       FROM contact_inquiries ORDER BY created_at DESC, id DESC`
+    ),
+    updateContactInquiryStatus: db.prepare(
+      `UPDATE contact_inquiries SET status = @status, updated_at = CURRENT_TIMESTAMP WHERE id = @id
+       RETURNING id, name, email, interest, message, status, created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    deleteContactInquiry: db.prepare(
+      `DELETE FROM contact_inquiries WHERE id = ? RETURNING id`
+    ),
     createUser: db.prepare(
       `INSERT INTO users (email, password_hash, role)
        VALUES (@email, @passwordHash, @role)
@@ -2208,6 +2224,18 @@ export function createDatabase(filename) {
 
   return {
     raw: db,
+    createContactInquiry(inquiry) {
+      return statements.createContactInquiry.get(inquiry);
+    },
+    listContactInquiries() {
+      return statements.listContactInquiries.all();
+    },
+    updateContactInquiryStatus(id, status) {
+      return statements.updateContactInquiryStatus.get({ id, status }) ?? null;
+    },
+    deleteContactInquiry(id) {
+      return statements.deleteContactInquiry.get(id) ?? null;
+    },
     createUser({ email, passwordHash, role = 'user' }) {
       return statements.createUser.get({ email, passwordHash, role });
     },

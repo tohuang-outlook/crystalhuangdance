@@ -27,6 +27,7 @@ const investorUpdateCategories = new Set([
   'real-time-quote',
 ]);
 const featuredReelPlacements = new Set(['featured', 'supporting']);
+const contactInquiryStatuses = new Set(['new', 'resolved']);
 
 function toSafeUser(user) {
   return {
@@ -115,6 +116,19 @@ function serializeComingUpEvent(event) {
     sortOrder: event.sortOrder,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
+  };
+}
+
+function serializeContactInquiry(inquiry) {
+  return {
+    id: inquiry.id,
+    name: inquiry.name,
+    email: inquiry.email,
+    interest: inquiry.interest ?? '',
+    message: inquiry.message,
+    status: inquiry.status,
+    createdAt: inquiry.createdAt,
+    updatedAt: inquiry.updatedAt,
   };
 }
 
@@ -660,6 +674,24 @@ export function createApp({
     res.json({ events });
   });
 
+  app.post('/api/contact-inquiries', (req, res) => {
+    const name = parseRequiredTrimmedString(req.body?.name);
+    const email = parseRequiredTrimmedString(req.body?.email)?.toLowerCase();
+    const interest = parseRequiredTrimmedString(req.body?.interest) ?? '';
+    const message = parseRequiredTrimmedString(req.body?.message);
+
+    if (!name || !email || !emailPattern.test(email) || !message) {
+      return res.status(400).json({ error: 'Name, a valid email address, and a message are required.' });
+    }
+
+    if (name.length > 120 || email.length > 254 || interest.length > 120 || message.length > 5000) {
+      return res.status(400).json({ error: 'One or more inquiry fields are too long.' });
+    }
+
+    const inquiry = db.createContactInquiry({ name, email, interest, message });
+    return res.status(201).json({ inquiry: serializeContactInquiry(inquiry) });
+  });
+
   app.get('/api/investor-updates', (_req, res) => {
     const updates = db.listInvestorUpdates().map(serializeInvestorUpdate);
     res.json({ updates });
@@ -702,6 +734,34 @@ export function createApp({
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
+  });
+
+  app.get('/api/admin/contact-inquiries', requireAdmin, (_req, res) => {
+    return res.json({ inquiries: db.listContactInquiries().map(serializeContactInquiry) });
+  });
+
+  app.patch('/api/admin/contact-inquiries/:inquiryId', requireAdmin, (req, res) => {
+    const inquiryId = parseIdParam(req.params.inquiryId);
+    const status = parseRequiredTrimmedString(req.body?.status);
+
+    if (!inquiryId || !status || !contactInquiryStatuses.has(status)) {
+      return res.status(400).json({ error: 'A valid inquiry id and status are required.' });
+    }
+
+    const inquiry = db.updateContactInquiryStatus(inquiryId, status);
+    if (!inquiry) return res.status(404).json({ error: 'Inquiry not found.' });
+
+    return res.json({ inquiry: serializeContactInquiry(inquiry) });
+  });
+
+  app.delete('/api/admin/contact-inquiries/:inquiryId', requireAdmin, (req, res) => {
+    const inquiryId = parseIdParam(req.params.inquiryId);
+    if (!inquiryId) return res.status(400).json({ error: 'A valid inquiry id is required.' });
+
+    const inquiry = db.deleteContactInquiry(inquiryId);
+    if (!inquiry) return res.status(404).json({ error: 'Inquiry not found.' });
+
+    return res.json({ deletedInquiryId: inquiry.id });
   });
 
   app.get('/api/admin/coming-up-events', requireAdmin, (_req, res) => {

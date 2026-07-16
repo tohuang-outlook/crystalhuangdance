@@ -72,6 +72,12 @@ import {
   updateAdminPressHighlight,
   uploadAdminVideoFile,
 } from '../services/admin';
+import {
+  deleteAdminContactInquiry,
+  fetchAdminContactInquiries,
+  updateAdminContactInquiryStatus,
+  type ContactInquiryRecord,
+} from '../services/contactInquiries';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -102,7 +108,7 @@ function formatBytes(bytes: number | null) {
 }
 
 type AdminUploadMode = 'youtube' | 'upload';
-type AdminConsoleTab = 'coming-up-events' | 'content' | 'dancer' | 'investor';
+type AdminConsoleTab = 'coming-up-events' | 'content' | 'dancer' | 'inquiries' | 'investor';
 
 interface DancerUploadDraft {
   mode: AdminUploadMode;
@@ -555,6 +561,7 @@ export default function AdminPage() {
   );
   const [groupArchiveEntries, setGroupArchiveEntries] = useState<GroupChoreographyEntryRecord[]>([]);
   const [groupArchiveMoments, setGroupArchiveMoments] = useState<ArchiveMediaRecord[]>([]);
+  const [contactInquiries, setContactInquiries] = useState<ContactInquiryRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -638,6 +645,11 @@ export default function AdminPage() {
       id: 'dancer' as const,
       label: 'Dancer',
       description: 'Admin accounts and private video management',
+    },
+    {
+      id: 'inquiries' as const,
+      label: 'Inquiries',
+      description: 'Website contact messages and follow-up status',
     },
     {
       id: 'investor' as const,
@@ -728,6 +740,7 @@ export default function AdminPage() {
         achievementsResponse,
         artistProfileResponse,
         galleryArchiveResponse,
+        contactInquiriesResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -738,6 +751,7 @@ export default function AdminPage() {
         fetchAdminAchievements(),
         fetchAdminArtistProfile(),
         fetchAdminGalleryArchive(),
+        fetchAdminContactInquiries(),
       ]);
 
       setUsers(usersResponse.users);
@@ -752,6 +766,7 @@ export default function AdminPage() {
       setMasterClassArchiveMoments(galleryArchiveResponse.masterClassMoments);
       setGroupArchiveEntries(galleryArchiveResponse.groupEntries);
       setGroupArchiveMoments(galleryArchiveResponse.groupMoments);
+      setContactInquiries(contactInquiriesResponse.inquiries);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -2360,7 +2375,7 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-8 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.5)] p-3 shadow-[0_14px_36px_rgba(68,102,136,0.08)]">
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-5">
               {adminTabs.map((tab) => {
                 const isActive = activeTab === tab.id;
 
@@ -3603,6 +3618,57 @@ export default function AdminPage() {
                 )}
               </section>
               </>
+              ) : null}
+
+              {activeTab === 'inquiries' ? (
+                <section aria-labelledby="contact-inquiries-heading">
+                  <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-8">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Website Contact</p>
+                        <h2 id="contact-inquiries-heading" className="mt-3 text-4xl text-[var(--text)]">
+                          Professional inquiries
+                        </h2>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                          Messages submitted through the public contact form. Mark completed conversations as resolved, or delete messages when they are no longer needed.
+                        </p>
+                      </div>
+                      <p className="text-sm text-[var(--text-muted)]">
+                        {contactInquiries.filter((inquiry) => inquiry.status === 'new').length} new · {contactInquiries.length} total
+                      </p>
+                    </div>
+
+                    {contactInquiries.length === 0 ? (
+                      <div className="mt-6 rounded-[1.25rem] border border-dashed border-[var(--line)] px-5 py-8 text-center text-sm text-[var(--text-muted)]">
+                        No website inquiries yet.
+                      </div>
+                    ) : (
+                      <div className="mt-6 space-y-4">
+                        {contactInquiries.map((inquiry) => {
+                          const isWorking = activeEventActionKey?.startsWith(`inquiry-${inquiry.id}`);
+
+                          return (
+                            <article key={inquiry.id} className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
+                              <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                  <p className="eyebrow text-[10px]">{inquiry.status === 'new' ? 'New inquiry' : 'Resolved'} · {formatDate(inquiry.createdAt)}</p>
+                                  <h3 className="mt-3 text-2xl text-[var(--text)]">{inquiry.name}</h3>
+                                  <a className="mt-2 inline-block text-sm text-[var(--text-muted)] underline" href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] disabled:opacity-60" disabled={isWorking} onClick={() => void (async () => { setActiveEventActionKey(`inquiry-${inquiry.id}-status`); try { const response = await updateAdminContactInquiryStatus(inquiry.id, inquiry.status === 'new' ? 'resolved' : 'new'); setContactInquiries((current) => current.map((entry) => entry.id === inquiry.id ? response.inquiry : entry)); } catch (err) { setError(err instanceof Error ? err.message : 'Unable to update inquiry.'); } finally { setActiveEventActionKey(null); } })()} type="button">{inquiry.status === 'new' ? 'Mark resolved' : 'Reopen'}</button>
+                                  <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--text)] disabled:opacity-60" disabled={isWorking} onClick={() => void (async () => { if (!window.confirm(`Delete inquiry from ${inquiry.name}?`)) return; setActiveEventActionKey(`inquiry-${inquiry.id}-delete`); try { await deleteAdminContactInquiry(inquiry.id); setContactInquiries((current) => current.filter((entry) => entry.id !== inquiry.id)); } catch (err) { setError(err instanceof Error ? err.message : 'Unable to delete inquiry.'); } finally { setActiveEventActionKey(null); } })()} type="button">Delete</button>
+                                </div>
+                              </div>
+                              {inquiry.interest ? <p className="mt-4 text-sm font-medium text-[var(--text)]">{inquiry.interest}</p> : null}
+                              <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--text-muted)]">{inquiry.message}</p>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </section>
               ) : null}
 
               {activeTab === 'investor' ? (

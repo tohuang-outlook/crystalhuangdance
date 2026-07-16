@@ -3,7 +3,7 @@ import { CheckCircle, Instagram, Mail, MapPin, Music2, Youtube } from 'lucide-re
 import { siteConfig } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdknaovq';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -20,10 +20,15 @@ export default function Contact() {
     const data = new FormData(form);
 
     try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
+      const res = await fetch(`${apiBaseUrl}/api/contact-inquiries`, {
         method: 'POST',
-        body: data,
-        headers: { Accept: 'application/json' },
+        body: JSON.stringify({
+          name: data.get('name'),
+          email: data.get('email'),
+          interest: data.get('interest'),
+          message: data.get('message'),
+        }),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (res.ok) {
@@ -121,8 +126,6 @@ export default function Contact() {
           className="space-y-5 border border-[var(--line)] bg-[var(--surface)] p-6 sm:p-8"
           onSubmit={handleSubmit}
         >
-          <input type="hidden" name="_subject" value="New inquiry from crystalhuangdance.com" />
-
           <div className="grid gap-5 sm:grid-cols-2">
             <input
               type="text"
@@ -133,7 +136,7 @@ export default function Contact() {
             />
             <input
               type="email"
-              name="_replyto"
+              name="email"
               placeholder={t('Your Email', '您的電子郵件')}
               required
               className="w-full border border-[var(--line)] bg-[rgba(243,238,228,0.02)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(243,238,228,0.24)]"
