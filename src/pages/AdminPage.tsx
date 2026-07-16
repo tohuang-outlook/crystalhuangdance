@@ -1,18 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  createAdminGroupChoreographyEntry,
+  createAdminGroupChoreographyMoment,
   createAdminFeaturedReel,
   createAdminAchievement,
   createAdminComingUpEvent,
   createAdminInvestorUpdate,
+  createAdminMasterClassMoment,
+  createAdminMasterClassTimelineEntry,
   createAdminPressHighlight,
   createAdminYoutubeVideo,
+  deleteAdminGroupChoreographyEntry,
+  deleteAdminGroupChoreographyMoment,
   deleteAdminFeaturedReel,
   deleteAdminAchievement,
   deleteAdminComingUpEvent,
   deleteAdminInvestorUpdate,
+  deleteAdminMasterClassMoment,
+  deleteAdminMasterClassTimelineEntry,
   deleteAdminPressHighlight,
   deleteAdminUser,
   deleteAdminVideo,
+  fetchAdminGalleryArchive,
   fetchAdminFeaturedReels,
   fetchAdminAchievements,
   fetchAdminArtistProfile,
@@ -22,30 +31,44 @@ import {
   fetchAdminUsers,
   fetchAdminVideos,
   reorderAdminFeaturedReels,
+  reorderAdminGroupChoreographyEntries,
+  reorderAdminGroupChoreographyMoments,
+  reorderAdminMasterClassMoments,
+  reorderAdminMasterClassTimelineEntries,
   reorderAdminAchievements,
   reorderAdminPressHighlights,
+  type AdminArchiveMediaPayload,
   type AchievementRecord,
   type AdminAchievementPayload,
+  type AdminGroupChoreographyEntryPayload,
   type AdminArtistProfilePayload,
   type AdminArtistProfileRecord,
   type AdminFeaturedReelPayload,
   type AdminInvestorUpdatePayload,
+  type ArchiveMediaRecord,
+  type AdminMasterClassTimelineEntryPayload,
   type AdminPressHighlightPayload,
   type AdminUserRecord,
   type AdminVideoRecord,
   type ComingUpEventRecord,
   type FeaturedReelPlacement,
   type FeaturedReelRecord,
+  type GroupChoreographyEntryRecord,
   type InvestorUpdateCategory,
   type InvestorUpdateRecord,
+  type MasterClassTimelineEntryRecord,
   type PressHighlightRecord,
   reorderAdminComingUpEvents,
   reorderAdminInvestorUpdates,
+  updateAdminGroupChoreographyEntry,
+  updateAdminGroupChoreographyMoment,
   updateAdminFeaturedReel,
   updateAdminAchievement,
   updateAdminArtistProfile,
   updateAdminComingUpEvent,
   updateAdminInvestorUpdate,
+  updateAdminMasterClassMoment,
+  updateAdminMasterClassTimelineEntry,
   updateAdminPressHighlight,
   uploadAdminVideoFile,
 } from '../services/admin';
@@ -176,6 +199,41 @@ interface ArtistProfileDraft {
   aboutParagraph2Zh: string;
   aboutParagraph3: string;
   aboutParagraph3Zh: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface MasterClassTimelineDraft {
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  location: string;
+  locationZh: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface ArchiveMediaDraft {
+  title: string;
+  titleZh: string;
+  subtitle: string;
+  subtitleZh: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  videoSrc: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+interface GroupChoreographyEntryDraft {
+  seasonLabel: string;
+  seasonLabelZh: string;
+  organization: string;
+  organizationZh: string;
+  workTitle: string;
+  workTitleZh: string;
   isSubmitting: boolean;
   error: string | null;
 }
@@ -372,6 +430,92 @@ function createArtistProfileDraftFromRecord(
   };
 }
 
+function createEmptyMasterClassTimelineDraft(): MasterClassTimelineDraft {
+  return {
+    dateLabel: '',
+    dateLabelZh: '',
+    title: '',
+    titleZh: '',
+    location: '',
+    locationZh: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createMasterClassTimelineDraftFromRecord(
+  entry: MasterClassTimelineEntryRecord
+): MasterClassTimelineDraft {
+  return {
+    dateLabel: entry.dateLabel,
+    dateLabelZh: entry.dateLabelZh,
+    title: entry.title,
+    titleZh: entry.titleZh,
+    location: entry.location,
+    locationZh: entry.locationZh,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createEmptyArchiveMediaDraft(): ArchiveMediaDraft {
+  return {
+    title: '',
+    titleZh: '',
+    subtitle: '',
+    subtitleZh: '',
+    imageSrc: '',
+    imageAlt: '',
+    imageAltZh: '',
+    videoSrc: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createArchiveMediaDraftFromRecord(item: ArchiveMediaRecord): ArchiveMediaDraft {
+  return {
+    title: item.title,
+    titleZh: item.titleZh,
+    subtitle: item.subtitle,
+    subtitleZh: item.subtitleZh,
+    imageSrc: item.imageSrc,
+    imageAlt: item.imageAlt,
+    imageAltZh: item.imageAltZh,
+    videoSrc: item.videoSrc ?? '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createEmptyGroupChoreographyEntryDraft(): GroupChoreographyEntryDraft {
+  return {
+    seasonLabel: '',
+    seasonLabelZh: '',
+    organization: '',
+    organizationZh: '',
+    workTitle: '',
+    workTitleZh: '',
+    isSubmitting: false,
+    error: null,
+  };
+}
+
+function createGroupChoreographyEntryDraftFromRecord(
+  entry: GroupChoreographyEntryRecord
+): GroupChoreographyEntryDraft {
+  return {
+    seasonLabel: entry.seasonLabel,
+    seasonLabelZh: entry.seasonLabelZh,
+    organization: entry.organization,
+    organizationZh: entry.organizationZh,
+    workTitle: entry.workTitle,
+    workTitleZh: entry.workTitleZh,
+    isSubmitting: false,
+    error: null,
+  };
+}
+
 export default function AdminPage() {
   const investorCategories: Array<{
     id: InvestorUpdateCategory;
@@ -403,6 +547,14 @@ export default function AdminPage() {
   const [pressHighlights, setPressHighlights] = useState<PressHighlightRecord[]>([]);
   const [achievements, setAchievements] = useState<AchievementRecord[]>([]);
   const [artistProfile, setArtistProfile] = useState<AdminArtistProfileRecord | null>(null);
+  const [masterClassTimelineEntries, setMasterClassTimelineEntries] = useState<
+    MasterClassTimelineEntryRecord[]
+  >([]);
+  const [masterClassArchiveMoments, setMasterClassArchiveMoments] = useState<ArchiveMediaRecord[]>(
+    []
+  );
+  const [groupArchiveEntries, setGroupArchiveEntries] = useState<GroupChoreographyEntryRecord[]>([]);
+  const [groupArchiveMoments, setGroupArchiveMoments] = useState<ArchiveMediaRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -414,6 +566,10 @@ export default function AdminPage() {
   const [investorUpdateDrafts, setInvestorUpdateDrafts] = useState<Record<number, InvestorUpdateDraft>>({});
   const [pressHighlightDrafts, setPressHighlightDrafts] = useState<Record<number, PressHighlightDraft>>({});
   const [achievementDrafts, setAchievementDrafts] = useState<Record<number, AchievementDraft>>({});
+  const [masterClassTimelineDrafts, setMasterClassTimelineDrafts] = useState<Record<number, MasterClassTimelineDraft>>({});
+  const [masterClassMomentDrafts, setMasterClassMomentDrafts] = useState<Record<number, ArchiveMediaDraft>>({});
+  const [groupChoreographyEntryDrafts, setGroupChoreographyEntryDrafts] = useState<Record<number, GroupChoreographyEntryDraft>>({});
+  const [groupChoreographyMomentDrafts, setGroupChoreographyMomentDrafts] = useState<Record<number, ArchiveMediaDraft>>({});
   const [newComingUpEventDraft, setNewComingUpEventDraft] = useState<ComingUpEventDraft>(
     createEmptyComingUpEventDraft()
   );
@@ -426,6 +582,14 @@ export default function AdminPage() {
   const [artistProfileDraft, setArtistProfileDraft] = useState<ArtistProfileDraft>(
     createEmptyArtistProfileDraft()
   );
+  const [newMasterClassTimelineDraft, setNewMasterClassTimelineDraft] =
+    useState<MasterClassTimelineDraft>(createEmptyMasterClassTimelineDraft());
+  const [newMasterClassMomentDraft, setNewMasterClassMomentDraft] =
+    useState<ArchiveMediaDraft>(createEmptyArchiveMediaDraft());
+  const [newGroupChoreographyEntryDraft, setNewGroupChoreographyEntryDraft] =
+    useState<GroupChoreographyEntryDraft>(createEmptyGroupChoreographyEntryDraft());
+  const [newGroupChoreographyMomentDraft, setNewGroupChoreographyMomentDraft] =
+    useState<ArchiveMediaDraft>(createEmptyArchiveMediaDraft());
   const [newInvestorUpdateDrafts, setNewInvestorUpdateDrafts] = useState<
     Record<InvestorUpdateCategory, InvestorUpdateDraft>
   >({
@@ -563,6 +727,7 @@ export default function AdminPage() {
         pressHighlightsResponse,
         achievementsResponse,
         artistProfileResponse,
+        galleryArchiveResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -572,6 +737,7 @@ export default function AdminPage() {
         fetchAdminPressHighlights(),
         fetchAdminAchievements(),
         fetchAdminArtistProfile(),
+        fetchAdminGalleryArchive(),
       ]);
 
       setUsers(usersResponse.users);
@@ -582,6 +748,10 @@ export default function AdminPage() {
       setPressHighlights(pressHighlightsResponse.highlights);
       setAchievements(achievementsResponse.achievements);
       setArtistProfile(artistProfileResponse.profile);
+      setMasterClassTimelineEntries(galleryArchiveResponse.timelineEntries);
+      setMasterClassArchiveMoments(galleryArchiveResponse.masterClassMoments);
+      setGroupArchiveEntries(galleryArchiveResponse.groupEntries);
+      setGroupArchiveMoments(galleryArchiveResponse.groupMoments);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -682,6 +852,54 @@ export default function AdminPage() {
     });
   }, [artistProfile]);
 
+  useEffect(() => {
+    setMasterClassTimelineDrafts((current) => {
+      const nextDrafts: Record<number, MasterClassTimelineDraft> = {};
+
+      masterClassTimelineEntries.forEach((entry) => {
+        nextDrafts[entry.id] = current[entry.id] ?? createMasterClassTimelineDraftFromRecord(entry);
+      });
+
+      return nextDrafts;
+    });
+  }, [masterClassTimelineEntries]);
+
+  useEffect(() => {
+    setMasterClassMomentDrafts((current) => {
+      const nextDrafts: Record<number, ArchiveMediaDraft> = {};
+
+      masterClassArchiveMoments.forEach((moment) => {
+        nextDrafts[moment.id] = current[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
+      });
+
+      return nextDrafts;
+    });
+  }, [masterClassArchiveMoments]);
+
+  useEffect(() => {
+    setGroupChoreographyEntryDrafts((current) => {
+      const nextDrafts: Record<number, GroupChoreographyEntryDraft> = {};
+
+      groupArchiveEntries.forEach((entry) => {
+        nextDrafts[entry.id] = current[entry.id] ?? createGroupChoreographyEntryDraftFromRecord(entry);
+      });
+
+      return nextDrafts;
+    });
+  }, [groupArchiveEntries]);
+
+  useEffect(() => {
+    setGroupChoreographyMomentDrafts((current) => {
+      const nextDrafts: Record<number, ArchiveMediaDraft> = {};
+
+      groupArchiveMoments.forEach((moment) => {
+        nextDrafts[moment.id] = current[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
+      });
+
+      return nextDrafts;
+    });
+  }, [groupArchiveMoments]);
+
   const getDraft = (userId: number) => uploadDrafts[userId] ?? createDefaultDraft();
 
   const getComingUpEventDraft = (event: ComingUpEventRecord) =>
@@ -698,6 +916,14 @@ export default function AdminPage() {
 
   const getAchievementDraft = (achievement: AchievementRecord) =>
     achievementDrafts[achievement.id] ?? createAchievementDraftFromRecord(achievement);
+  const getMasterClassTimelineDraft = (entry: MasterClassTimelineEntryRecord) =>
+    masterClassTimelineDrafts[entry.id] ?? createMasterClassTimelineDraftFromRecord(entry);
+  const getMasterClassMomentDraft = (moment: ArchiveMediaRecord) =>
+    masterClassMomentDrafts[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
+  const getGroupChoreographyEntryDraft = (entry: GroupChoreographyEntryRecord) =>
+    groupChoreographyEntryDrafts[entry.id] ?? createGroupChoreographyEntryDraftFromRecord(entry);
+  const getGroupChoreographyMomentDraft = (moment: ArchiveMediaRecord) =>
+    groupChoreographyMomentDrafts[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
 
   const updateDraft = (userId: number, patch: Partial<DancerUploadDraft>) => {
     setUploadDrafts((current) => ({
@@ -758,6 +984,76 @@ export default function AdminPage() {
         ...patch,
       },
     }));
+  };
+
+  const updateMasterClassTimelineDraft = (
+    entryId: number,
+    patch: Partial<MasterClassTimelineDraft>
+  ) => {
+    setMasterClassTimelineDrafts((current) => ({
+      ...current,
+      [entryId]: {
+        ...(current[entryId] ?? createEmptyMasterClassTimelineDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateMasterClassMomentDraft = (
+    momentId: number,
+    patch: Partial<ArchiveMediaDraft>
+  ) => {
+    setMasterClassMomentDrafts((current) => ({
+      ...current,
+      [momentId]: {
+        ...(current[momentId] ?? createEmptyArchiveMediaDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateGroupChoreographyEntryDraft = (
+    entryId: number,
+    patch: Partial<GroupChoreographyEntryDraft>
+  ) => {
+    setGroupChoreographyEntryDrafts((current) => ({
+      ...current,
+      [entryId]: {
+        ...(current[entryId] ?? createEmptyGroupChoreographyEntryDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateGroupChoreographyMomentDraft = (
+    momentId: number,
+    patch: Partial<ArchiveMediaDraft>
+  ) => {
+    setGroupChoreographyMomentDrafts((current) => ({
+      ...current,
+      [momentId]: {
+        ...(current[momentId] ?? createEmptyArchiveMediaDraft()),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateNewMasterClassTimelineDraft = (patch: Partial<MasterClassTimelineDraft>) => {
+    setNewMasterClassTimelineDraft((current) => ({ ...current, ...patch }));
+  };
+
+  const updateNewMasterClassMomentDraft = (patch: Partial<ArchiveMediaDraft>) => {
+    setNewMasterClassMomentDraft((current) => ({ ...current, ...patch }));
+  };
+
+  const updateNewGroupChoreographyEntryDraft = (
+    patch: Partial<GroupChoreographyEntryDraft>
+  ) => {
+    setNewGroupChoreographyEntryDraft((current) => ({ ...current, ...patch }));
+  };
+
+  const updateNewGroupChoreographyMomentDraft = (patch: Partial<ArchiveMediaDraft>) => {
+    setNewGroupChoreographyMomentDraft((current) => ({ ...current, ...patch }));
   };
 
   const updatePressHighlightDraft = (highlightId: number, patch: Partial<PressHighlightDraft>) => {
@@ -1095,6 +1391,39 @@ export default function AdminPage() {
     aboutParagraph3Zh: draft.aboutParagraph3Zh.trim(),
   });
 
+  const toMasterClassTimelinePayload = (
+    draft: MasterClassTimelineDraft
+  ): AdminMasterClassTimelineEntryPayload => ({
+    dateLabel: draft.dateLabel.trim(),
+    dateLabelZh: draft.dateLabelZh.trim(),
+    title: draft.title.trim(),
+    titleZh: draft.titleZh.trim(),
+    location: draft.location.trim(),
+    locationZh: draft.locationZh.trim(),
+  });
+
+  const toArchiveMediaPayload = (draft: ArchiveMediaDraft): AdminArchiveMediaPayload => ({
+    title: draft.title.trim(),
+    titleZh: draft.titleZh.trim(),
+    subtitle: draft.subtitle.trim(),
+    subtitleZh: draft.subtitleZh.trim(),
+    imageSrc: draft.imageSrc.trim(),
+    imageAlt: draft.imageAlt.trim(),
+    imageAltZh: draft.imageAltZh.trim(),
+    videoSrc: draft.videoSrc.trim(),
+  });
+
+  const toGroupChoreographyEntryPayload = (
+    draft: GroupChoreographyEntryDraft
+  ): AdminGroupChoreographyEntryPayload => ({
+    seasonLabel: draft.seasonLabel.trim(),
+    seasonLabelZh: draft.seasonLabelZh.trim(),
+    organization: draft.organization.trim(),
+    organizationZh: draft.organizationZh.trim(),
+    workTitle: draft.workTitle.trim(),
+    workTitleZh: draft.workTitleZh.trim(),
+  });
+
   const handleCreateFeaturedReel = async (placement: FeaturedReelPlacement) => {
     const draft = newFeaturedReelDrafts[placement];
     updateNewFeaturedReelDraft(placement, { isSubmitting: true, error: null });
@@ -1414,6 +1743,402 @@ export default function AdminPage() {
     }
 
     updateArtistProfileDraft({ isSubmitting: false });
+  };
+
+  const handleCreateMasterClassTimelineEntry = async () => {
+    updateNewMasterClassTimelineDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminMasterClassTimelineEntry(
+        toMasterClassTimelinePayload(newMasterClassTimelineDraft)
+      );
+      setMasterClassTimelineEntries((current) => [...current, response.entry]);
+      setNewMasterClassTimelineDraft(createEmptyMasterClassTimelineDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewMasterClassTimelineDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this timeline entry.',
+      });
+      return;
+    }
+
+    updateNewMasterClassTimelineDraft({ isSubmitting: false });
+  };
+
+  const handleSaveMasterClassTimelineEntry = async (entry: MasterClassTimelineEntryRecord) => {
+    const draft = getMasterClassTimelineDraft(entry);
+    updateMasterClassTimelineDraft(entry.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminMasterClassTimelineEntry(
+        entry.id,
+        toMasterClassTimelinePayload(draft)
+      );
+      setMasterClassTimelineEntries((current) =>
+        current.map((item) => (item.id === entry.id ? response.entry : item))
+      );
+      setMasterClassTimelineDrafts((current) => ({
+        ...current,
+        [entry.id]: createMasterClassTimelineDraftFromRecord(response.entry),
+      }));
+    } catch (err) {
+      updateMasterClassTimelineDraft(entry.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this timeline entry.',
+      });
+      return;
+    }
+
+    updateMasterClassTimelineDraft(entry.id, { isSubmitting: false });
+  };
+
+  const handleDeleteMasterClassTimelineEntry = async (entry: MasterClassTimelineEntryRecord) => {
+    if (!window.confirm(`Delete "${entry.title}" from Archive Timeline?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`master-class-timeline-delete-${entry.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminMasterClassTimelineEntry(entry.id);
+      setMasterClassTimelineEntries((current) => current.filter((item) => item.id !== entry.id));
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this timeline entry.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveMasterClassTimelineEntry = async (entryId: number, direction: -1 | 1) => {
+    const currentIndex = masterClassTimelineEntries.findIndex((entry) => entry.id === entryId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= masterClassTimelineEntries.length) {
+      return;
+    }
+
+    const reorderedIds = [...masterClassTimelineEntries.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`master-class-timeline-move-${entryId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminMasterClassTimelineEntries(reorderedIds);
+      setMasterClassTimelineEntries(response.timelineEntries);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder timeline entries.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const createMediaHandlers = (
+    kind: 'master-class' | 'group',
+    moment: ArchiveMediaRecord
+  ) => ({
+    save: async (draft: ArchiveMediaDraft) => {
+      const response =
+        kind === 'master-class'
+          ? await updateAdminMasterClassMoment(moment.id, toArchiveMediaPayload(draft))
+          : await updateAdminGroupChoreographyMoment(moment.id, toArchiveMediaPayload(draft));
+      return response.moment;
+    },
+    deleteAction:
+      kind === 'master-class' ? deleteAdminMasterClassMoment : deleteAdminGroupChoreographyMoment,
+  });
+
+  const handleSaveMasterClassMoment = async (moment: ArchiveMediaRecord) => {
+    const draft = getMasterClassMomentDraft(moment);
+    updateMasterClassMomentDraft(moment.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const saved = await createMediaHandlers('master-class', moment).save(draft);
+      setMasterClassArchiveMoments((current) =>
+        current.map((item) => (item.id === moment.id ? saved : item))
+      );
+      setMasterClassMomentDrafts((current) => ({
+        ...current,
+        [moment.id]: createArchiveMediaDraftFromRecord(saved),
+      }));
+    } catch (err) {
+      updateMasterClassMomentDraft(moment.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this master class moment.',
+      });
+      return;
+    }
+
+    updateMasterClassMomentDraft(moment.id, { isSubmitting: false });
+  };
+
+  const handleCreateMasterClassMoment = async () => {
+    updateNewMasterClassMomentDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminMasterClassMoment(
+        toArchiveMediaPayload(newMasterClassMomentDraft)
+      );
+      setMasterClassArchiveMoments((current) => [...current, response.moment]);
+      setNewMasterClassMomentDraft(createEmptyArchiveMediaDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewMasterClassMomentDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this master class moment.',
+      });
+      return;
+    }
+
+    updateNewMasterClassMomentDraft({ isSubmitting: false });
+  };
+
+  const handleDeleteMasterClassMoment = async (moment: ArchiveMediaRecord) => {
+    if (!window.confirm(`Delete "${moment.title}" from Selected Master Class Moments?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`master-class-moment-delete-${moment.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminMasterClassMoment(moment.id);
+      setMasterClassArchiveMoments((current) => current.filter((item) => item.id !== moment.id));
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this master class moment.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveMasterClassMoment = async (momentId: number, direction: -1 | 1) => {
+    const currentIndex = masterClassArchiveMoments.findIndex((entry) => entry.id === momentId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= masterClassArchiveMoments.length) {
+      return;
+    }
+
+    const reorderedIds = [...masterClassArchiveMoments.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`master-class-moment-move-${momentId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminMasterClassMoments(reorderedIds);
+      setMasterClassArchiveMoments(response.masterClassMoments);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder master class moments.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleCreateGroupChoreographyEntry = async () => {
+    updateNewGroupChoreographyEntryDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminGroupChoreographyEntry(
+        toGroupChoreographyEntryPayload(newGroupChoreographyEntryDraft)
+      );
+      setGroupArchiveEntries((current) => [...current, response.entry]);
+      setNewGroupChoreographyEntryDraft(createEmptyGroupChoreographyEntryDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewGroupChoreographyEntryDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this group entry.',
+      });
+      return;
+    }
+
+    updateNewGroupChoreographyEntryDraft({ isSubmitting: false });
+  };
+
+  const handleSaveGroupChoreographyEntry = async (entry: GroupChoreographyEntryRecord) => {
+    const draft = getGroupChoreographyEntryDraft(entry);
+    updateGroupChoreographyEntryDraft(entry.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await updateAdminGroupChoreographyEntry(
+        entry.id,
+        toGroupChoreographyEntryPayload(draft)
+      );
+      setGroupArchiveEntries((current) =>
+        current.map((item) => (item.id === entry.id ? response.entry : item))
+      );
+      setGroupChoreographyEntryDrafts((current) => ({
+        ...current,
+        [entry.id]: createGroupChoreographyEntryDraftFromRecord(response.entry),
+      }));
+    } catch (err) {
+      updateGroupChoreographyEntryDraft(entry.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this group entry.',
+      });
+      return;
+    }
+
+    updateGroupChoreographyEntryDraft(entry.id, { isSubmitting: false });
+  };
+
+  const handleDeleteGroupChoreographyEntry = async (entry: GroupChoreographyEntryRecord) => {
+    if (!window.confirm(`Delete "${entry.organization} — ${entry.workTitle}" from Groups Choreography?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`group-entry-delete-${entry.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminGroupChoreographyEntry(entry.id);
+      setGroupArchiveEntries((current) => current.filter((item) => item.id !== entry.id));
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this group entry.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveGroupChoreographyEntry = async (entryId: number, direction: -1 | 1) => {
+    const currentIndex = groupArchiveEntries.findIndex((entry) => entry.id === entryId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= groupArchiveEntries.length) {
+      return;
+    }
+
+    const reorderedIds = [...groupArchiveEntries.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`group-entry-move-${entryId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminGroupChoreographyEntries(reorderedIds);
+      setGroupArchiveEntries(response.groupEntries);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder group choreography entries.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleCreateGroupChoreographyMoment = async () => {
+    updateNewGroupChoreographyMomentDraft({ isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const response = await createAdminGroupChoreographyMoment(
+        toArchiveMediaPayload(newGroupChoreographyMomentDraft)
+      );
+      setGroupArchiveMoments((current) => [...current, response.moment]);
+      setNewGroupChoreographyMomentDraft(createEmptyArchiveMediaDraft());
+      await loadDashboard();
+    } catch (err) {
+      updateNewGroupChoreographyMomentDraft({
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to create this group moment.',
+      });
+      return;
+    }
+
+    updateNewGroupChoreographyMomentDraft({ isSubmitting: false });
+  };
+
+  const handleSaveGroupChoreographyMoment = async (moment: ArchiveMediaRecord) => {
+    const draft = getGroupChoreographyMomentDraft(moment);
+    updateGroupChoreographyMomentDraft(moment.id, { isSubmitting: true, error: null });
+    setError(null);
+
+    try {
+      const saved = await updateAdminGroupChoreographyMoment(
+        moment.id,
+        toArchiveMediaPayload(draft)
+      );
+      setGroupArchiveMoments((current) =>
+        current.map((item) => (item.id === moment.id ? saved.moment : item))
+      );
+      setGroupChoreographyMomentDrafts((current) => ({
+        ...current,
+        [moment.id]: createArchiveMediaDraftFromRecord(saved.moment),
+      }));
+    } catch (err) {
+      updateGroupChoreographyMomentDraft(moment.id, {
+        isSubmitting: false,
+        error: err instanceof Error ? err.message : 'Unable to save this group moment.',
+      });
+      return;
+    }
+
+    updateGroupChoreographyMomentDraft(moment.id, { isSubmitting: false });
+  };
+
+  const handleDeleteGroupChoreographyMoment = async (moment: ArchiveMediaRecord) => {
+    if (!window.confirm(`Delete "${moment.title}" from Featured Group Works?`)) {
+      return;
+    }
+
+    setActiveEventActionKey(`group-moment-delete-${moment.id}`);
+    setError(null);
+
+    try {
+      await deleteAdminGroupChoreographyMoment(moment.id);
+      setGroupArchiveMoments((current) => current.filter((item) => item.id !== moment.id));
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this group moment.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
+  };
+
+  const handleMoveGroupChoreographyMoment = async (momentId: number, direction: -1 | 1) => {
+    const currentIndex = groupArchiveMoments.findIndex((entry) => entry.id === momentId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= groupArchiveMoments.length) {
+      return;
+    }
+
+    const reorderedIds = [...groupArchiveMoments.map((entry) => entry.id)];
+    [reorderedIds[currentIndex], reorderedIds[nextIndex]] = [
+      reorderedIds[nextIndex],
+      reorderedIds[currentIndex],
+    ];
+
+    setActiveEventActionKey(`group-moment-move-${momentId}`);
+    setError(null);
+
+    try {
+      const response = await reorderAdminGroupChoreographyMoments(reorderedIds);
+      setGroupArchiveMoments(response.groupMoments);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reorder group moments.');
+    } finally {
+      setActiveEventActionKey(null);
+    }
   };
 
   const toInvestorUpdatePayload = (draft: InvestorUpdateDraft): AdminInvestorUpdatePayload => ({
@@ -2406,6 +3131,215 @@ export default function AdminPage() {
                       </article>
                     );
                   })}
+
+                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Master Class Archive</p>
+                        <h3 className="mt-3 text-3xl text-[var(--text)]">Master Class and Choreographer</h3>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+                          Manage the full gallery archive section: timeline, master class cards, group choreography credits, and featured group works.
+                        </p>
+                      </div>
+                      <div className="text-sm text-[var(--text-muted)]">
+                        {masterClassTimelineEntries.length} timeline · {masterClassArchiveMoments.length} master cards · {groupArchiveEntries.length} group credits · {groupArchiveMoments.length} group cards
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-8">
+                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                        <p className="eyebrow text-[10px]">Archive Timeline</p>
+                        <div className="mt-4 grid gap-4 xl:grid-cols-3">
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Date label (EN)" value={newMasterClassTimelineDraft.dateLabel} onChange={(event) => updateNewMasterClassTimelineDraft({ dateLabel: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Date label (ZH)" value={newMasterClassTimelineDraft.dateLabelZh} onChange={(event) => updateNewMasterClassTimelineDraft({ dateLabelZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (EN)" value={newMasterClassTimelineDraft.title} onChange={(event) => updateNewMasterClassTimelineDraft({ title: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (ZH)" value={newMasterClassTimelineDraft.titleZh} onChange={(event) => updateNewMasterClassTimelineDraft({ titleZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Location (EN)" value={newMasterClassTimelineDraft.location} onChange={(event) => updateNewMasterClassTimelineDraft({ location: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Location (ZH)" value={newMasterClassTimelineDraft.locationZh} onChange={(event) => updateNewMasterClassTimelineDraft({ locationZh: event.target.value })} />
+                        </div>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <p className="text-sm text-[var(--text-muted)]">Add a new timeline line for the gallery archive.</p>
+                          <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white disabled:opacity-60" disabled={newMasterClassTimelineDraft.isSubmitting} onClick={() => void handleCreateMasterClassTimelineEntry()} type="button">{newMasterClassTimelineDraft.isSubmitting ? 'Adding...' : 'Add timeline entry'}</button>
+                        </div>
+                        {newMasterClassTimelineDraft.error ? <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{newMasterClassTimelineDraft.error}</p> : null}
+                        <div className="mt-6 space-y-4">
+                          {masterClassTimelineEntries.map((entry, index) => {
+                            const draft = getMasterClassTimelineDraft(entry);
+                            const isDeleting = activeEventActionKey === `master-class-timeline-delete-${entry.id}`;
+                            const isMoving = activeEventActionKey === `master-class-timeline-move-${entry.id}`;
+                            return (
+                              <article key={entry.id} className="rounded-[1.1rem] border border-[var(--line)] bg-white p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div><p className="eyebrow text-[10px]">Position {index + 1}</p><h4 className="mt-2 text-xl">{draft.title || 'Untitled timeline entry'}</h4></div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === 0 || isMoving} onClick={() => void handleMoveMasterClassTimelineEntry(entry.id, -1)} type="button">Up</button>
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === masterClassTimelineEntries.length - 1 || isMoving} onClick={() => void handleMoveMasterClassTimelineEntry(entry.id, 1)} type="button">Down</button>
+                                    <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white" disabled={draft.isSubmitting} onClick={() => void handleSaveMasterClassTimelineEntry(entry)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                    <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={isDeleting} onClick={() => void handleDeleteMasterClassTimelineEntry(entry)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                  </div>
+                                </div>
+                                <div className="mt-4 grid gap-3 xl:grid-cols-3">
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.dateLabel} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { dateLabel: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.dateLabelZh} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { dateLabelZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.title} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { title: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.titleZh} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { titleZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.location} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { location: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.locationZh} onChange={(event) => updateMasterClassTimelineDraft(entry.id, { locationZh: event.target.value })} />
+                                </div>
+                                {draft.error ? <p className="mt-3 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{draft.error}</p> : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                        <p className="eyebrow text-[10px]">Selected Master Class Moments</p>
+                        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (EN)" value={newMasterClassMomentDraft.title} onChange={(event) => updateNewMasterClassMomentDraft({ title: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (ZH)" value={newMasterClassMomentDraft.titleZh} onChange={(event) => updateNewMasterClassMomentDraft({ titleZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (EN)" value={newMasterClassMomentDraft.subtitle} onChange={(event) => updateNewMasterClassMomentDraft({ subtitle: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (ZH)" value={newMasterClassMomentDraft.subtitleZh} onChange={(event) => updateNewMasterClassMomentDraft({ subtitleZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (EN)" value={newMasterClassMomentDraft.imageAlt} onChange={(event) => updateNewMasterClassMomentDraft({ imageAlt: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (ZH)" value={newMasterClassMomentDraft.imageAltZh} onChange={(event) => updateNewMasterClassMomentDraft({ imageAltZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Video path (optional)" value={newMasterClassMomentDraft.videoSrc} onChange={(event) => updateNewMasterClassMomentDraft({ videoSrc: event.target.value })} />
+                        </div>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <p className="text-sm text-[var(--text-muted)]">Manage the click-to-open cards in the master class gallery.</p>
+                          <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white disabled:opacity-60" disabled={newMasterClassMomentDraft.isSubmitting} onClick={() => void handleCreateMasterClassMoment()} type="button">{newMasterClassMomentDraft.isSubmitting ? 'Adding...' : 'Add master card'}</button>
+                        </div>
+                        {newMasterClassMomentDraft.error ? <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{newMasterClassMomentDraft.error}</p> : null}
+                        <div className="mt-6 space-y-4">
+                          {masterClassArchiveMoments.map((moment, index) => {
+                            const draft = getMasterClassMomentDraft(moment);
+                            const isDeleting = activeEventActionKey === `master-class-moment-delete-${moment.id}`;
+                            const isMoving = activeEventActionKey === `master-class-moment-move-${moment.id}`;
+                            return (
+                              <article key={moment.id} className="rounded-[1.1rem] border border-[var(--line)] bg-white p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div><p className="eyebrow text-[10px]">Position {index + 1}</p><h4 className="mt-2 text-xl">{draft.title || 'Untitled master card'}</h4></div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === 0 || isMoving} onClick={() => void handleMoveMasterClassMoment(moment.id, -1)} type="button">Up</button>
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === masterClassArchiveMoments.length - 1 || isMoving} onClick={() => void handleMoveMasterClassMoment(moment.id, 1)} type="button">Down</button>
+                                    <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white" disabled={draft.isSubmitting} onClick={() => void handleSaveMasterClassMoment(moment)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                    <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={isDeleting} onClick={() => void handleDeleteMasterClassMoment(moment)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                  </div>
+                                </div>
+                                <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.title} onChange={(event) => updateMasterClassMomentDraft(moment.id, { title: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.titleZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { titleZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitle} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitle: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitleZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitleZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAlt} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAlt: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAltZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAltZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.videoSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { videoSrc: event.target.value })} />
+                                </div>
+                                {draft.error ? <p className="mt-3 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{draft.error}</p> : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                        <p className="eyebrow text-[10px]">Groups Choreography</p>
+                        <div className="mt-4 grid gap-4 xl:grid-cols-3">
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Season (EN)" value={newGroupChoreographyEntryDraft.seasonLabel} onChange={(event) => updateNewGroupChoreographyEntryDraft({ seasonLabel: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Season (ZH)" value={newGroupChoreographyEntryDraft.seasonLabelZh} onChange={(event) => updateNewGroupChoreographyEntryDraft({ seasonLabelZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Organization (EN)" value={newGroupChoreographyEntryDraft.organization} onChange={(event) => updateNewGroupChoreographyEntryDraft({ organization: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Organization (ZH)" value={newGroupChoreographyEntryDraft.organizationZh} onChange={(event) => updateNewGroupChoreographyEntryDraft({ organizationZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Work title (EN)" value={newGroupChoreographyEntryDraft.workTitle} onChange={(event) => updateNewGroupChoreographyEntryDraft({ workTitle: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Work title (ZH)" value={newGroupChoreographyEntryDraft.workTitleZh} onChange={(event) => updateNewGroupChoreographyEntryDraft({ workTitleZh: event.target.value })} />
+                        </div>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <p className="text-sm text-[var(--text-muted)]">Manage the text-only group choreography credits list.</p>
+                          <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white disabled:opacity-60" disabled={newGroupChoreographyEntryDraft.isSubmitting} onClick={() => void handleCreateGroupChoreographyEntry()} type="button">{newGroupChoreographyEntryDraft.isSubmitting ? 'Adding...' : 'Add group credit'}</button>
+                        </div>
+                        {newGroupChoreographyEntryDraft.error ? <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{newGroupChoreographyEntryDraft.error}</p> : null}
+                        <div className="mt-6 space-y-4">
+                          {groupArchiveEntries.map((entry, index) => {
+                            const draft = getGroupChoreographyEntryDraft(entry);
+                            const isDeleting = activeEventActionKey === `group-entry-delete-${entry.id}`;
+                            const isMoving = activeEventActionKey === `group-entry-move-${entry.id}`;
+                            return (
+                              <article key={entry.id} className="rounded-[1.1rem] border border-[var(--line)] bg-white p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div><p className="eyebrow text-[10px]">Position {index + 1}</p><h4 className="mt-2 text-xl">{draft.organization || 'Untitled group credit'}</h4></div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === 0 || isMoving} onClick={() => void handleMoveGroupChoreographyEntry(entry.id, -1)} type="button">Up</button>
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === groupArchiveEntries.length - 1 || isMoving} onClick={() => void handleMoveGroupChoreographyEntry(entry.id, 1)} type="button">Down</button>
+                                    <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white" disabled={draft.isSubmitting} onClick={() => void handleSaveGroupChoreographyEntry(entry)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                    <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={isDeleting} onClick={() => void handleDeleteGroupChoreographyEntry(entry)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                  </div>
+                                </div>
+                                <div className="mt-4 grid gap-3 xl:grid-cols-3">
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.seasonLabel} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { seasonLabel: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.seasonLabelZh} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { seasonLabelZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.organization} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { organization: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.organizationZh} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { organizationZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.workTitle} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { workTitle: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.workTitleZh} onChange={(event) => updateGroupChoreographyEntryDraft(entry.id, { workTitleZh: event.target.value })} />
+                                </div>
+                                {draft.error ? <p className="mt-3 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{draft.error}</p> : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                        <p className="eyebrow text-[10px]">Featured Group Works</p>
+                        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (EN)" value={newGroupChoreographyMomentDraft.title} onChange={(event) => updateNewGroupChoreographyMomentDraft({ title: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (ZH)" value={newGroupChoreographyMomentDraft.titleZh} onChange={(event) => updateNewGroupChoreographyMomentDraft({ titleZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (EN)" value={newGroupChoreographyMomentDraft.subtitle} onChange={(event) => updateNewGroupChoreographyMomentDraft({ subtitle: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (ZH)" value={newGroupChoreographyMomentDraft.subtitleZh} onChange={(event) => updateNewGroupChoreographyMomentDraft({ subtitleZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Image path" value={newGroupChoreographyMomentDraft.imageSrc} onChange={(event) => updateNewGroupChoreographyMomentDraft({ imageSrc: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (EN)" value={newGroupChoreographyMomentDraft.imageAlt} onChange={(event) => updateNewGroupChoreographyMomentDraft({ imageAlt: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (ZH)" value={newGroupChoreographyMomentDraft.imageAltZh} onChange={(event) => updateNewGroupChoreographyMomentDraft({ imageAltZh: event.target.value })} />
+                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Video path (optional)" value={newGroupChoreographyMomentDraft.videoSrc} onChange={(event) => updateNewGroupChoreographyMomentDraft({ videoSrc: event.target.value })} />
+                        </div>
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                          <p className="text-sm text-[var(--text-muted)]">Manage the featured group work cards and their click-to-open media.</p>
+                          <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white disabled:opacity-60" disabled={newGroupChoreographyMomentDraft.isSubmitting} onClick={() => void handleCreateGroupChoreographyMoment()} type="button">{newGroupChoreographyMomentDraft.isSubmitting ? 'Adding...' : 'Add group card'}</button>
+                        </div>
+                        {newGroupChoreographyMomentDraft.error ? <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{newGroupChoreographyMomentDraft.error}</p> : null}
+                        <div className="mt-6 space-y-4">
+                          {groupArchiveMoments.map((moment, index) => {
+                            const draft = getGroupChoreographyMomentDraft(moment);
+                            const isDeleting = activeEventActionKey === `group-moment-delete-${moment.id}`;
+                            const isMoving = activeEventActionKey === `group-moment-move-${moment.id}`;
+                            return (
+                              <article key={moment.id} className="rounded-[1.1rem] border border-[var(--line)] bg-white p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div><p className="eyebrow text-[10px]">Position {index + 1}</p><h4 className="mt-2 text-xl">{draft.title || 'Untitled group card'}</h4></div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === 0 || isMoving} onClick={() => void handleMoveGroupChoreographyMoment(moment.id, -1)} type="button">Up</button>
+                                    <button className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={index === groupArchiveMoments.length - 1 || isMoving} onClick={() => void handleMoveGroupChoreographyMoment(moment.id, 1)} type="button">Down</button>
+                                    <button className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-white" disabled={draft.isSubmitting} onClick={() => void handleSaveGroupChoreographyMoment(moment)} type="button">{draft.isSubmitting ? 'Saving...' : 'Save'}</button>
+                                    <button className="rounded-full border border-[rgba(255,107,107,0.24)] px-4 py-2 text-xs uppercase tracking-[0.18em]" disabled={isDeleting} onClick={() => void handleDeleteGroupChoreographyMoment(moment)} type="button">{isDeleting ? 'Deleting...' : 'Delete'}</button>
+                                  </div>
+                                </div>
+                                <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.title} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { title: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.titleZh} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { titleZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitle} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { subtitle: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitleZh} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { subtitleZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.imageSrc} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { imageSrc: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAlt} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { imageAlt: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAltZh} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { imageAltZh: event.target.value })} />
+                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.videoSrc} onChange={(event) => updateGroupChoreographyMomentDraft(moment.id, { videoSrc: event.target.value })} />
+                                </div>
+                                {draft.error ? <p className="mt-3 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{draft.error}</p> : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
                 </div>
               </section>
               ) : null}

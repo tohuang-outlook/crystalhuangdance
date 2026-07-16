@@ -119,3 +119,59 @@ CREATE TABLE IF NOT EXISTS artist_profile (
   about_paragraph_3_zh TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS master_class_timeline_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date_label TEXT NOT NULL,
+  date_label_zh TEXT NOT NULL,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  location TEXT NOT NULL,
+  location_zh TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS master_class_moments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  subtitle TEXT NOT NULL,
+  subtitle_zh TEXT NOT NULL,
+  image_src TEXT NOT NULL,
+  image_alt TEXT NOT NULL,
+  image_alt_zh TEXT NOT NULL,
+  video_src TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS group_choreography_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_label TEXT NOT NULL,
+  season_label_zh TEXT NOT NULL,
+  organization TEXT NOT NULL,
+  organization_zh TEXT NOT NULL,
+  work_title TEXT NOT NULL,
+  work_title_zh TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS group_choreography_moments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  title_zh TEXT NOT NULL,
+  subtitle TEXT NOT NULL,
+  subtitle_zh TEXT NOT NULL,
+  image_src TEXT NOT NULL,
+  image_alt TEXT NOT NULL,
+  image_alt_zh TEXT NOT NULL,
+  video_src TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -7,13 +7,70 @@ import {
   masterClassTimeline,
 } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  fetchGalleryArchive,
+  type PublicArchiveMediaItem,
+  type PublicGroupChoreographyEntry,
+  type PublicMasterClassTimelineEntry,
+} from '../services/galleryArchive';
 
 const archiveImagePositionClasses: Record<string, string> = {
   'Ballet Master Class at YAGP': 'object-[center_58%]',
   'SFB School — TBD': 'object-top',
 };
 
+function createFallbackTimelineEntries(): PublicMasterClassTimelineEntry[] {
+  return masterClassTimeline.map((entry, index) => ({
+    id: index + 1,
+    dateLabel: entry.date,
+    dateLabelZh: entry.dateZh,
+    title: entry.title,
+    titleZh: entry.titleZh,
+    location: entry.location,
+    locationZh: entry.locationZh,
+  }));
+}
+
+function createFallbackMediaItems(
+  items: typeof masterClassMoments | typeof groupChoreographyMoments
+): PublicArchiveMediaItem[] {
+  return items.map((item, index) => ({
+    id: index + 1,
+    title: item.title,
+    titleZh: item.titleZh,
+    subtitle: item.subtitle,
+    subtitleZh: item.subtitleZh,
+    imageSrc: item.image,
+    imageAlt: item.imageAlt,
+    imageAltZh: item.imageAltZh,
+    videoSrc: item.video,
+  }));
+}
+
+function createFallbackGroupEntries(): PublicGroupChoreographyEntry[] {
+  return groupChoreographyEntries.map((entry, index) => ({
+    id: index + 1,
+    seasonLabel: entry.season,
+    seasonLabelZh: entry.seasonZh,
+    organization: entry.organization,
+    organizationZh: entry.organizationZh,
+    workTitle: entry.work,
+    workTitleZh: entry.workZh,
+  }));
+}
+
 export default function Gallery() {
+  const [timelineEntries, setTimelineEntries] =
+    useState<PublicMasterClassTimelineEntry[]>(createFallbackTimelineEntries);
+  const [masterMoments, setMasterMoments] = useState<PublicArchiveMediaItem[]>(
+    createFallbackMediaItems(masterClassMoments)
+  );
+  const [groupEntries, setGroupEntries] = useState<PublicGroupChoreographyEntry[]>(
+    createFallbackGroupEntries
+  );
+  const [groupMoments, setGroupMoments] = useState<PublicArchiveMediaItem[]>(
+    createFallbackMediaItems(groupChoreographyMoments)
+  );
   const [selectedMediaState, setSelectedMediaState] = useState<{
     collection: 'master' | 'group';
     index: number;
@@ -22,10 +79,46 @@ export default function Gallery() {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const selectedItems =
-    selectedMediaState?.collection === 'group' ? groupChoreographyMoments : masterClassMoments;
-  const selectedItem =
-    selectedMediaState !== null ? selectedItems[selectedMediaState.index] : null;
+  const selectedItems = selectedMediaState?.collection === 'group' ? groupMoments : masterMoments;
+  const selectedItem = selectedMediaState !== null ? selectedItems[selectedMediaState.index] : null;
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadGalleryArchive() {
+      try {
+        const archive = await fetchGalleryArchive();
+
+        if (!isActive) {
+          return;
+        }
+
+        if (archive.timelineEntries.length > 0) {
+          setTimelineEntries(archive.timelineEntries);
+        }
+
+        if (archive.masterClassMoments.length > 0) {
+          setMasterMoments(archive.masterClassMoments);
+        }
+
+        if (archive.groupEntries.length > 0) {
+          setGroupEntries(archive.groupEntries);
+        }
+
+        if (archive.groupMoments.length > 0) {
+          setGroupMoments(archive.groupMoments);
+        }
+      } catch {
+        // Keep static gallery content if the public endpoint is unavailable.
+      }
+    }
+
+    void loadGalleryArchive();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedMediaState === null) return;
@@ -65,7 +158,7 @@ export default function Gallery() {
   }, [selectedMediaState]);
 
   useEffect(() => {
-    if (!selectedItem?.video || !videoRef.current) return;
+    if (!selectedItem?.videoSrc || !videoRef.current) return;
 
     videoRef.current.volume =
       selectedItem.title === 'Ballet Master Class at ZDP Academy' ? 0.3 : 1;
@@ -116,13 +209,13 @@ export default function Gallery() {
           </div>
 
           <div className="grid gap-4 border-t border-[var(--line)] pt-6">
-            {masterClassTimeline.map((entry) => (
+            {timelineEntries.map((entry) => (
               <div
-                key={`${entry.date}-${entry.title}`}
+                key={`${entry.id}-${entry.title}`}
                 className="grid gap-3 border-b border-[var(--line)] pb-5 md:grid-cols-[12rem_1fr]"
               >
                 <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  {t(entry.date, entry.dateZh)}
+                  {t(entry.dateLabel, entry.dateLabelZh)}
                 </p>
                 <div className="space-y-1">
                   <p className="text-2xl text-[var(--text)]">{t(entry.title, entry.titleZh)}</p>
@@ -137,24 +230,20 @@ export default function Gallery() {
 
         <div className="space-y-6">
           <div className="space-y-3">
-            <p className="eyebrow">
-              {t('Selected Master Class Moments', '精選大師課片段')}
-            </p>
-            <h3 className="text-3xl">
-              {t('Selected Master Class Moments', '精選大師課片段')}
-            </h3>
+            <p className="eyebrow">{t('Selected Master Class Moments', '精選大師課片段')}</p>
+            <h3 className="text-3xl">{t('Selected Master Class Moments', '精選大師課片段')}</h3>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {masterClassMoments.map((item, index) => (
+            {masterMoments.map((item, index) => (
               <button
-                key={`${item.title}-${item.subtitle}`}
+                key={`${item.id}-${item.title}`}
                 type="button"
                 className="hover-float-card flex h-full flex-col overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
                 onClick={() => setSelectedMediaState({ collection: 'master', index })}
               >
                 <img
-                  src={item.image}
+                  src={item.imageSrc}
                   alt={t(item.imageAlt, item.imageAltZh)}
                   loading="lazy"
                   decoding="async"
@@ -167,7 +256,7 @@ export default function Gallery() {
                   <p className="text-xs uppercase tracking-[0.22em] text-[var(--text)]">
                     {t(item.subtitle, item.subtitleZh)}
                   </p>
-                  {item.video ? (
+                  {item.videoSrc ? (
                     <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
                       {t('Click to play video', '點擊播放影片')}
                     </p>
@@ -185,16 +274,16 @@ export default function Gallery() {
           </div>
 
           <div className="space-y-4 border-t border-[var(--line)] pt-6">
-            {groupChoreographyEntries.map((entry) => (
+            {groupEntries.map((entry) => (
               <div
-                key={`${entry.season}-${entry.organization}-${entry.work}`}
+                key={`${entry.id}-${entry.organization}-${entry.workTitle}`}
                 className="grid gap-3 border-b border-[var(--line)] pb-5 md:grid-cols-[10rem_1fr]"
               >
                 <p className="text-sm uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  {t(entry.season, entry.seasonZh)}
+                  {t(entry.seasonLabel, entry.seasonLabelZh)}
                 </p>
                 <p className="text-lg leading-7 text-[var(--text)]">
-                  {t(entry.organization, entry.organizationZh)} — {t(entry.work, entry.workZh)}
+                  {t(entry.organization, entry.organizationZh)} — {t(entry.workTitle, entry.workTitleZh)}
                 </p>
               </div>
             ))}
@@ -203,15 +292,15 @@ export default function Gallery() {
           <div className="space-y-4 pt-2">
             <p className="eyebrow">{t('Featured Group Works', '精選群舞作品')}</p>
             <div className="grid gap-6 md:grid-cols-3">
-              {groupChoreographyMoments.map((item, index) => (
+              {groupMoments.map((item, index) => (
                 <button
-                  key={`${item.title}-${item.subtitle}`}
+                  key={`${item.id}-${item.title}`}
                   type="button"
                   className="hover-float-card flex h-full flex-col overflow-hidden border border-[var(--line)] bg-[var(--surface)] text-left"
                   onClick={() => setSelectedMediaState({ collection: 'group', index })}
                 >
                   <img
-                    src={item.image}
+                    src={item.imageSrc}
                     alt={t(item.imageAlt, item.imageAltZh)}
                     loading="lazy"
                     decoding="async"
@@ -224,7 +313,7 @@ export default function Gallery() {
                     <p className="text-xs uppercase tracking-[0.22em] text-[var(--text)]">
                       {t(item.subtitle, item.subtitleZh)}
                     </p>
-                    {item.video ? (
+                    {item.videoSrc ? (
                       <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--accent)]">
                         {t('Click to play video', '點擊播放影片')}
                       </p>
@@ -274,7 +363,7 @@ export default function Gallery() {
           >
             <ChevronRight size={40} />
           </button>
-          {selectedItem.video ? (
+          {selectedItem.videoSrc ? (
             <div
               className="w-full max-w-5xl overflow-hidden rounded-lg border border-[rgba(250,247,242,0.16)] bg-[var(--surface)] shadow-2xl"
               onClick={(event) => event.stopPropagation()}
@@ -297,7 +386,7 @@ export default function Gallery() {
               <video
                 ref={videoRef}
                 className="aspect-video w-full bg-black"
-                src={selectedItem.video}
+                src={selectedItem.videoSrc}
                 controls
                 autoPlay
                 playsInline
@@ -305,7 +394,7 @@ export default function Gallery() {
             </div>
           ) : (
             <img
-              src={selectedItem.image}
+              src={selectedItem.imageSrc}
               alt={t(selectedItem.imageAlt, selectedItem.imageAltZh)}
               decoding="async"
               className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"

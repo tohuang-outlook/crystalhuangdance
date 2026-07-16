@@ -204,6 +204,53 @@ function serializeArtistProfile(profile) {
   };
 }
 
+function serializeMasterClassTimelineEntry(entry) {
+  return {
+    id: entry.id,
+    dateLabel: entry.dateLabel,
+    dateLabelZh: entry.dateLabelZh,
+    title: entry.title,
+    titleZh: entry.titleZh,
+    location: entry.location,
+    locationZh: entry.locationZh,
+    sortOrder: entry.sortOrder,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  };
+}
+
+function serializeArchiveMediaItem(item) {
+  return {
+    id: item.id,
+    title: item.title,
+    titleZh: item.titleZh,
+    subtitle: item.subtitle,
+    subtitleZh: item.subtitleZh,
+    imageSrc: item.imageSrc,
+    imageAlt: item.imageAlt,
+    imageAltZh: item.imageAltZh,
+    videoSrc: item.videoSrc,
+    sortOrder: item.sortOrder,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+function serializeGroupChoreographyEntry(entry) {
+  return {
+    id: entry.id,
+    seasonLabel: entry.seasonLabel,
+    seasonLabelZh: entry.seasonLabelZh,
+    organization: entry.organization,
+    organizationZh: entry.organizationZh,
+    workTitle: entry.workTitle,
+    workTitleZh: entry.workTitleZh,
+    sortOrder: entry.sortOrder,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  };
+}
+
 function parseIdParam(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -333,6 +380,41 @@ function parseArtistProfilePayload(body) {
     aboutParagraph2Zh: parseRequiredTrimmedString(body?.aboutParagraph2Zh),
     aboutParagraph3: parseRequiredTrimmedString(body?.aboutParagraph3),
     aboutParagraph3Zh: parseRequiredTrimmedString(body?.aboutParagraph3Zh),
+  };
+}
+
+function parseMasterClassTimelineEntryPayload(body) {
+  return {
+    dateLabel: parseRequiredTrimmedString(body?.dateLabel),
+    dateLabelZh: parseRequiredTrimmedString(body?.dateLabelZh),
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    location: parseRequiredTrimmedString(body?.location),
+    locationZh: parseRequiredTrimmedString(body?.locationZh),
+  };
+}
+
+function parseArchiveMediaItemPayload(body) {
+  return {
+    title: parseRequiredTrimmedString(body?.title),
+    titleZh: parseRequiredTrimmedString(body?.titleZh),
+    subtitle: parseRequiredTrimmedString(body?.subtitle),
+    subtitleZh: parseRequiredTrimmedString(body?.subtitleZh),
+    imageSrc: parseRequiredTrimmedString(body?.imageSrc),
+    imageAlt: parseRequiredTrimmedString(body?.imageAlt),
+    imageAltZh: parseRequiredTrimmedString(body?.imageAltZh),
+    videoSrc: trimOptionalString(body?.videoSrc),
+  };
+}
+
+function parseGroupChoreographyEntryPayload(body) {
+  return {
+    seasonLabel: parseRequiredTrimmedString(body?.seasonLabel),
+    seasonLabelZh: parseRequiredTrimmedString(body?.seasonLabelZh),
+    organization: parseRequiredTrimmedString(body?.organization),
+    organizationZh: parseRequiredTrimmedString(body?.organizationZh),
+    workTitle: parseRequiredTrimmedString(body?.workTitle),
+    workTitleZh: parseRequiredTrimmedString(body?.workTitleZh),
   };
 }
 
@@ -606,6 +688,15 @@ export function createApp({
     }
 
     return res.json({ profile: serializeArtistProfile(profile) });
+  });
+
+  app.get('/api/gallery-archive', (_req, res) => {
+    return res.json({
+      timelineEntries: db.listMasterClassTimelineEntries().map(serializeMasterClassTimelineEntry),
+      masterClassMoments: db.listMasterClassMoments().map(serializeArchiveMediaItem),
+      groupEntries: db.listGroupChoreographyEntries().map(serializeGroupChoreographyEntry),
+      groupMoments: db.listGroupChoreographyMoments().map(serializeArchiveMediaItem),
+    });
   });
 
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
@@ -883,6 +974,15 @@ export function createApp({
     }
 
     return res.json({ profile: serializeArtistProfile(profile) });
+  });
+
+  app.get('/api/admin/gallery-archive', requireAdmin, (_req, res) => {
+    return res.json({
+      timelineEntries: db.listMasterClassTimelineEntries().map(serializeMasterClassTimelineEntry),
+      masterClassMoments: db.listMasterClassMoments().map(serializeArchiveMediaItem),
+      groupEntries: db.listGroupChoreographyEntries().map(serializeGroupChoreographyEntry),
+      groupMoments: db.listGroupChoreographyMoments().map(serializeArchiveMediaItem),
+    });
   });
 
   app.post('/api/admin/featured-reels', requireAdmin, (req, res) => {
@@ -1295,6 +1395,334 @@ export function createApp({
 
     const profile = db.upsertArtistProfile(payload);
     return res.json({ profile: serializeArtistProfile(profile) });
+  });
+
+  app.post('/api/admin/master-class-timeline', requireAdmin, (req, res) => {
+    const payload = parseMasterClassTimelineEntryPayload(req.body);
+
+    if (!payload.dateLabel || !payload.dateLabelZh || !payload.title || !payload.titleZh || !payload.location || !payload.locationZh) {
+      return res.status(400).json({ error: 'All English and Chinese timeline fields are required.' });
+    }
+
+    const entry = db.createMasterClassTimelineEntry({
+      ...payload,
+      sortOrder: db.countMasterClassTimelineEntries(),
+    });
+
+    return res.status(201).json({ entry: serializeMasterClassTimelineEntry(entry) });
+  });
+
+  app.put('/api/admin/master-class-timeline/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+
+    if (!entryId) {
+      return res.status(400).json({ error: 'A valid timeline entry id is required.' });
+    }
+
+    const payload = parseMasterClassTimelineEntryPayload(req.body);
+
+    if (!payload.dateLabel || !payload.dateLabelZh || !payload.title || !payload.titleZh || !payload.location || !payload.locationZh) {
+      return res.status(400).json({ error: 'All English and Chinese timeline fields are required.' });
+    }
+
+    const entry = db.updateMasterClassTimelineEntry({
+      id: entryId,
+      ...payload,
+    });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Master class timeline entry not found.' });
+    }
+
+    return res.json({ entry: serializeMasterClassTimelineEntry(entry) });
+  });
+
+  app.delete('/api/admin/master-class-timeline/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+
+    if (!entryId) {
+      return res.status(400).json({ error: 'A valid timeline entry id is required.' });
+    }
+
+    const deletedEntry = db.deleteMasterClassTimelineEntry(entryId);
+
+    if (!deletedEntry) {
+      return res.status(404).json({ error: 'Master class timeline entry not found.' });
+    }
+
+    db.reorderMasterClassTimelineEntries(db.listMasterClassTimelineEntries().map((entry) => entry.id));
+    return res.json({ deletedEntryId: deletedEntry.id });
+  });
+
+  app.post('/api/admin/master-class-timeline/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid timeline entry ids.' });
+    }
+
+    const currentIds = db.listMasterClassTimelineEntries().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current timeline entry ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current timeline entry ids.' });
+    }
+
+    const timelineEntries = db.reorderMasterClassTimelineEntries(orderedIds).map(serializeMasterClassTimelineEntry);
+    return res.json({ timelineEntries });
+  });
+
+  app.post('/api/admin/master-class-moments', requireAdmin, (req, res) => {
+    const payload = parseArchiveMediaItemPayload(req.body);
+
+    if (!payload.title || !payload.titleZh || !payload.subtitle || !payload.subtitleZh || !payload.imageSrc || !payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'All master class media labels, titles, and image fields are required.' });
+    }
+
+    const moment = db.createMasterClassMoment({
+      ...payload,
+      sortOrder: db.countMasterClassMoments(),
+    });
+
+    return res.status(201).json({ moment: serializeArchiveMediaItem(moment) });
+  });
+
+  app.put('/api/admin/master-class-moments/:momentId', requireAdmin, (req, res) => {
+    const momentId = parseIdParam(req.params.momentId);
+
+    if (!momentId) {
+      return res.status(400).json({ error: 'A valid master class moment id is required.' });
+    }
+
+    const payload = parseArchiveMediaItemPayload(req.body);
+
+    if (!payload.title || !payload.titleZh || !payload.subtitle || !payload.subtitleZh || !payload.imageSrc || !payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'All master class media labels, titles, and image fields are required.' });
+    }
+
+    const moment = db.updateMasterClassMoment({
+      id: momentId,
+      ...payload,
+    });
+
+    if (!moment) {
+      return res.status(404).json({ error: 'Master class moment not found.' });
+    }
+
+    return res.json({ moment: serializeArchiveMediaItem(moment) });
+  });
+
+  app.delete('/api/admin/master-class-moments/:momentId', requireAdmin, (req, res) => {
+    const momentId = parseIdParam(req.params.momentId);
+
+    if (!momentId) {
+      return res.status(400).json({ error: 'A valid master class moment id is required.' });
+    }
+
+    const deletedMoment = db.deleteMasterClassMoment(momentId);
+
+    if (!deletedMoment) {
+      return res.status(404).json({ error: 'Master class moment not found.' });
+    }
+
+    db.reorderMasterClassMoments(db.listMasterClassMoments().map((entry) => entry.id));
+    return res.json({ deletedMomentId: deletedMoment.id });
+  });
+
+  app.post('/api/admin/master-class-moments/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid master class moment ids.' });
+    }
+
+    const currentIds = db.listMasterClassMoments().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current master class moment ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current master class moment ids.' });
+    }
+
+    const masterClassMoments = db.reorderMasterClassMoments(orderedIds).map(serializeArchiveMediaItem);
+    return res.json({ masterClassMoments });
+  });
+
+  app.post('/api/admin/group-choreography-entries', requireAdmin, (req, res) => {
+    const payload = parseGroupChoreographyEntryPayload(req.body);
+
+    if (!payload.seasonLabel || !payload.seasonLabelZh || !payload.organization || !payload.organizationZh || !payload.workTitle || !payload.workTitleZh) {
+      return res.status(400).json({ error: 'All English and Chinese group choreography fields are required.' });
+    }
+
+    const entry = db.createGroupChoreographyEntry({
+      ...payload,
+      sortOrder: db.countGroupChoreographyEntries(),
+    });
+
+    return res.status(201).json({ entry: serializeGroupChoreographyEntry(entry) });
+  });
+
+  app.put('/api/admin/group-choreography-entries/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+
+    if (!entryId) {
+      return res.status(400).json({ error: 'A valid group choreography entry id is required.' });
+    }
+
+    const payload = parseGroupChoreographyEntryPayload(req.body);
+
+    if (!payload.seasonLabel || !payload.seasonLabelZh || !payload.organization || !payload.organizationZh || !payload.workTitle || !payload.workTitleZh) {
+      return res.status(400).json({ error: 'All English and Chinese group choreography fields are required.' });
+    }
+
+    const entry = db.updateGroupChoreographyEntry({
+      id: entryId,
+      ...payload,
+    });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Group choreography entry not found.' });
+    }
+
+    return res.json({ entry: serializeGroupChoreographyEntry(entry) });
+  });
+
+  app.delete('/api/admin/group-choreography-entries/:entryId', requireAdmin, (req, res) => {
+    const entryId = parseIdParam(req.params.entryId);
+
+    if (!entryId) {
+      return res.status(400).json({ error: 'A valid group choreography entry id is required.' });
+    }
+
+    const deletedEntry = db.deleteGroupChoreographyEntry(entryId);
+
+    if (!deletedEntry) {
+      return res.status(404).json({ error: 'Group choreography entry not found.' });
+    }
+
+    db.reorderGroupChoreographyEntries(db.listGroupChoreographyEntries().map((entry) => entry.id));
+    return res.json({ deletedEntryId: deletedEntry.id });
+  });
+
+  app.post('/api/admin/group-choreography-entries/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid group choreography entry ids.' });
+    }
+
+    const currentIds = db.listGroupChoreographyEntries().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current group choreography entry ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current group choreography entry ids.' });
+    }
+
+    const groupEntries = db.reorderGroupChoreographyEntries(orderedIds).map(serializeGroupChoreographyEntry);
+    return res.json({ groupEntries });
+  });
+
+  app.post('/api/admin/group-choreography-moments', requireAdmin, (req, res) => {
+    const payload = parseArchiveMediaItemPayload(req.body);
+
+    if (!payload.title || !payload.titleZh || !payload.subtitle || !payload.subtitleZh || !payload.imageSrc || !payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'All group media labels, titles, and image fields are required.' });
+    }
+
+    const moment = db.createGroupChoreographyMoment({
+      ...payload,
+      sortOrder: db.countGroupChoreographyMoments(),
+    });
+
+    return res.status(201).json({ moment: serializeArchiveMediaItem(moment) });
+  });
+
+  app.put('/api/admin/group-choreography-moments/:momentId', requireAdmin, (req, res) => {
+    const momentId = parseIdParam(req.params.momentId);
+
+    if (!momentId) {
+      return res.status(400).json({ error: 'A valid group choreography moment id is required.' });
+    }
+
+    const payload = parseArchiveMediaItemPayload(req.body);
+
+    if (!payload.title || !payload.titleZh || !payload.subtitle || !payload.subtitleZh || !payload.imageSrc || !payload.imageAlt || !payload.imageAltZh) {
+      return res.status(400).json({ error: 'All group media labels, titles, and image fields are required.' });
+    }
+
+    const moment = db.updateGroupChoreographyMoment({
+      id: momentId,
+      ...payload,
+    });
+
+    if (!moment) {
+      return res.status(404).json({ error: 'Group choreography moment not found.' });
+    }
+
+    return res.json({ moment: serializeArchiveMediaItem(moment) });
+  });
+
+  app.delete('/api/admin/group-choreography-moments/:momentId', requireAdmin, (req, res) => {
+    const momentId = parseIdParam(req.params.momentId);
+
+    if (!momentId) {
+      return res.status(400).json({ error: 'A valid group choreography moment id is required.' });
+    }
+
+    const deletedMoment = db.deleteGroupChoreographyMoment(momentId);
+
+    if (!deletedMoment) {
+      return res.status(404).json({ error: 'Group choreography moment not found.' });
+    }
+
+    db.reorderGroupChoreographyMoments(db.listGroupChoreographyMoments().map((entry) => entry.id));
+    return res.json({ deletedMomentId: deletedMoment.id });
+  });
+
+  app.post('/api/admin/group-choreography-moments/reorder', requireAdmin, (req, res) => {
+    const orderedIds = Array.isArray(req.body?.orderedIds)
+      ? req.body.orderedIds.map((id) => parseIdParam(id))
+      : null;
+
+    if (!orderedIds || orderedIds.some((id) => id === null)) {
+      return res.status(400).json({ error: 'orderedIds must be an array of valid group choreography moment ids.' });
+    }
+
+    const currentIds = db.listGroupChoreographyMoments().map((entry) => entry.id);
+
+    if (orderedIds.length !== currentIds.length) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current group choreography moment ids.' });
+    }
+
+    const orderedIdSet = new Set(orderedIds);
+
+    if (orderedIdSet.size !== currentIds.length || currentIds.some((id) => !orderedIdSet.has(id))) {
+      return res.status(400).json({ error: 'orderedIds must exactly match the current group choreography moment ids.' });
+    }
+
+    const groupMoments = db.reorderGroupChoreographyMoments(orderedIds).map(serializeArchiveMediaItem);
+    return res.json({ groupMoments });
   });
 
   app.get('/api/admin/videos', requireAdmin, (_req, res) => {

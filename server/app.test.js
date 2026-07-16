@@ -1054,6 +1054,234 @@ describe('auth and video backend foundation', () => {
     });
   });
 
+  it('lists gallery archive modules publicly and lets admins manage them', async () => {
+    const publicResponse = await request(app).get('/api/gallery-archive');
+    expect(publicResponse.status).toBe(200);
+    expect(publicResponse.body.timelineEntries.length).toBeGreaterThan(0);
+    expect(publicResponse.body.masterClassMoments.length).toBeGreaterThan(0);
+    expect(publicResponse.body.groupEntries.length).toBeGreaterThan(0);
+    expect(publicResponse.body.groupMoments.length).toBeGreaterThan(0);
+
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const createTimelineResponse = await adminAgent.post('/api/admin/master-class-timeline').send({
+      dateLabel: 'August 2026',
+      dateLabelZh: '2026 年 8 月',
+      title: 'Test Master Class Timeline',
+      titleZh: '測試大師課時間線',
+      location: 'Taipei',
+      locationZh: '台北',
+    });
+    expect(createTimelineResponse.status).toBe(201);
+    const createdTimelineId = createTimelineResponse.body.entry.id;
+    expect(createTimelineResponse.body.entry).toMatchObject({
+      title: 'Test Master Class Timeline',
+      location: 'Taipei',
+    });
+
+    const updateTimelineResponse = await adminAgent
+      .put(`/api/admin/master-class-timeline/${createdTimelineId}`)
+      .send({
+        dateLabel: 'September 2026',
+        dateLabelZh: '2026 年 9 月',
+        title: 'Updated Master Class Timeline',
+        titleZh: '更新大師課時間線',
+        location: 'Hong Kong',
+        locationZh: '香港',
+      });
+    expect(updateTimelineResponse.status).toBe(200);
+    expect(updateTimelineResponse.body.entry).toMatchObject({
+      id: createdTimelineId,
+      title: 'Updated Master Class Timeline',
+      locationZh: '香港',
+    });
+
+    const timelineIds = db.listMasterClassTimelineEntries().map((entry) => entry.id);
+    const reorderedTimelineIds = [...timelineIds].reverse();
+    const reorderTimelineResponse = await adminAgent.post('/api/admin/master-class-timeline/reorder').send({
+      orderedIds: reorderedTimelineIds,
+    });
+    expect(reorderTimelineResponse.status).toBe(200);
+    expect(reorderTimelineResponse.body.timelineEntries.map((entry) => entry.id)).toEqual(
+      reorderedTimelineIds
+    );
+
+    const createMasterMomentResponse = await adminAgent.post('/api/admin/master-class-moments').send({
+      title: 'Test Master Class Moment',
+      titleZh: '測試大師課片段',
+      subtitle: 'English subtitle',
+      subtitleZh: '中文副標',
+      imageSrc: '/master-test.jpg',
+      imageAlt: 'Master class image',
+      imageAltZh: '大師課圖片',
+      videoSrc: 'https://example.com/master-video',
+    });
+    expect(createMasterMomentResponse.status).toBe(201);
+    const createdMasterMomentId = createMasterMomentResponse.body.moment.id;
+    expect(createMasterMomentResponse.body.moment).toMatchObject({
+      title: 'Test Master Class Moment',
+      videoSrc: 'https://example.com/master-video',
+    });
+
+    const updateMasterMomentResponse = await adminAgent
+      .put(`/api/admin/master-class-moments/${createdMasterMomentId}`)
+      .send({
+        title: 'Updated Master Class Moment',
+        titleZh: '更新大師課片段',
+        subtitle: 'Updated English subtitle',
+        subtitleZh: '更新中文副標',
+        imageSrc: '/master-updated.jpg',
+        imageAlt: 'Updated master class image',
+        imageAltZh: '更新大師課圖片',
+        videoSrc: '',
+      });
+    expect(updateMasterMomentResponse.status).toBe(200);
+    expect(updateMasterMomentResponse.body.moment).toMatchObject({
+      id: createdMasterMomentId,
+      title: 'Updated Master Class Moment',
+      videoSrc: null,
+    });
+
+    const masterMomentIds = db.listMasterClassMoments().map((entry) => entry.id);
+    const reorderedMasterMomentIds = [...masterMomentIds].reverse();
+    const reorderMasterMomentResponse = await adminAgent
+      .post('/api/admin/master-class-moments/reorder')
+      .send({
+        orderedIds: reorderedMasterMomentIds,
+      });
+    expect(reorderMasterMomentResponse.status).toBe(200);
+    expect(reorderMasterMomentResponse.body.masterClassMoments.map((entry) => entry.id)).toEqual(
+      reorderedMasterMomentIds
+    );
+
+    const createGroupEntryResponse = await adminAgent
+      .post('/api/admin/group-choreography-entries')
+      .send({
+        seasonLabel: '2026 Season',
+        seasonLabelZh: '2026 季',
+        organization: 'Test Organization',
+        organizationZh: '測試單位',
+        workTitle: 'Test Group Work',
+        workTitleZh: '測試群舞作品',
+      });
+    expect(createGroupEntryResponse.status).toBe(201);
+    const createdGroupEntryId = createGroupEntryResponse.body.entry.id;
+    expect(createGroupEntryResponse.body.entry).toMatchObject({
+      organization: 'Test Organization',
+      workTitleZh: '測試群舞作品',
+    });
+
+    const updateGroupEntryResponse = await adminAgent
+      .put(`/api/admin/group-choreography-entries/${createdGroupEntryId}`)
+      .send({
+        seasonLabel: '2027 Season',
+        seasonLabelZh: '2027 季',
+        organization: 'Updated Organization',
+        organizationZh: '更新單位',
+        workTitle: 'Updated Group Work',
+        workTitleZh: '更新群舞作品',
+      });
+    expect(updateGroupEntryResponse.status).toBe(200);
+    expect(updateGroupEntryResponse.body.entry).toMatchObject({
+      id: createdGroupEntryId,
+      seasonLabel: '2027 Season',
+      organizationZh: '更新單位',
+    });
+
+    const groupEntryIds = db.listGroupChoreographyEntries().map((entry) => entry.id);
+    const reorderedGroupEntryIds = [...groupEntryIds].reverse();
+    const reorderGroupEntryResponse = await adminAgent
+      .post('/api/admin/group-choreography-entries/reorder')
+      .send({
+        orderedIds: reorderedGroupEntryIds,
+      });
+    expect(reorderGroupEntryResponse.status).toBe(200);
+    expect(reorderGroupEntryResponse.body.groupEntries.map((entry) => entry.id)).toEqual(
+      reorderedGroupEntryIds
+    );
+
+    const createGroupMomentResponse = await adminAgent
+      .post('/api/admin/group-choreography-moments')
+      .send({
+        title: 'Test Group Moment',
+        titleZh: '測試群舞片段',
+        subtitle: 'English group subtitle',
+        subtitleZh: '中文群舞副標',
+        imageSrc: '/group-test.jpg',
+        imageAlt: 'Group image',
+        imageAltZh: '群舞圖片',
+        videoSrc: 'https://example.com/group-video',
+      });
+    expect(createGroupMomentResponse.status).toBe(201);
+    const createdGroupMomentId = createGroupMomentResponse.body.moment.id;
+    expect(createGroupMomentResponse.body.moment).toMatchObject({
+      title: 'Test Group Moment',
+      videoSrc: 'https://example.com/group-video',
+    });
+
+    const updateGroupMomentResponse = await adminAgent
+      .put(`/api/admin/group-choreography-moments/${createdGroupMomentId}`)
+      .send({
+        title: 'Updated Group Moment',
+        titleZh: '更新群舞片段',
+        subtitle: 'Updated English group subtitle',
+        subtitleZh: '更新中文群舞副標',
+        imageSrc: '/group-updated.jpg',
+        imageAlt: 'Updated group image',
+        imageAltZh: '更新群舞圖片',
+        videoSrc: '',
+      });
+    expect(updateGroupMomentResponse.status).toBe(200);
+    expect(updateGroupMomentResponse.body.moment).toMatchObject({
+      id: createdGroupMomentId,
+      titleZh: '更新群舞片段',
+      videoSrc: null,
+    });
+
+    const groupMomentIds = db.listGroupChoreographyMoments().map((entry) => entry.id);
+    const reorderedGroupMomentIds = [...groupMomentIds].reverse();
+    const reorderGroupMomentResponse = await adminAgent
+      .post('/api/admin/group-choreography-moments/reorder')
+      .send({
+        orderedIds: reorderedGroupMomentIds,
+      });
+    expect(reorderGroupMomentResponse.status).toBe(200);
+    expect(reorderGroupMomentResponse.body.groupMoments.map((entry) => entry.id)).toEqual(
+      reorderedGroupMomentIds
+    );
+
+    const deleteTimelineResponse = await adminAgent.delete(
+      `/api/admin/master-class-timeline/${createdTimelineId}`
+    );
+    expect(deleteTimelineResponse.status).toBe(200);
+    expect(deleteTimelineResponse.body).toEqual({ deletedEntryId: createdTimelineId });
+    expect(db.findMasterClassTimelineEntryById(createdTimelineId)).toBeNull();
+
+    const deleteMasterMomentResponse = await adminAgent.delete(
+      `/api/admin/master-class-moments/${createdMasterMomentId}`
+    );
+    expect(deleteMasterMomentResponse.status).toBe(200);
+    expect(deleteMasterMomentResponse.body).toEqual({ deletedMomentId: createdMasterMomentId });
+    expect(db.findMasterClassMomentById(createdMasterMomentId)).toBeNull();
+
+    const deleteGroupEntryResponse = await adminAgent.delete(
+      `/api/admin/group-choreography-entries/${createdGroupEntryId}`
+    );
+    expect(deleteGroupEntryResponse.status).toBe(200);
+    expect(deleteGroupEntryResponse.body).toEqual({ deletedEntryId: createdGroupEntryId });
+    expect(db.findGroupChoreographyEntryById(createdGroupEntryId)).toBeNull();
+
+    const deleteGroupMomentResponse = await adminAgent.delete(
+      `/api/admin/group-choreography-moments/${createdGroupMomentId}`
+    );
+    expect(deleteGroupMomentResponse.status).toBe(200);
+    expect(deleteGroupMomentResponse.body).toEqual({ deletedMomentId: createdGroupMomentId });
+    expect(db.findGroupChoreographyMomentById(createdGroupMomentId)).toBeNull();
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

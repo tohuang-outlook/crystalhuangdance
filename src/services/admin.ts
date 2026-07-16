@@ -120,6 +120,47 @@ export interface AdminArtistProfileRecord {
   updatedAt: string;
 }
 
+export interface MasterClassTimelineEntryRecord {
+  id: number;
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  location: string;
+  locationZh: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArchiveMediaRecord {
+  id: number;
+  title: string;
+  titleZh: string;
+  subtitle: string;
+  subtitleZh: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  videoSrc: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupChoreographyEntryRecord {
+  id: number;
+  seasonLabel: string;
+  seasonLabelZh: string;
+  organization: string;
+  organizationZh: string;
+  workTitle: string;
+  workTitleZh: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AdminUsersEnvelope {
   users: AdminUserRecord[];
 }
@@ -146,6 +187,13 @@ interface AdminAchievementsEnvelope {
 
 interface AdminArtistProfileEnvelope {
   profile: AdminArtistProfileRecord;
+}
+
+interface AdminGalleryArchiveEnvelope {
+  timelineEntries: MasterClassTimelineEntryRecord[];
+  masterClassMoments: ArchiveMediaRecord[];
+  groupEntries: GroupChoreographyEntryRecord[];
+  groupMoments: ArchiveMediaRecord[];
 }
 
 interface AdminVideosEnvelope {
@@ -246,6 +294,10 @@ export function fetchAdminArtistProfile() {
   return request<AdminArtistProfileEnvelope>('/api/admin/artist-profile', { method: 'GET' });
 }
 
+export function fetchAdminGalleryArchive() {
+  return request<AdminGalleryArchiveEnvelope>('/api/admin/gallery-archive', { method: 'GET' });
+}
+
 export function deleteAdminUser(userId: number) {
   return request<{ deletedUserId: number; deletedVideoCount: number }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',
@@ -286,6 +338,36 @@ export function deleteAdminAchievement(achievementId: number) {
   return request<{ deletedAchievementId: number }>(`/api/admin/achievements/${achievementId}`, {
     method: 'DELETE',
   });
+}
+
+export function deleteAdminMasterClassTimelineEntry(entryId: number) {
+  return request<{ deletedEntryId: number }>(`/api/admin/master-class-timeline/${entryId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminMasterClassMoment(momentId: number) {
+  return request<{ deletedMomentId: number }>(`/api/admin/master-class-moments/${momentId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAdminGroupChoreographyEntry(entryId: number) {
+  return request<{ deletedEntryId: number }>(
+    `/api/admin/group-choreography-entries/${entryId}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}
+
+export function deleteAdminGroupChoreographyMoment(momentId: number) {
+  return request<{ deletedMomentId: number }>(
+    `/api/admin/group-choreography-moments/${momentId}`,
+    {
+      method: 'DELETE',
+    }
+  );
 }
 
 export function createAdminYoutubeVideo(
@@ -372,6 +454,35 @@ export interface AdminArtistProfilePayload {
   aboutParagraph2Zh: string;
   aboutParagraph3: string;
   aboutParagraph3Zh: string;
+}
+
+export interface AdminMasterClassTimelineEntryPayload {
+  dateLabel: string;
+  dateLabelZh: string;
+  title: string;
+  titleZh: string;
+  location: string;
+  locationZh: string;
+}
+
+export interface AdminArchiveMediaPayload {
+  title: string;
+  titleZh: string;
+  subtitle: string;
+  subtitleZh: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageAltZh: string;
+  videoSrc: string;
+}
+
+export interface AdminGroupChoreographyEntryPayload {
+  seasonLabel: string;
+  seasonLabelZh: string;
+  organization: string;
+  organizationZh: string;
+  workTitle: string;
+  workTitleZh: string;
 }
 
 export function createAdminComingUpEvent(payload: AdminComingUpEventPayload) {
@@ -466,6 +577,88 @@ export function updateAdminArtistProfile(payload: AdminArtistProfilePayload) {
   });
 }
 
+export function createAdminMasterClassTimelineEntry(payload: AdminMasterClassTimelineEntryPayload) {
+  return request<{ entry: MasterClassTimelineEntryRecord }>('/api/admin/master-class-timeline', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminMasterClassTimelineEntry(
+  entryId: number,
+  payload: AdminMasterClassTimelineEntryPayload
+) {
+  return request<{ entry: MasterClassTimelineEntryRecord }>(
+    `/api/admin/master-class-timeline/${entryId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function createAdminMasterClassMoment(payload: AdminArchiveMediaPayload) {
+  return request<{ moment: ArchiveMediaRecord }>('/api/admin/master-class-moments', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminMasterClassMoment(
+  momentId: number,
+  payload: AdminArchiveMediaPayload
+) {
+  return request<{ moment: ArchiveMediaRecord }>(`/api/admin/master-class-moments/${momentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createAdminGroupChoreographyEntry(
+  payload: AdminGroupChoreographyEntryPayload
+) {
+  return request<{ entry: GroupChoreographyEntryRecord }>(
+    '/api/admin/group-choreography-entries',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function updateAdminGroupChoreographyEntry(
+  entryId: number,
+  payload: AdminGroupChoreographyEntryPayload
+) {
+  return request<{ entry: GroupChoreographyEntryRecord }>(
+    `/api/admin/group-choreography-entries/${entryId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function createAdminGroupChoreographyMoment(payload: AdminArchiveMediaPayload) {
+  return request<{ moment: ArchiveMediaRecord }>('/api/admin/group-choreography-moments', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminGroupChoreographyMoment(
+  momentId: number,
+  payload: AdminArchiveMediaPayload
+) {
+  return request<{ moment: ArchiveMediaRecord }>(
+    `/api/admin/group-choreography-moments/${momentId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
 export function reorderAdminComingUpEvents(orderedIds: number[]) {
   return request<AdminComingUpEventsEnvelope>('/api/admin/coming-up-events/reorder', {
     method: 'POST',
@@ -505,4 +698,44 @@ export function reorderAdminAchievements(orderedIds: number[]) {
     method: 'POST',
     body: JSON.stringify({ orderedIds }),
   });
+}
+
+export function reorderAdminMasterClassTimelineEntries(orderedIds: number[]) {
+  return request<{ timelineEntries: MasterClassTimelineEntryRecord[] }>(
+    '/api/admin/master-class-timeline/reorder',
+    {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    }
+  );
+}
+
+export function reorderAdminMasterClassMoments(orderedIds: number[]) {
+  return request<{ masterClassMoments: ArchiveMediaRecord[] }>(
+    '/api/admin/master-class-moments/reorder',
+    {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    }
+  );
+}
+
+export function reorderAdminGroupChoreographyEntries(orderedIds: number[]) {
+  return request<{ groupEntries: GroupChoreographyEntryRecord[] }>(
+    '/api/admin/group-choreography-entries/reorder',
+    {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    }
+  );
+}
+
+export function reorderAdminGroupChoreographyMoments(orderedIds: number[]) {
+  return request<{ groupMoments: ArchiveMediaRecord[] }>(
+    '/api/admin/group-choreography-moments/reorder',
+    {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    }
+  );
 }

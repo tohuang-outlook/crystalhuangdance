@@ -390,6 +390,234 @@ const defaultArtistProfile = {
   aboutParagraph3Zh:
     '除比賽與學院訓練外，Crystal 亦曾以 NYCDA Outstanding Dancer、The Dance Awards Best Dancer 與 Radix Core Performer 身分於全美巡演，並參與紐約、義大利、比利時、瑞士、南非、中國與日本等地的演出與 gala。她的專業履歷也延伸至編舞、工作坊與教學型創作，持續將舞台經驗轉化為對年輕舞者的創作與分享。',
 };
+const defaultMasterClassTimelineEntries = [
+  {
+    dateLabel: 'April 2026',
+    dateLabelZh: '2026 年 4 月',
+    title: 'Ballet Master Class at UC Berkeley Ballet Company',
+    titleZh: '加州大學柏克萊芭蕾舞團芭蕾大師課',
+    location: 'Berkeley, CA',
+    locationZh: '加州柏克萊',
+    sortOrder: 0,
+  },
+  {
+    dateLabel: 'March 2026',
+    dateLabelZh: '2026 年 3 月',
+    title: 'Ballet Master Class at YAGP',
+    titleZh: 'YAGP 芭蕾大師課',
+    location: 'San Francisco, CA',
+    locationZh: '加州舊金山',
+    sortOrder: 1,
+  },
+  {
+    dateLabel: 'August 2025',
+    dateLabelZh: '2025 年 8 月',
+    title: 'Ballet Master Class at ZDP Academy',
+    titleZh: 'ZDP Academy 芭蕾大師課',
+    location: 'Boston, MA',
+    locationZh: '麻州波士頓',
+    sortOrder: 2,
+  },
+  {
+    dateLabel: 'August 2025',
+    dateLabelZh: '2025 年 8 月',
+    title: 'Jazz Master Class at T.O.P Award',
+    titleZh: 'T.O.P Award 爵士大師課',
+    location: 'T.O.P Award',
+    locationZh: 'T.O.P Award',
+    sortOrder: 3,
+  },
+  {
+    dateLabel: 'July 2025',
+    dateLabelZh: '2025 年 7 月',
+    title: 'Contemporary Master Class at The Rock Center',
+    titleZh: 'The Rock Center 現代舞大師課',
+    location: 'Henderson, NV',
+    locationZh: '內華達州亨德森',
+    sortOrder: 4,
+  },
+  {
+    dateLabel: 'July 2025',
+    dateLabelZh: '2025 年 7 月',
+    title: "Contemporary Master Class at Li's Ballet",
+    titleZh: "Li's Ballet 現代舞大師課",
+    location: 'Temple City, CA',
+    locationZh: '加州天普市',
+    sortOrder: 5,
+  },
+  {
+    dateLabel: 'June 2025',
+    dateLabelZh: '2025 年 6 月',
+    title: 'Jazz Master Class at OAEC Academy',
+    titleZh: 'OAEC Academy 爵士大師課',
+    location: 'Houston, TX',
+    locationZh: '德州休士頓',
+    sortOrder: 6,
+  },
+  {
+    dateLabel: 'June 2024',
+    dateLabelZh: '2024 年 6 月',
+    title: 'Contemporary Master Class at OAEC Academy',
+    titleZh: 'OAEC Academy 現代舞大師課',
+    location: 'Houston, TX',
+    locationZh: '德州休士頓',
+    sortOrder: 7,
+  },
+];
+const defaultMasterClassMoments = [
+  {
+    title: 'Ballet Master Class at UC Berkeley Ballet Company',
+    titleZh: '加州大學柏克萊芭蕾舞團芭蕾大師課',
+    subtitle: 'Berkeley, CA · April 2026',
+    subtitleZh: '加州柏克萊 · 2026 年 4 月',
+    imageSrc: '/crystal-masterclass-uc-berkeley.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-uc-berkeley.mp4',
+    sortOrder: 0,
+  },
+  {
+    title: 'Ballet Master Class at YAGP',
+    titleZh: 'YAGP 芭蕾大師課',
+    subtitle: 'San Francisco, CA · March 2026',
+    subtitleZh: '加州舊金山 · 2026 年 3 月',
+    imageSrc: '/crystal-masterclass-yagp.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-yagp.mp4',
+    sortOrder: 1,
+  },
+  {
+    title: 'Ballet Master Class at ZDP Academy',
+    titleZh: 'ZDP Academy 芭蕾大師課',
+    subtitle: 'Boston, MA · Aug. 2025',
+    subtitleZh: '麻州波士頓 · 2025 年 8 月',
+    imageSrc: '/crystal-masterclass-zdp.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-zdp.mp4',
+    sortOrder: 2,
+  },
+  {
+    title: 'Jazz Master Class at T.O.P Award',
+    titleZh: 'T.O.P Award 爵士大師課',
+    subtitle: 'T.O.P Award · Aug. 2025',
+    subtitleZh: 'T.O.P Award · 2025 年 8 月',
+    imageSrc: '/crystal-masterclass-top.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-top.mp4',
+    sortOrder: 3,
+  },
+  {
+    title: 'Contemporary Master Class at The Rock Center',
+    titleZh: 'The Rock Center 現代舞大師課',
+    subtitle: 'Henderson, NV · July 2025',
+    subtitleZh: '內華達州亨德森 · 2025 年 7 月',
+    imageSrc: '/crystal-masterclass-rock-center.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-rock-center.mp4',
+    sortOrder: 4,
+  },
+  {
+    title: "Contemporary Master Class at Li's Ballet",
+    titleZh: "Li's Ballet 現代舞大師課",
+    subtitle: 'Temple City, CA · July 2025',
+    subtitleZh: '加州天普市 · 2025 年 7 月',
+    imageSrc: '/crystal-masterclass-lis-ballet.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-lis-ballet.mp4',
+    sortOrder: 5,
+  },
+  {
+    title: 'Jazz Master Class at OAEC Academy',
+    titleZh: 'OAEC Academy 爵士大師課',
+    subtitle: 'Houston, TX · June 2025',
+    subtitleZh: '德州休士頓 · 2025 年 6 月',
+    imageSrc: '/crystal-masterclass-oaec-jazz.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-oaec-jazz.mp4',
+    sortOrder: 6,
+  },
+  {
+    title: 'Contemporary Master Class at OAEC Academy',
+    titleZh: 'OAEC Academy 現代舞大師課',
+    subtitle: 'Houston, TX · June 2024',
+    subtitleZh: '德州休士頓 · 2024 年 6 月',
+    imageSrc: '/crystal-masterclass-oaec-contemporary.jpg',
+    imageAlt: 'Crystal Huang in a master class or choreographic setting',
+    imageAltZh: 'Crystal Huang 在大師課或編舞指導場合中的影像',
+    videoSrc: '/crystal-masterclass-oaec-contemporary.mp4',
+    sortOrder: 7,
+  },
+];
+const defaultGroupChoreographyEntries = [
+  {
+    seasonLabel: '2025/26',
+    seasonLabelZh: '2025/26',
+    organization: 'SFB School',
+    organizationZh: 'SFB School',
+    workTitle: 'TBD',
+    workTitleZh: 'TBD',
+    sortOrder: 0,
+  },
+  {
+    seasonLabel: '2024/25',
+    seasonLabelZh: '2024/25',
+    organization: 'ABT School',
+    organizationZh: 'ABT School',
+    workTitle: 'Synergy',
+    workTitleZh: 'Synergy',
+    sortOrder: 1,
+  },
+  {
+    seasonLabel: '2024/25',
+    seasonLabelZh: '2024/25',
+    organization: "Yoko's Dance",
+    organizationZh: "Yoko's Dance",
+    workTitle: 'Yearning Heart',
+    workTitleZh: 'Yearning Heart',
+    sortOrder: 2,
+  },
+];
+const defaultGroupChoreographyMoments = [
+  {
+    title: 'SFB School — TBD',
+    titleZh: 'SFB School — TBD',
+    subtitle: '2025/26 Group Choreography',
+    subtitleZh: '2025/26 群體編舞作品',
+    imageSrc: '/crystal-group-sfb-tbd.jpg',
+    imageAlt: 'SFB School group choreography photo',
+    imageAltZh: 'SFB School 群體編舞照片',
+    videoSrc: null,
+    sortOrder: 0,
+  },
+  {
+    title: 'ABT School — Synergy',
+    titleZh: 'ABT School — Synergy',
+    subtitle: '2024/25 Group Choreography',
+    subtitleZh: '2024/25 群體編舞作品',
+    imageSrc: '/crystal-group-abt-synergy.jpg',
+    imageAlt: 'Crystal Huang in a group choreography setting',
+    imageAltZh: 'Crystal Huang 在群體編舞作品中的影像',
+    videoSrc: '/crystal-group-abt-synergy.mp4',
+    sortOrder: 1,
+  },
+  {
+    title: "Yoko's Dance — Yearning Heart",
+    titleZh: "Yoko's Dance — Yearning Heart",
+    subtitle: '2024/25 Group Choreography',
+    subtitleZh: '2024/25 群體編舞作品',
+    imageSrc: '/crystal-group-yokos-yearning-heart.jpg',
+    imageAlt: 'Crystal Huang in a group choreography setting',
+    imageAltZh: 'Crystal Huang 在群體編舞作品中的影像',
+    videoSrc: '/crystal-group-yokos-yearning-heart.mp4',
+    sortOrder: 2,
+  },
+];
 function ensureParentDirectory(filename) {
   if (filename === ':memory:') {
     return;
@@ -1186,6 +1414,460 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    listMasterClassTimelineEntries: db.prepare(
+      `SELECT
+          id,
+          date_label AS dateLabel,
+          date_label_zh AS dateLabelZh,
+          title,
+          title_zh AS titleZh,
+          location,
+          location_zh AS locationZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM master_class_timeline_entries
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countMasterClassTimelineEntries: db.prepare(
+      'SELECT COUNT(*) AS count FROM master_class_timeline_entries'
+    ),
+    findMasterClassTimelineEntryById: db.prepare(
+      `SELECT
+          id,
+          date_label AS dateLabel,
+          date_label_zh AS dateLabelZh,
+          title,
+          title_zh AS titleZh,
+          location,
+          location_zh AS locationZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM master_class_timeline_entries
+       WHERE id = ?`
+    ),
+    createMasterClassTimelineEntry: db.prepare(
+      `INSERT INTO master_class_timeline_entries (
+          date_label,
+          date_label_zh,
+          title,
+          title_zh,
+          location,
+          location_zh,
+          sort_order
+        ) VALUES (
+          @dateLabel,
+          @dateLabelZh,
+          @title,
+          @titleZh,
+          @location,
+          @locationZh,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          date_label AS dateLabel,
+          date_label_zh AS dateLabelZh,
+          title,
+          title_zh AS titleZh,
+          location,
+          location_zh AS locationZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateMasterClassTimelineEntry: db.prepare(
+      `UPDATE master_class_timeline_entries
+       SET date_label = @dateLabel,
+           date_label_zh = @dateLabelZh,
+           title = @title,
+           title_zh = @titleZh,
+           location = @location,
+           location_zh = @locationZh,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          date_label AS dateLabel,
+          date_label_zh AS dateLabelZh,
+          title,
+          title_zh AS titleZh,
+          location,
+          location_zh AS locationZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteMasterClassTimelineEntry: db.prepare(
+      `DELETE FROM master_class_timeline_entries
+       WHERE id = ?
+       RETURNING
+          id,
+          date_label AS dateLabel,
+          date_label_zh AS dateLabelZh,
+          title,
+          title_zh AS titleZh,
+          location,
+          location_zh AS locationZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateMasterClassTimelineEntrySortOrder: db.prepare(
+      `UPDATE master_class_timeline_entries
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
+    listMasterClassMoments: db.prepare(
+      `SELECT
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM master_class_moments
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countMasterClassMoments: db.prepare('SELECT COUNT(*) AS count FROM master_class_moments'),
+    findMasterClassMomentById: db.prepare(
+      `SELECT
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM master_class_moments
+       WHERE id = ?`
+    ),
+    createMasterClassMoment: db.prepare(
+      `INSERT INTO master_class_moments (
+          title,
+          title_zh,
+          subtitle,
+          subtitle_zh,
+          image_src,
+          image_alt,
+          image_alt_zh,
+          video_src,
+          sort_order
+        ) VALUES (
+          @title,
+          @titleZh,
+          @subtitle,
+          @subtitleZh,
+          @imageSrc,
+          @imageAlt,
+          @imageAltZh,
+          @videoSrc,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateMasterClassMoment: db.prepare(
+      `UPDATE master_class_moments
+       SET title = @title,
+           title_zh = @titleZh,
+           subtitle = @subtitle,
+           subtitle_zh = @subtitleZh,
+           image_src = @imageSrc,
+           image_alt = @imageAlt,
+           image_alt_zh = @imageAltZh,
+           video_src = @videoSrc,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteMasterClassMoment: db.prepare(
+      `DELETE FROM master_class_moments
+       WHERE id = ?
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateMasterClassMomentSortOrder: db.prepare(
+      `UPDATE master_class_moments
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
+    listGroupChoreographyEntries: db.prepare(
+      `SELECT
+          id,
+          season_label AS seasonLabel,
+          season_label_zh AS seasonLabelZh,
+          organization,
+          organization_zh AS organizationZh,
+          work_title AS workTitle,
+          work_title_zh AS workTitleZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM group_choreography_entries
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countGroupChoreographyEntries: db.prepare(
+      'SELECT COUNT(*) AS count FROM group_choreography_entries'
+    ),
+    findGroupChoreographyEntryById: db.prepare(
+      `SELECT
+          id,
+          season_label AS seasonLabel,
+          season_label_zh AS seasonLabelZh,
+          organization,
+          organization_zh AS organizationZh,
+          work_title AS workTitle,
+          work_title_zh AS workTitleZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM group_choreography_entries
+       WHERE id = ?`
+    ),
+    createGroupChoreographyEntry: db.prepare(
+      `INSERT INTO group_choreography_entries (
+          season_label,
+          season_label_zh,
+          organization,
+          organization_zh,
+          work_title,
+          work_title_zh,
+          sort_order
+        ) VALUES (
+          @seasonLabel,
+          @seasonLabelZh,
+          @organization,
+          @organizationZh,
+          @workTitle,
+          @workTitleZh,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          season_label AS seasonLabel,
+          season_label_zh AS seasonLabelZh,
+          organization,
+          organization_zh AS organizationZh,
+          work_title AS workTitle,
+          work_title_zh AS workTitleZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateGroupChoreographyEntry: db.prepare(
+      `UPDATE group_choreography_entries
+       SET season_label = @seasonLabel,
+           season_label_zh = @seasonLabelZh,
+           organization = @organization,
+           organization_zh = @organizationZh,
+           work_title = @workTitle,
+           work_title_zh = @workTitleZh,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          season_label AS seasonLabel,
+          season_label_zh AS seasonLabelZh,
+          organization,
+          organization_zh AS organizationZh,
+          work_title AS workTitle,
+          work_title_zh AS workTitleZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteGroupChoreographyEntry: db.prepare(
+      `DELETE FROM group_choreography_entries
+       WHERE id = ?
+       RETURNING
+          id,
+          season_label AS seasonLabel,
+          season_label_zh AS seasonLabelZh,
+          organization,
+          organization_zh AS organizationZh,
+          work_title AS workTitle,
+          work_title_zh AS workTitleZh,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateGroupChoreographyEntrySortOrder: db.prepare(
+      `UPDATE group_choreography_entries
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
+    listGroupChoreographyMoments: db.prepare(
+      `SELECT
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM group_choreography_moments
+       ORDER BY sort_order ASC, id ASC`
+    ),
+    countGroupChoreographyMoments: db.prepare(
+      'SELECT COUNT(*) AS count FROM group_choreography_moments'
+    ),
+    findGroupChoreographyMomentById: db.prepare(
+      `SELECT
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt
+       FROM group_choreography_moments
+       WHERE id = ?`
+    ),
+    createGroupChoreographyMoment: db.prepare(
+      `INSERT INTO group_choreography_moments (
+          title,
+          title_zh,
+          subtitle,
+          subtitle_zh,
+          image_src,
+          image_alt,
+          image_alt_zh,
+          video_src,
+          sort_order
+        ) VALUES (
+          @title,
+          @titleZh,
+          @subtitle,
+          @subtitleZh,
+          @imageSrc,
+          @imageAlt,
+          @imageAltZh,
+          @videoSrc,
+          @sortOrder
+        )
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateGroupChoreographyMoment: db.prepare(
+      `UPDATE group_choreography_moments
+       SET title = @title,
+           title_zh = @titleZh,
+           subtitle = @subtitle,
+           subtitle_zh = @subtitleZh,
+           image_src = @imageSrc,
+           image_alt = @imageAlt,
+           image_alt_zh = @imageAltZh,
+           video_src = @videoSrc,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    deleteGroupChoreographyMoment: db.prepare(
+      `DELETE FROM group_choreography_moments
+       WHERE id = ?
+       RETURNING
+          id,
+          title,
+          title_zh AS titleZh,
+          subtitle,
+          subtitle_zh AS subtitleZh,
+          image_src AS imageSrc,
+          image_alt AS imageAlt,
+          image_alt_zh AS imageAltZh,
+          video_src AS videoSrc,
+          sort_order AS sortOrder,
+          created_at AS createdAt,
+          updated_at AS updatedAt`
+    ),
+    updateGroupChoreographyMomentSortOrder: db.prepare(
+      `UPDATE group_choreography_moments
+       SET sort_order = @sortOrder,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id`
+    ),
     getArtistProfile: db.prepare(
       `SELECT
           id,
@@ -1347,6 +2029,50 @@ export function createDatabase(filename) {
     return statements.listAchievementEntries.all();
   });
 
+  const reorderMasterClassTimelineEntries = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateMasterClassTimelineEntrySortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listMasterClassTimelineEntries.all();
+  });
+
+  const reorderMasterClassMoments = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateMasterClassMomentSortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listMasterClassMoments.all();
+  });
+
+  const reorderGroupChoreographyEntries = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateGroupChoreographyEntrySortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listGroupChoreographyEntries.all();
+  });
+
+  const reorderGroupChoreographyMoments = db.transaction((orderedIds) => {
+    orderedIds.forEach((id, index) => {
+      statements.updateGroupChoreographyMomentSortOrder.run({
+        id,
+        sortOrder: index,
+      });
+    });
+
+    return statements.listGroupChoreographyMoments.all();
+  });
+
   const createAchievementEntry = db.transaction((entry) => {
     if (entry.latest) {
       statements.clearLatestAchievementFlag.run();
@@ -1422,11 +2148,63 @@ export function createDatabase(filename) {
     statements.upsertArtistProfile.get(defaultArtistProfile);
   }
 
+  function seedMasterClassTimelineEntries() {
+    const { count } = statements.countMasterClassTimelineEntries.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const entry of defaultMasterClassTimelineEntries) {
+      statements.createMasterClassTimelineEntry.get(entry);
+    }
+  }
+
+  function seedMasterClassMoments() {
+    const { count } = statements.countMasterClassMoments.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const moment of defaultMasterClassMoments) {
+      statements.createMasterClassMoment.get(moment);
+    }
+  }
+
+  function seedGroupChoreographyEntries() {
+    const { count } = statements.countGroupChoreographyEntries.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const entry of defaultGroupChoreographyEntries) {
+      statements.createGroupChoreographyEntry.get(entry);
+    }
+  }
+
+  function seedGroupChoreographyMoments() {
+    const { count } = statements.countGroupChoreographyMoments.get();
+
+    if (Number(count) > 0) {
+      return;
+    }
+
+    for (const moment of defaultGroupChoreographyMoments) {
+      statements.createGroupChoreographyMoment.get(moment);
+    }
+  }
+
   seedComingUpEvents();
   seedFeaturedReels();
   seedPressHighlights();
   seedAchievementEntries();
   seedArtistProfile();
+  seedMasterClassTimelineEntries();
+  seedMasterClassMoments();
+  seedGroupChoreographyEntries();
+  seedGroupChoreographyMoments();
 
   return {
     raw: db,
@@ -1631,6 +2409,94 @@ export function createDatabase(filename) {
     },
     upsertArtistProfile(profile) {
       return statements.upsertArtistProfile.get(profile);
+    },
+    listMasterClassTimelineEntries() {
+      return statements.listMasterClassTimelineEntries.all();
+    },
+    countMasterClassTimelineEntries() {
+      const { count } = statements.countMasterClassTimelineEntries.get();
+      return Number(count);
+    },
+    findMasterClassTimelineEntryById(id) {
+      return statements.findMasterClassTimelineEntryById.get(id) ?? null;
+    },
+    createMasterClassTimelineEntry(entry) {
+      return statements.createMasterClassTimelineEntry.get(entry);
+    },
+    updateMasterClassTimelineEntry(entry) {
+      return statements.updateMasterClassTimelineEntry.get(entry) ?? null;
+    },
+    deleteMasterClassTimelineEntry(entryId) {
+      return statements.deleteMasterClassTimelineEntry.get(entryId) ?? null;
+    },
+    reorderMasterClassTimelineEntries(orderedIds) {
+      return reorderMasterClassTimelineEntries(orderedIds);
+    },
+    listMasterClassMoments() {
+      return statements.listMasterClassMoments.all();
+    },
+    countMasterClassMoments() {
+      const { count } = statements.countMasterClassMoments.get();
+      return Number(count);
+    },
+    findMasterClassMomentById(id) {
+      return statements.findMasterClassMomentById.get(id) ?? null;
+    },
+    createMasterClassMoment(moment) {
+      return statements.createMasterClassMoment.get(moment);
+    },
+    updateMasterClassMoment(moment) {
+      return statements.updateMasterClassMoment.get(moment) ?? null;
+    },
+    deleteMasterClassMoment(momentId) {
+      return statements.deleteMasterClassMoment.get(momentId) ?? null;
+    },
+    reorderMasterClassMoments(orderedIds) {
+      return reorderMasterClassMoments(orderedIds);
+    },
+    listGroupChoreographyEntries() {
+      return statements.listGroupChoreographyEntries.all();
+    },
+    countGroupChoreographyEntries() {
+      const { count } = statements.countGroupChoreographyEntries.get();
+      return Number(count);
+    },
+    findGroupChoreographyEntryById(id) {
+      return statements.findGroupChoreographyEntryById.get(id) ?? null;
+    },
+    createGroupChoreographyEntry(entry) {
+      return statements.createGroupChoreographyEntry.get(entry);
+    },
+    updateGroupChoreographyEntry(entry) {
+      return statements.updateGroupChoreographyEntry.get(entry) ?? null;
+    },
+    deleteGroupChoreographyEntry(entryId) {
+      return statements.deleteGroupChoreographyEntry.get(entryId) ?? null;
+    },
+    reorderGroupChoreographyEntries(orderedIds) {
+      return reorderGroupChoreographyEntries(orderedIds);
+    },
+    listGroupChoreographyMoments() {
+      return statements.listGroupChoreographyMoments.all();
+    },
+    countGroupChoreographyMoments() {
+      const { count } = statements.countGroupChoreographyMoments.get();
+      return Number(count);
+    },
+    findGroupChoreographyMomentById(id) {
+      return statements.findGroupChoreographyMomentById.get(id) ?? null;
+    },
+    createGroupChoreographyMoment(moment) {
+      return statements.createGroupChoreographyMoment.get(moment);
+    },
+    updateGroupChoreographyMoment(moment) {
+      return statements.updateGroupChoreographyMoment.get(moment) ?? null;
+    },
+    deleteGroupChoreographyMoment(momentId) {
+      return statements.deleteGroupChoreographyMoment.get(momentId) ?? null;
+    },
+    reorderGroupChoreographyMoments(orderedIds) {
+      return reorderGroupChoreographyMoments(orderedIds);
     },
     close() {
       db.close();
