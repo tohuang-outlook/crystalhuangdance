@@ -487,6 +487,17 @@ function createUploadMiddleware(config) {
   });
 }
 
+function createAssetUploadMiddleware(config) {
+  return multer({
+    dest: config.uploadTempDirectory,
+    limits: { fileSize: 50 * 1024 * 1024 },
+    fileFilter: (_req, file, callback) => {
+      if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) return callback(null, true);
+      callback(new Error('Only image and video files are allowed.'));
+    },
+  });
+}
+
 export function createApp({
   db,
   sessionSecret,
@@ -503,6 +514,9 @@ export function createApp({
 
   const app = express();
   const upload = createUploadMiddleware(config);
+  const assetUpload = createAssetUploadMiddleware(config);
+  const assetDirectory = config.assetDirectory ?? path.join(config.uploadTempDirectory, '..', 'assets');
+  const publicAssetsBasePath = config.publicAssetsBasePath ?? '/uploads/assets';
 
   if (config.trustProxy) {
     app.set('trust proxy', 1);
@@ -524,6 +538,7 @@ export function createApp({
     })
   );
   app.use(config.publicVideosBasePath, express.static(config.processedVideosDirectory));
+  app.use(publicAssetsBasePath, express.static(assetDirectory));
 
   app.get('/api/auth/me', (req, res) => {
     if (!req.session.user) {
@@ -758,6 +773,32 @@ export function createApp({
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
+  });
+
+  app.get('/api/admin/assets', requireAdmin, async (_req, res) => {
+    await fs.mkdir(assetDirectory, { recursive: true });
+    const entries = await fs.readdir(assetDirectory, { withFileTypes: true });
+    const assets = await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => {
+      const stat = await fs.stat(path.join(assetDirectory, entry.name));
+      return { name: entry.name, path: `${publicAssetsBasePath}/${entry.name}`, size: stat.size, createdAt: stat.birthtime.toISOString() };
+    }));
+    return res.json({ assets: assets.sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
+  });
+
+  app.post('/api/admin/assets', requireAdmin, assetUpload.single('asset'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'An image or video file is required.' });
+    await fs.mkdir(assetDirectory, { recursive: true });
+    const extension = path.extname(req.file.originalname).toLowerCase();
+    const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${extension}`;
+    await fs.rename(req.file.path, path.join(assetDirectory, filename));
+    return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: req.file.size, createdAt: new Date().toISOString() } });
+  });
+
+  app.delete('/api/admin/assets/:name', requireAdmin, async (req, res) => {
+    const name = path.basename(req.params.name);
+    if (name !== req.params.name) return res.status(400).json({ error: 'Invalid asset name.' });
+    try { await fs.unlink(path.join(assetDirectory, name)); } catch (error) { if (error?.code === 'ENOENT') return res.status(404).json({ error: 'Asset not found.' }); throw error; }
+    return res.json({ deletedAssetName: name });
   });
 
   app.get('/api/admin/contact-inquiries', requireAdmin, (_req, res) => {

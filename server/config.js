@@ -51,6 +51,8 @@ export function getServerConfig() {
     uploadTempDirectory: path.join(uploadsDirectory, 'tmp'),
     processedVideosDirectory: path.join(uploadsDirectory, 'videos'),
     publicVideosBasePath: '/uploads/videos',
+    assetDirectory: path.join(uploadsDirectory, 'assets'),
+    publicAssetsBasePath: '/uploads/assets',
     frontendDistDirectory: process.env.FRONTEND_DIST_DIRECTORY
       ? path.resolve(process.env.FRONTEND_DIST_DIRECTORY)
       : path.resolve(process.cwd(), 'dist'),

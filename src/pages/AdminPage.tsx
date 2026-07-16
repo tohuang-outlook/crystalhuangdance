@@ -79,6 +79,7 @@ import {
   type ContactInquiryRecord,
 } from '../services/contactInquiries';
 import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
+import { deleteAdminAsset, fetchAdminAssets, uploadAdminAsset, type AssetRecord } from '../services/assets';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -564,6 +565,7 @@ export default function AdminPage() {
   const [groupArchiveMoments, setGroupArchiveMoments] = useState<ArchiveMediaRecord[]>([]);
   const [contactInquiries, setContactInquiries] = useState<ContactInquiryRecord[]>([]);
   const [heroEntryPoints, setHeroEntryPoints] = useState<HeroEntryPointRecord[]>([]);
+  const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -744,6 +746,7 @@ export default function AdminPage() {
         galleryArchiveResponse,
         contactInquiriesResponse,
         heroEntryPointsResponse,
+        assetsResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -756,6 +759,7 @@ export default function AdminPage() {
         fetchAdminGalleryArchive(),
         fetchAdminContactInquiries(),
         fetchAdminHeroEntryPoints(),
+        fetchAdminAssets(),
       ]);
 
       setUsers(usersResponse.users);
@@ -772,6 +776,7 @@ export default function AdminPage() {
       setGroupArchiveMoments(galleryArchiveResponse.groupMoments);
       setContactInquiries(contactInquiriesResponse.inquiries);
       setHeroEntryPoints(heroEntryPointsResponse.entryPoints);
+      setAssets(assetsResponse.assets);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -3366,6 +3371,11 @@ export default function AdminPage() {
 
               {activeTab === 'content' ? (
                 <section aria-labelledby="hero-entry-points-heading">
+                  <div className="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
+                    <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow">Shared media library</p><h2 className="mt-3 text-3xl">Images and videos</h2></div><label className="rounded-full bg-[var(--text)] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white cursor-pointer">Upload asset<input className="hidden" type="file" accept="image/*,video/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAdminAsset(file).then((response) => setAssets((current) => [response.asset, ...current])).catch((err) => setError(err.message)); event.currentTarget.value = ''; }} /></label></div>
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">Upload a file, then copy its path into a thumbnail, image, or local video path field.</p>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{assets.slice(0, 12).map((asset) => <article key={asset.name} className="rounded-xl border border-[var(--line)] bg-white p-3"><p className="truncate text-sm">{asset.name}</p><p className="mt-2 break-all text-xs text-[var(--text-muted)]">{asset.path}</p><div className="mt-3 flex gap-2"><button type="button" className="text-xs underline" onClick={() => void navigator.clipboard?.writeText(asset.path)}>Copy path</button><button type="button" className="text-xs text-red-700 underline" onClick={() => void deleteAdminAsset(asset.name).then(() => setAssets((current) => current.filter((item) => item.name !== asset.name))).catch((err) => setError(err.message))}>Delete</button></div></article>)}</div>
+                  </div>
                   <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
                     <p className="eyebrow">Homepage navigation</p>
                     <h2 id="hero-entry-points-heading" className="mt-3 text-4xl text-[var(--text)]">Hero entry cards</h2>
