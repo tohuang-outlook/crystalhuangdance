@@ -41,7 +41,8 @@ export default function ProtectedRoute({
     return <Navigate replace to={getDefaultMemberRoute()} />;
   }
 
-  if (requireMemberType && user?.memberType !== requireMemberType) {
+  // Administrators need access to member-specific dashboards for oversight.
+  if (requireMemberType && !isAdmin && user?.memberType !== requireMemberType) {
     return <Navigate replace to={getDefaultMemberRoute()} />;
   }
 
