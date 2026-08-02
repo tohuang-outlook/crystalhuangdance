@@ -409,12 +409,12 @@ export function deleteAdminInvestmentTransaction(transactionId: number) {
   );
 }
 
-export function generateAdminInvestmentReports() {
+export function generateAdminInvestmentReports(monthKey: string) {
   return requestJson<AdminInvestmentReportGenerationResponse>(
     '/api/admin/investment/reports/generate-latest',
     {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ monthKey }),
     }
   );
 }

@@ -86,6 +86,7 @@ import {
   createAdminInvestmentTransaction,
   deleteAdminInvestmentTransaction,
   fetchAdminInvestmentPortfolio,
+  generateAdminInvestmentReports,
   updateAdminInvestmentPortfolio,
   updateAdminInvestmentTransaction,
   type InvestmentPortfolioResponse,
@@ -619,6 +620,7 @@ export default function AdminPage() {
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
   const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created' | 'existing'>>({});
+  const [reportGenerationStatus, setReportGenerationStatus] = useState<'idle' | 'generating' | 'generated'>('idle');
   const [transactionDrafts, setTransactionDrafts] = useState<Record<number, InvestmentTransactionDraft>>({});
   const [adminPortfolios, setAdminPortfolios] = useState<Record<number, InvestmentPortfolioResponse | null>>({});
   const [portfolioDrafts, setPortfolioDrafts] = useState<Record<number, InvestmentPortfolioDraft>>({});
@@ -1053,6 +1055,18 @@ export default function AdminPage() {
     } catch (err) {
       setPortfolioStatuses((current) => ({ ...current, [user.id]: 'idle' }));
       setError(err instanceof Error ? err.message : 'Unable to create portfolio.');
+    }
+  };
+
+  const handleGenerateAugustInvestmentReport = async () => {
+    setError(null);
+    setReportGenerationStatus('generating');
+    try {
+      await generateAdminInvestmentReports('2026-08');
+      setReportGenerationStatus('generated');
+    } catch (err) {
+      setReportGenerationStatus('idle');
+      setError(err instanceof Error ? err.message : 'Unable to generate the August report.');
     }
   };
 
@@ -3764,6 +3778,20 @@ export default function AdminPage() {
                               <span className="text-xs font-medium text-emerald-700">
                                 {portfolioStatuses[user.id] === 'created' ? 'Portfolio created successfully.' : 'Portfolio already exists.'}
                               </span>
+                            ) : null}
+                            {user.memberType === 'investor' ? (
+                              <button
+                                type="button"
+                                disabled={reportGenerationStatus === 'generating'}
+                                className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
+                                onClick={() => void handleGenerateAugustInvestmentReport()}
+                              >
+                                {reportGenerationStatus === 'generating'
+                                  ? 'Generating Aug 2026...'
+                                  : reportGenerationStatus === 'generated'
+                                    ? 'Aug 2026 report ready'
+                                    : 'Generate Aug 2026 report'}
+                              </button>
                             ) : null}
                           </div>
 

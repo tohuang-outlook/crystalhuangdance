@@ -35,6 +35,24 @@ CREATE TABLE IF NOT EXISTS investment_transactions (
   FOREIGN KEY (portfolio_id) REFERENCES investment_portfolios (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS investment_monthly_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  portfolio_id INTEGER NOT NULL,
+  month_key TEXT NOT NULL,
+  snapshot_date TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ready',
+  generated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  error_message TEXT,
+  investor_note TEXT,
+  admin_note TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (portfolio_id, month_key),
+  FOREIGN KEY (portfolio_id) REFERENCES investment_portfolios (id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS videos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,

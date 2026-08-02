@@ -5,6 +5,7 @@ import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
+import { buildInvestmentReportFilename, createInvestmentReportPdfDocument } from './investment-report-pdf.js';
 import { processUploadedVideo } from './video-processing.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -242,6 +243,74 @@ function buildInvestmentSnapshot(transactions, livePricesBySymbol = {}) {
       allocationPercent: totalInvested > 0 ? roundCurrency((holding.currentValue / totalInvested) * 100) : 0,
     })),
   };
+}
+
+function formatInvestmentMonthLabel(monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function serializeInvestmentMonthlyReport(report) {
+  return {
+    id: report.id,
+    monthKey: report.monthKey,
+    label: formatInvestmentMonthLabel(report.monthKey),
+    snapshotDate: report.snapshotDate,
+    status: report.status,
+    generatedAt: report.generatedAt,
+    fileName: report.fileName,
+    investorNote: report.investorNote ?? null,
+  };
+}
+
+async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config, currentDate }) {
+  const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
+  if (transactions.length === 0) return { status: 'skipped', reason: 'no-transactions' };
+
+  let pricesBySymbol = {};
+  let pricesLastUpdatedAt = null;
+  try {
+    const pricing = await fetchInvestmentPrices([...new Set(transactions.map((entry) => entry.assetSymbol))]);
+    pricesBySymbol = pricing.pricesBySymbol;
+    pricesLastUpdatedAt = pricing.pricesLastUpdatedAt;
+  } catch (error) {
+    console.warn('Investment report pricing unavailable; using purchase prices.', {
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  const snapshot = buildInvestmentSnapshot(transactions, pricesBySymbol);
+  const label = formatInvestmentMonthLabel(monthKey);
+  const fileName = buildInvestmentReportFilename(portfolio.displayName || 'investor-portfolio', label);
+  const relativePath = path.join(String(portfolio.id), fileName);
+  const outputPath = path.join(config.reportStorageDirectory, relativePath);
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+  const { doc } = createInvestmentReportPdfDocument({
+    portfolio: serializeInvestmentPortfolio(portfolio),
+    summary: snapshot.summary,
+    holdings: snapshot.holdings,
+    transactions: [],
+    livePrices: snapshot.holdings.map((holding) => ({
+      assetSymbol: holding.assetSymbol,
+      assetName: holding.assetName,
+      currentPrice: holding.currentPrice,
+    })),
+    pricesLastUpdatedAt,
+    monthlyPerformance: [{ month: monthKey, label, portfolioValue: snapshot.summary.portfolioValue }],
+  });
+  await fs.writeFile(outputPath, Buffer.from(doc.output('arraybuffer')));
+
+  return db.upsertInvestmentMonthlyReport({
+    portfolioId: portfolio.id,
+    monthKey,
+    snapshotDate: currentDate.toISOString(),
+    fileName,
+    filePath: relativePath,
+    status: 'ready',
+    errorMessage: null,
+  });
 }
 
 function serializeAdminVideo(video) {
@@ -988,7 +1057,49 @@ export function createApp({
       setSessionUser(req, currentUser);
     }
 
-    return res.json({ reports: [] });
+    const portfolio = db.findInvestmentPortfolioByUserId(currentUser.id);
+    if (!portfolio) return res.status(404).json({ error: 'Portfolio not found.' });
+    return res.json({
+      reports: db.listInvestmentMonthlyReportsByPortfolioId(portfolio.id).map(serializeInvestmentMonthlyReport),
+    });
+  });
+
+  app.get('/api/investment/me/reports/:monthKey/download', requireAuth, async (req, res) => {
+    const sessionUser = req.session.user;
+    const currentUser = db.findUserById(sessionUser.id) ?? db.findUserByEmail(sessionUser.email);
+    const monthKey = String(req.params.monthKey ?? '').trim();
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.memberType !== 'investor')) {
+      return res.status(403).json({ error: 'Investor access is required.' });
+    }
+    if (!/^\d{4}-\d{2}$/.test(monthKey)) return res.status(400).json({ error: 'A valid report month is required.' });
+    const portfolio = db.findInvestmentPortfolioByUserId(currentUser.id);
+    const report = portfolio ? db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, monthKey) : null;
+    if (!report || report.status !== 'ready') return res.status(404).json({ error: 'Report not found.' });
+    const absolutePath = path.join(config.reportStorageDirectory, report.filePath);
+    try { await fs.access(absolutePath); } catch { return res.status(404).json({ error: 'Report file is missing.' }); }
+    return res.download(absolutePath, report.fileName);
+  });
+
+  app.post('/api/admin/investment/reports/generate-latest', requireAdmin, async (req, res) => {
+    const monthKey = String(req.body?.monthKey ?? '').trim();
+    if (!/^\d{4}-\d{2}$/.test(monthKey)) {
+      return res.status(400).json({ error: 'monthKey must use YYYY-MM format.' });
+    }
+    const investorPortfolios = db.listInvestmentPortfoliosForInvestors?.() ?? [];
+    let generated = 0;
+    let skipped = 0;
+    let failed = 0;
+    for (const portfolio of investorPortfolios) {
+      try {
+        const result = await generateInvestmentMonthlyReport({ db, portfolio, monthKey, config, currentDate: now() });
+        if (result?.status === 'skipped') skipped += 1;
+        else generated += 1;
+      } catch (error) {
+        failed += 1;
+        console.error('Investment report generation failed', error);
+      }
+    }
+    return res.json({ monthKey, summary: { generated, updated: 0, skipped, failed } });
   });
 
   app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {

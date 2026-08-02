@@ -652,6 +652,27 @@ export function createDatabase(filename) {
   db.pragma('foreign_keys = ON');
   db.exec(schemaSql);
 
+  // Reports are persisted separately so PDFs survive deploys on the Railway volume.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS investment_monthly_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      portfolio_id INTEGER NOT NULL,
+      month_key TEXT NOT NULL,
+      snapshot_date TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ready',
+      generated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      error_message TEXT,
+      investor_note TEXT,
+      admin_note TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (portfolio_id, month_key),
+      FOREIGN KEY (portfolio_id) REFERENCES investment_portfolios (id) ON DELETE CASCADE
+    )
+  `);
+
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
   ensureColumn(db, 'users', 'member_type', "TEXT NOT NULL DEFAULT 'dancer'");
   ensureColumn(db, 'users', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
@@ -726,6 +747,15 @@ export function createDatabase(filename) {
               notes, created_at AS createdAt, updated_at AS updatedAt
        FROM investment_portfolios WHERE user_id = ?`
     ),
+    listInvestmentPortfoliosForInvestors: db.prepare(
+      `SELECT portfolios.id, portfolios.user_id AS userId, portfolios.base_currency AS baseCurrency,
+              portfolios.display_name AS displayName, portfolios.notes,
+              portfolios.created_at AS createdAt, portfolios.updated_at AS updatedAt
+       FROM investment_portfolios portfolios
+       JOIN users ON users.id = portfolios.user_id
+       WHERE users.member_type = 'investor'
+       ORDER BY portfolios.id ASC`
+    ),
     updateInvestmentPortfolio: db.prepare(
       `UPDATE investment_portfolios
        SET display_name = @displayName, notes = @notes, updated_at = CURRENT_TIMESTAMP
@@ -771,6 +801,47 @@ export function createDatabase(filename) {
     ),
     deleteInvestmentTransaction: db.prepare(
       'DELETE FROM investment_transactions WHERE id = ? RETURNING id, portfolio_id AS portfolioId'
+    ),
+    listInvestmentMonthlyReportsByPortfolioId: db.prepare(
+      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, snapshot_date AS snapshotDate,
+              file_name AS fileName, file_path AS filePath, status, generated_at AS generatedAt,
+              error_message AS errorMessage, investor_note AS investorNote, admin_note AS adminNote,
+              created_at AS createdAt, updated_at AS updatedAt
+       FROM investment_monthly_reports WHERE portfolio_id = ? ORDER BY month_key DESC, id DESC`
+    ),
+    findInvestmentMonthlyReportByPortfolioIdAndMonth: db.prepare(
+      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, snapshot_date AS snapshotDate,
+              file_name AS fileName, file_path AS filePath, status, generated_at AS generatedAt,
+              error_message AS errorMessage, investor_note AS investorNote, admin_note AS adminNote,
+              created_at AS createdAt, updated_at AS updatedAt
+       FROM investment_monthly_reports WHERE portfolio_id = ? AND month_key = ?`
+    ),
+    upsertInvestmentMonthlyReport: db.prepare(
+      `INSERT INTO investment_monthly_reports
+        (portfolio_id, month_key, snapshot_date, file_name, file_path, status, error_message, investor_note, admin_note)
+       VALUES (@portfolioId, @monthKey, @snapshotDate, @fileName, @filePath, @status, @errorMessage, @investorNote, @adminNote)
+       ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
+         snapshot_date = excluded.snapshot_date, file_name = excluded.file_name, file_path = excluded.file_path,
+         status = excluded.status, error_message = excluded.error_message,
+         investor_note = COALESCE(excluded.investor_note, investment_monthly_reports.investor_note),
+         admin_note = COALESCE(excluded.admin_note, investment_monthly_reports.admin_note),
+         generated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       RETURNING id, portfolio_id AS portfolioId, month_key AS monthKey, snapshot_date AS snapshotDate,
+                 file_name AS fileName, file_path AS filePath, status, generated_at AS generatedAt,
+                 error_message AS errorMessage, investor_note AS investorNote, admin_note AS adminNote,
+                 created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    listInvestmentMonthlyReportsForAdmin: db.prepare(
+      `SELECT reports.id, reports.portfolio_id AS portfolioId, reports.month_key AS monthKey,
+              reports.snapshot_date AS snapshotDate, reports.file_name AS fileName, reports.file_path AS filePath,
+              reports.status, reports.generated_at AS generatedAt, reports.error_message AS errorMessage,
+              reports.investor_note AS investorNote, reports.admin_note AS adminNote,
+              portfolios.user_id AS investorUserId, portfolios.display_name AS portfolioDisplayName,
+              users.email AS investorEmail
+       FROM investment_monthly_reports reports
+       JOIN investment_portfolios portfolios ON portfolios.id = reports.portfolio_id
+       JOIN users ON users.id = portfolios.user_id
+       ORDER BY reports.month_key DESC, users.email ASC, reports.id DESC`
     ),
     createVideo: db.prepare(
       `INSERT INTO videos (
@@ -2352,6 +2423,9 @@ export function createDatabase(filename) {
     findInvestmentPortfolioByUserId(userId) {
       return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
     },
+    listInvestmentPortfoliosForInvestors() {
+      return statements.listInvestmentPortfoliosForInvestors.all();
+    },
     updateInvestmentPortfolio({ id, displayName, notes }) {
       return statements.updateInvestmentPortfolio.get({ id, displayName, notes }) ?? null;
     },
@@ -2372,6 +2446,18 @@ export function createDatabase(filename) {
     },
     deleteInvestmentTransaction(transactionId) {
       return statements.deleteInvestmentTransaction.get(transactionId) ?? null;
+    },
+    listInvestmentMonthlyReportsByPortfolioId(portfolioId) {
+      return statements.listInvestmentMonthlyReportsByPortfolioId.all(portfolioId);
+    },
+    findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolioId, monthKey) {
+      return statements.findInvestmentMonthlyReportByPortfolioIdAndMonth.get(portfolioId, monthKey) ?? null;
+    },
+    upsertInvestmentMonthlyReport(input) {
+      return statements.upsertInvestmentMonthlyReport.get({ investorNote: null, adminNote: null, ...input });
+    },
+    listInvestmentMonthlyReportsForAdmin() {
+      return statements.listInvestmentMonthlyReportsForAdmin.all();
     },
     createPasswordResetToken(passwordResetToken) {
       return replacePasswordResetToken(passwordResetToken);
