@@ -41,13 +41,56 @@ const investmentAssetIdsBySymbol = {
 const investmentPriceCache = new Map();
 const investmentPriceCacheTtlMs = 5 * 60 * 1000;
 
-async function fetchInvestmentPrices(symbols) {
+function parseMonthKey(monthKey) {
+  const match = String(monthKey ?? '').match(/^(\d{4})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
+
+function getInvestmentMonthEndDate(monthKey) {
+  const parsed = parseMonthKey(monthKey);
+  if (!parsed) return null;
+
+  return new Date(Date.UTC(parsed.year, parsed.month, 0, 12));
+}
+
+function getInvestmentReportSnapshotDate(monthKey, currentDate) {
+  const monthEndDate = getInvestmentMonthEndDate(monthKey);
+  if (!monthEndDate) return currentDate;
+
+  return monthEndDate.getTime() < currentDate.getTime() ? monthEndDate : currentDate;
+}
+
+function isHistoricalInvestmentPriceDate(asOfDate) {
+  if (!asOfDate) return false;
+
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const asOfKey = asOfDate.toISOString().slice(0, 10);
+  return asOfKey < todayKey;
+}
+
+async function fetchInvestmentPrices(symbols, { asOfDate = null } = {}) {
   const normalizedSymbols = [...new Set(symbols)].filter((symbol) => investmentAssetIdsBySymbol[symbol]);
   if (normalizedSymbols.length === 0 || process.env.NODE_ENV !== 'production') {
     return { pricesBySymbol: {}, pricesLastUpdatedAt: null };
   }
 
-  const cacheKey = normalizedSymbols.sort().join(',');
+  if (isHistoricalInvestmentPriceDate(asOfDate)) {
+    const historical = await fetchOkxHistoricalInvestmentPrices(normalizedSymbols, asOfDate);
+    if (Object.keys(historical.pricesBySymbol).length > 0) {
+      return historical;
+    }
+  }
+
+  const cacheKey = `live:${normalizedSymbols.sort().join(',')}`;
   const cached = investmentPriceCache.get(cacheKey);
   if (cached && Date.now() - cached.cachedAt < investmentPriceCacheTtlMs) {
     return cached.value;
@@ -88,6 +131,57 @@ async function fetchInvestmentPrices(symbols) {
   };
   investmentPriceCache.set(cacheKey, { cachedAt: Date.now(), value });
   return value;
+}
+
+async function fetchOkxHistoricalInvestmentPrices(symbols, asOfDate) {
+  const pricesBySymbol = {};
+  const targetTime = Date.UTC(
+    asOfDate.getUTCFullYear(),
+    asOfDate.getUTCMonth(),
+    asOfDate.getUTCDate(),
+    23,
+    59,
+    59,
+    999
+  );
+
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      const url = new URL('https://www.okx.com/api/v5/market/history-candles');
+      url.searchParams.set('instId', `${symbol}-USDT`);
+      url.searchParams.set('bar', '1Dutc');
+      url.searchParams.set('limit', '100');
+
+      const response = await fetch(url);
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      const candles = Array.isArray(payload.data) ? payload.data : [];
+      const matchingCandle = candles
+        .map((entry) => ({
+          timestamp: Number(entry?.[0]),
+          close: Number(entry?.[4]),
+        }))
+        .filter(
+          (entry) =>
+            Number.isFinite(entry.timestamp) &&
+            entry.timestamp <= targetTime &&
+            Number.isFinite(entry.close) &&
+            entry.close > 0
+        )
+        .sort((left, right) => right.timestamp - left.timestamp)[0];
+
+      if (matchingCandle) {
+        pricesBySymbol[symbol] = matchingCandle.close;
+      }
+    })
+  );
+
+  return {
+    pricesBySymbol,
+    pricesLastUpdatedAt:
+      Object.keys(pricesBySymbol).length > 0 ? asOfDate.toISOString().slice(0, 10) : null,
+  };
 }
 
 async function fetchOkxInvestmentPrices(symbols) {
@@ -298,10 +392,14 @@ async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config
   const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
   if (transactions.length === 0) return { status: 'skipped', reason: 'no-transactions' };
 
+  const snapshotDate = getInvestmentReportSnapshotDate(monthKey, currentDate);
   let pricesBySymbol = {};
   let pricesLastUpdatedAt = null;
   try {
-    const pricing = await fetchInvestmentPrices([...new Set(transactions.map((entry) => entry.assetSymbol))]);
+    const pricing = await fetchInvestmentPrices(
+      [...new Set(transactions.map((entry) => entry.assetSymbol))],
+      { asOfDate: snapshotDate }
+    );
     pricesBySymbol = pricing.pricesBySymbol;
     pricesLastUpdatedAt = pricing.pricesLastUpdatedAt;
   } catch (error) {
@@ -353,7 +451,7 @@ async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config
     portfolioId: portfolio.id,
     monthKey,
     portfolioValue: snapshot.summary.portfolioValue,
-    snapshotDate: currentDate.toISOString().slice(0, 10),
+    snapshotDate: snapshotDate.toISOString().slice(0, 10),
     fileName,
     filePath: relativePath,
     status: 'ready',

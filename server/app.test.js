@@ -15,6 +15,7 @@ function createTestConfig() {
   return {
     uploadTempDirectory: path.join(root, 'tmp'),
     processedVideosDirectory: path.join(root, 'videos'),
+    reportStorageDirectory: path.join(root, 'investment-reports'),
     publicVideosBasePath: '/uploads/videos',
     frontendDistDirectory: path.join(root, 'dist'),
     trustProxy: false,
@@ -274,6 +275,56 @@ describe('auth and video backend foundation', () => {
     const reportsResponse = await investorAgent.get('/api/investment/me/reports');
     expect(reportsResponse.status).toBe(200);
     expect(reportsResponse.body).toEqual({ reports: [] });
+  });
+
+  it('generates historical investment reports using the requested month-end snapshot date', async () => {
+    currentTime = new Date('2026-08-03T16:00:00.000Z');
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const investorAgent = request.agent(app);
+    const investor = await registerUser(investorAgent, 'itsj2@icloud.com');
+
+    const memberTypeResponse = await adminAgent
+      .patch(`/api/admin/users/${investor.id}/member-type`)
+      .send({ memberType: 'investor' });
+    expect(memberTypeResponse.status).toBe(200);
+
+    const portfolioResponse = await adminAgent
+      .post(`/api/admin/investors/${investor.id}/portfolio`)
+      .send({ displayName: 'itsj2 Investor Portfolio' });
+    expect(portfolioResponse.status).toBe(201);
+
+    const transactionResponse = await adminAgent
+      .post(`/api/admin/investors/${investor.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'SOL',
+        assetName: 'Solana',
+        amountInvested: 5000,
+        purchasePrice: 100,
+        purchaseShares: 50,
+        purchaseDate: '2026-06-01',
+      });
+    expect(transactionResponse.status).toBe(201);
+
+    const julyReportResponse = await adminAgent
+      .post('/api/admin/investment/reports/generate-latest')
+      .send({ monthKey: '2026-07' });
+    expect(julyReportResponse.status).toBe(200);
+
+    const portfolio = db.findInvestmentPortfolioByUserId(investor.id);
+    const julyReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, '2026-07');
+    expect(julyReport.snapshotDate).toBe('2026-07-31');
+
+    const augustReportResponse = await adminAgent
+      .post('/api/admin/investment/reports/generate-latest')
+      .send({ monthKey: '2026-08' });
+    expect(augustReportResponse.status).toBe(200);
+
+    const augustReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, '2026-08');
+    expect(augustReport.snapshotDate).toBe('2026-08-03');
   });
 
   it('rejects duplicate registration and invalid login attempts', async () => {
