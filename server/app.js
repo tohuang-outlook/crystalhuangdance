@@ -763,7 +763,20 @@ export function createApp({
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    return res.json({ user: req.session.user });
+    const currentUser = db.findUserById(req.session.user.id) ?? db.findUserByEmail(req.session.user.email);
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (
+      currentUser.id !== req.session.user.id ||
+      currentUser.role !== req.session.user.role ||
+      currentUser.memberType !== req.session.user.memberType
+    ) {
+      setSessionUser(req, currentUser);
+    }
+
+    return res.json({ user: toSafeUser(currentUser) });
   });
 
   app.get('/api/auth/session', (req, res) => {
