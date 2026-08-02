@@ -29,6 +29,46 @@ const investorUpdateCategories = new Set([
 const featuredReelPlacements = new Set(['featured', 'supporting']);
 const contactInquiryStatuses = new Set(['new', 'resolved']);
 const allowedMemberTypes = new Set(['dancer', 'investor']);
+const investmentAssetIdsBySymbol = {
+  BTC: 'bitcoin',
+  ETH: 'ethereum',
+  ADA: 'cardano',
+  XRP: 'ripple',
+  SOL: 'solana',
+  DOGE: 'dogecoin',
+};
+
+async function fetchInvestmentPrices(symbols) {
+  const normalizedSymbols = [...new Set(symbols)].filter((symbol) => investmentAssetIdsBySymbol[symbol]);
+  if (normalizedSymbols.length === 0 || process.env.NODE_ENV !== 'production') {
+    return { pricesBySymbol: {}, pricesLastUpdatedAt: null };
+  }
+
+  const url = new URL('https://api.coingecko.com/api/v3/simple/price');
+  url.searchParams.set('ids', normalizedSymbols.map((symbol) => investmentAssetIdsBySymbol[symbol]).join(','));
+  url.searchParams.set('vs_currencies', 'usd');
+  url.searchParams.set('include_last_updated_at', 'true');
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const pricesBySymbol = {};
+  let latestUpdatedAt = null;
+  for (const symbol of normalizedSymbols) {
+    const assetPayload = payload[investmentAssetIdsBySymbol[symbol]];
+    const price = Number(assetPayload?.usd);
+    if (Number.isFinite(price)) pricesBySymbol[symbol] = price;
+    const updatedAt = Number(assetPayload?.last_updated_at);
+    if (Number.isFinite(updatedAt)) latestUpdatedAt = latestUpdatedAt === null ? updatedAt : Math.max(latestUpdatedAt, updatedAt);
+  }
+
+  return {
+    pricesBySymbol,
+    pricesLastUpdatedAt: latestUpdatedAt === null ? null : new Date(latestUpdatedAt * 1000).toISOString(),
+  };
+}
 
 function toSafeUser(user) {
   return {
@@ -143,7 +183,7 @@ function roundCurrency(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function buildInvestmentSnapshot(transactions) {
+function buildInvestmentSnapshot(transactions, livePricesBySymbol = {}) {
   const holdingsBySymbol = new Map();
 
   for (const transaction of transactions) {
@@ -159,7 +199,7 @@ function buildInvestmentSnapshot(transactions) {
   }
 
   const rawHoldings = [...holdingsBySymbol.values()].map((holding) => {
-    const currentPrice = holding.quantity > 0 ? holding.invested / holding.quantity : 0;
+    const currentPrice = Number(livePricesBySymbol[holding.assetSymbol]) || (holding.quantity > 0 ? holding.invested / holding.quantity : 0);
     const currentValue = holding.quantity * currentPrice;
     return {
       assetSymbol: holding.assetSymbol,
@@ -868,7 +908,7 @@ export function createApp({
     res.json({ users });
   });
 
-  app.get('/api/investment/me', requireAuth, (req, res) => {
+  app.get('/api/investment/me', requireAuth, async (req, res) => {
     const sessionUser = req.session.user;
     const currentUser = db.findUserById(sessionUser.id) ?? db.findUserByEmail(sessionUser.email);
 
@@ -888,7 +928,21 @@ export function createApp({
     }
 
     const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
-    const snapshot = buildInvestmentSnapshot(transactions);
+    const symbols = [...new Set(transactions.map((transaction) => transaction.assetSymbol))];
+    let pricesBySymbol = {};
+    let pricesLastUpdatedAt = null;
+
+    try {
+      const pricing = await fetchInvestmentPrices(symbols);
+      pricesBySymbol = pricing.pricesBySymbol;
+      pricesLastUpdatedAt = pricing.pricesLastUpdatedAt;
+    } catch (error) {
+      console.warn('Investment pricing unavailable; using purchase prices.', {
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    const snapshot = buildInvestmentSnapshot(transactions, pricesBySymbol);
     const livePrices = snapshot.holdings.map((holding) => ({
       assetSymbol: holding.assetSymbol,
       assetName: holding.assetName,
@@ -901,7 +955,7 @@ export function createApp({
       holdings: snapshot.holdings,
       transactions: transactions.map(serializeInvestmentTransaction),
       livePrices,
-      pricesLastUpdatedAt: null,
+      pricesLastUpdatedAt,
       monthlyPerformance: [],
     });
   });
