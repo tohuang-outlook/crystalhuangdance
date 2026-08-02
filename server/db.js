@@ -653,6 +653,7 @@ export function createDatabase(filename) {
   db.exec(schemaSql);
 
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
+  ensureColumn(db, 'users', 'member_type', "TEXT NOT NULL DEFAULT 'dancer'");
   ensureColumn(db, 'users', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'videos', 'original_filename', 'TEXT');
   ensureColumn(db, 'videos', 'duration_seconds', 'INTEGER');
@@ -685,27 +686,68 @@ export function createDatabase(filename) {
       `DELETE FROM contact_inquiries WHERE id = ? RETURNING id`
     ),
     createUser: db.prepare(
-      `INSERT INTO users (email, password_hash, role)
-       VALUES (@email, @passwordHash, @role)
-       RETURNING id, email, role`
+      `INSERT INTO users (email, password_hash, role, member_type)
+       VALUES (@email, @passwordHash, @role, @memberType)
+       RETURNING id, email, role, member_type AS memberType`
     ),
     findUserByEmail: db.prepare(
-      'SELECT id, email, role, password_hash AS passwordHash FROM users WHERE email = ?'
+      'SELECT id, email, role, member_type AS memberType, password_hash AS passwordHash FROM users WHERE email = ?'
     ),
-    findUserById: db.prepare('SELECT id, email, role FROM users WHERE id = ?'),
+    findUserById: db.prepare('SELECT id, email, role, member_type AS memberType FROM users WHERE id = ?'),
     setUserRoleByEmail: db.prepare(
       `UPDATE users
        SET role = @role,
            updated_at = CURRENT_TIMESTAMP
        WHERE email = @email
-       RETURNING id, email, role`
+       RETURNING id, email, role, member_type AS memberType`
+    ),
+    setUserMemberTypeById: db.prepare(
+      `UPDATE users
+       SET member_type = @memberType,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = @userId
+       RETURNING id, email, role, member_type AS memberType`
     ),
     updateUserPasswordHash: db.prepare(
       `UPDATE users
        SET password_hash = @passwordHash,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @userId
-       RETURNING id, email, role`
+       RETURNING id, email, role, member_type AS memberType`
+    ),
+    createInvestmentPortfolio: db.prepare(
+      `INSERT INTO investment_portfolios (user_id, base_currency, display_name, notes)
+       VALUES (@userId, @baseCurrency, @displayName, @notes)
+       RETURNING id, user_id AS userId, base_currency AS baseCurrency, display_name AS displayName,
+                 notes, created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    findInvestmentPortfolioByUserId: db.prepare(
+      `SELECT id, user_id AS userId, base_currency AS baseCurrency, display_name AS displayName,
+              notes, created_at AS createdAt, updated_at AS updatedAt
+       FROM investment_portfolios WHERE user_id = ?`
+    ),
+    createInvestmentTransaction: db.prepare(
+      `INSERT INTO investment_transactions (
+         portfolio_id, asset_symbol, asset_name, transaction_type, amount_invested,
+         purchase_price, purchase_shares, purchase_date, notes
+       ) VALUES (
+         @portfolioId, @assetSymbol, @assetName, @transactionType, @amountInvested,
+         @purchasePrice, @purchaseShares, @purchaseDate, @notes
+       )
+       RETURNING id, portfolio_id AS portfolioId, asset_symbol AS assetSymbol,
+                 asset_name AS assetName, transaction_type AS transactionType,
+                 amount_invested AS amountInvested, purchase_price AS purchasePrice,
+                 purchase_shares AS purchaseShares, purchase_date AS purchaseDate,
+                 notes, created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    listInvestmentTransactionsByPortfolioId: db.prepare(
+      `SELECT id, portfolio_id AS portfolioId, asset_symbol AS assetSymbol,
+              asset_name AS assetName, transaction_type AS transactionType,
+              amount_invested AS amountInvested, purchase_price AS purchasePrice,
+              purchase_shares AS purchaseShares, purchase_date AS purchaseDate,
+              notes, created_at AS createdAt, updated_at AS updatedAt
+       FROM investment_transactions
+       WHERE portfolio_id = ? ORDER BY date(purchase_date) DESC, id DESC`
     ),
     createVideo: db.prepare(
       `INSERT INTO videos (
@@ -765,6 +807,7 @@ export function createDatabase(filename) {
           users.id,
           users.email,
           users.role,
+          users.member_type AS memberType,
           users.created_at AS createdAt,
           users.updated_at AS updatedAt,
           COUNT(videos.id) AS uploadCount
@@ -2265,8 +2308,8 @@ export function createDatabase(filename) {
     deleteContactInquiry(id) {
       return statements.deleteContactInquiry.get(id) ?? null;
     },
-    createUser({ email, passwordHash, role = 'user' }) {
-      return statements.createUser.get({ email, passwordHash, role });
+    createUser({ email, passwordHash, role = 'user', memberType = 'dancer' }) {
+      return statements.createUser.get({ email, passwordHash, role, memberType });
     },
     findUserByEmail(email) {
       return statements.findUserByEmail.get(email) ?? null;
@@ -2276,6 +2319,27 @@ export function createDatabase(filename) {
     },
     setUserRoleByEmail(email, role) {
       return statements.setUserRoleByEmail.get({ email, role }) ?? null;
+    },
+    setUserMemberTypeById(userId, memberType) {
+      return statements.setUserMemberTypeById.get({ userId, memberType }) ?? null;
+    },
+    createInvestmentPortfolio({ userId, displayName = null, baseCurrency = 'USD', notes = null }) {
+      return statements.createInvestmentPortfolio.get({ userId, displayName, baseCurrency, notes });
+    },
+    findInvestmentPortfolioByUserId(userId) {
+      return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
+    },
+    createInvestmentTransaction({
+      portfolioId, assetSymbol, assetName, transactionType = 'buy', amountInvested,
+      purchasePrice, purchaseShares, purchaseDate, notes = null,
+    }) {
+      return statements.createInvestmentTransaction.get({
+        portfolioId, assetSymbol, assetName, transactionType, amountInvested,
+        purchasePrice, purchaseShares, purchaseDate, notes,
+      });
+    },
+    listInvestmentTransactionsByPortfolioId(portfolioId) {
+      return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);
     },
     createPasswordResetToken(passwordResetToken) {
       return replacePasswordResetToken(passwordResetToken);

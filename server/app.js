@@ -28,12 +28,14 @@ const investorUpdateCategories = new Set([
 ]);
 const featuredReelPlacements = new Set(['featured', 'supporting']);
 const contactInquiryStatuses = new Set(['new', 'resolved']);
+const allowedMemberTypes = new Set(['dancer', 'investor']);
 
 function toSafeUser(user) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
+    memberType: user.memberType ?? 'dancer',
   };
 }
 
@@ -68,6 +70,18 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requireInvestor(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (req.session.user.role !== 'admin' && req.session.user.memberType !== 'investor') {
+    return res.status(403).json({ error: 'Investor access is required.' });
+  }
+
+  next();
+}
+
 function serializeVideo(video) {
   return {
     id: video.id,
@@ -89,9 +103,88 @@ function serializeAdminUser(user) {
     id: user.id,
     email: user.email,
     role: user.role,
+    memberType: user.memberType ?? 'dancer',
     uploadCount: user.uploadCount,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+  };
+}
+
+function serializeInvestmentPortfolio(portfolio) {
+  return {
+    id: portfolio.id,
+    userId: portfolio.userId,
+    baseCurrency: portfolio.baseCurrency,
+    displayName: portfolio.displayName,
+    notes: portfolio.notes,
+    createdAt: portfolio.createdAt,
+    updatedAt: portfolio.updatedAt,
+  };
+}
+
+function serializeInvestmentTransaction(transaction) {
+  return {
+    id: transaction.id,
+    portfolioId: transaction.portfolioId,
+    assetSymbol: transaction.assetSymbol,
+    assetName: transaction.assetName,
+    transactionType: transaction.transactionType,
+    amountInvested: transaction.amountInvested,
+    purchasePrice: transaction.purchasePrice,
+    purchaseShares: transaction.purchaseShares,
+    purchaseDate: transaction.purchaseDate,
+    notes: transaction.notes,
+    createdAt: transaction.createdAt,
+    updatedAt: transaction.updatedAt,
+  };
+}
+
+function roundCurrency(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function buildInvestmentSnapshot(transactions) {
+  const holdingsBySymbol = new Map();
+
+  for (const transaction of transactions) {
+    const holding = holdingsBySymbol.get(transaction.assetSymbol) ?? {
+      assetSymbol: transaction.assetSymbol,
+      assetName: transaction.assetName,
+      quantity: 0,
+      invested: 0,
+    };
+    holding.quantity += Number(transaction.purchaseShares);
+    holding.invested += Number(transaction.amountInvested);
+    holdingsBySymbol.set(transaction.assetSymbol, holding);
+  }
+
+  const rawHoldings = [...holdingsBySymbol.values()].map((holding) => {
+    const currentPrice = holding.quantity > 0 ? holding.invested / holding.quantity : 0;
+    const currentValue = holding.quantity * currentPrice;
+    return {
+      assetSymbol: holding.assetSymbol,
+      assetName: holding.assetName,
+      quantity: roundCurrency(holding.quantity),
+      invested: roundCurrency(holding.invested),
+      averageCost: roundCurrency(currentPrice),
+      currentPrice: roundCurrency(currentPrice),
+      currentValue: roundCurrency(currentValue),
+      unrealizedPnL: 0,
+    };
+  });
+
+  const totalInvested = roundCurrency(rawHoldings.reduce((sum, holding) => sum + holding.invested, 0));
+  return {
+    summary: {
+      totalInvested,
+      portfolioValue: totalInvested,
+      unrealizedPnL: 0,
+      totalReturnPercent: 0,
+    },
+    holdings: rawHoldings.map((holding) => ({
+      ...holding,
+      allocationPercent: totalInvested > 0 ? roundCurrency((holding.currentValue / totalInvested) * 100) : 0,
+    })),
   };
 }
 
@@ -773,6 +866,102 @@ export function createApp({
   app.get('/api/admin/users', requireAdmin, (_req, res) => {
     const users = db.listUsersWithUploadCounts().map(serializeAdminUser);
     res.json({ users });
+  });
+
+  app.get('/api/investment/me', requireInvestor, (req, res) => {
+    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    const transactions = db.listInvestmentTransactionsByPortfolioId(portfolio.id);
+    const snapshot = buildInvestmentSnapshot(transactions);
+    const livePrices = snapshot.holdings.map((holding) => ({
+      assetSymbol: holding.assetSymbol,
+      assetName: holding.assetName,
+      currentPrice: holding.currentPrice,
+    }));
+
+    return res.json({
+      portfolio: serializeInvestmentPortfolio(portfolio),
+      summary: snapshot.summary,
+      holdings: snapshot.holdings,
+      transactions: transactions.map(serializeInvestmentTransaction),
+      livePrices,
+      pricesLastUpdatedAt: null,
+      monthlyPerformance: [],
+    });
+  });
+
+  app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const memberType = String(req.body?.memberType ?? '').trim().toLowerCase();
+
+    if (!userId || !allowedMemberTypes.has(memberType)) {
+      return res.status(400).json({ error: 'A valid member type and user id are required.' });
+    }
+
+    const user = db.setUserMemberTypeById(userId, memberType);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({ user: toSafeUser(user) });
+  });
+
+  app.post('/api/admin/investors/:userId/portfolio', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const targetUser = userId ? db.findUserById(userId) : null;
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    if (targetUser.memberType !== 'investor') {
+      return res.status(400).json({ error: 'Portfolios can only be created for investor users.' });
+    }
+    if (db.findInvestmentPortfolioByUserId(userId)) {
+      return res.status(409).json({ error: 'This investor already has a portfolio.' });
+    }
+
+    const portfolio = db.createInvestmentPortfolio({
+      userId,
+      displayName: trimOptionalString(req.body?.displayName),
+      notes: trimOptionalString(req.body?.notes),
+    });
+
+    return res.status(201).json({ portfolio: serializeInvestmentPortfolio(portfolio) });
+  });
+
+  app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const portfolio = userId ? db.findInvestmentPortfolioByUserId(userId) : null;
+    const assetSymbol = String(req.body?.assetSymbol ?? '').trim().toUpperCase();
+    const assetName = String(req.body?.assetName ?? assetSymbol).trim();
+    const amountInvested = Number(req.body?.amountInvested);
+    const purchasePrice = Number(req.body?.purchasePrice);
+    const purchaseShares = Number(req.body?.purchaseShares);
+    const purchaseDate = String(req.body?.purchaseDate ?? '').trim();
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+    if (!assetSymbol || !assetName || !purchaseDate || ![amountInvested, purchasePrice, purchaseShares].every((value) => Number.isFinite(value) && value > 0)) {
+      return res.status(400).json({ error: 'Valid transaction details are required.' });
+    }
+
+    const transaction = db.createInvestmentTransaction({
+      portfolioId: portfolio.id,
+      assetSymbol,
+      assetName,
+      amountInvested,
+      purchasePrice,
+      purchaseShares,
+      purchaseDate,
+      notes: trimOptionalString(req.body?.notes),
+    });
+
+    return res.status(201).json({ transaction: serializeInvestmentTransaction(transaction) });
   });
 
   app.get('/api/admin/assets', requireAdmin, async (_req, res) => {

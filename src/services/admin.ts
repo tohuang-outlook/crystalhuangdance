@@ -2,6 +2,7 @@ export interface AdminUserRecord {
   id: number;
   email: string;
   role: 'user' | 'admin';
+  memberType: 'dancer' | 'investor';
   uploadCount: number;
   createdAt: string;
   updatedAt: string;
@@ -264,6 +265,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function fetchAdminUsers() {
   return request<AdminUsersEnvelope>('/api/admin/users', { method: 'GET' });
+}
+
+export function updateAdminUserMemberType(userId: number, memberType: 'dancer' | 'investor') {
+  return request<{ user: Pick<AdminUserRecord, 'id' | 'email' | 'role' | 'memberType'> }>(
+    `/api/admin/users/${userId}/member-type`,
+    { method: 'PATCH', body: JSON.stringify({ memberType }) }
+  );
 }
 
 export function fetchAdminVideos() {

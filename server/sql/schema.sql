@@ -3,8 +3,36 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',
+  member_type TEXT NOT NULL DEFAULT 'dancer',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS investment_portfolios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
+  base_currency TEXT NOT NULL DEFAULT 'USD',
+  display_name TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS investment_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  portfolio_id INTEGER NOT NULL,
+  asset_symbol TEXT NOT NULL,
+  asset_name TEXT NOT NULL,
+  transaction_type TEXT NOT NULL DEFAULT 'buy',
+  amount_invested REAL NOT NULL,
+  purchase_price REAL NOT NULL,
+  purchase_shares REAL NOT NULL,
+  purchase_date TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (portfolio_id) REFERENCES investment_portfolios (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS videos (

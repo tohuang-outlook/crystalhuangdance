@@ -139,6 +139,7 @@ describe('auth and video backend foundation', () => {
       id: 1,
       email: 'crystal@example.com',
       role: 'user',
+      memberType: 'dancer',
     });
 
     const meResponse = await agent.get('/api/auth/me');
@@ -149,6 +150,7 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
     });
 
@@ -160,6 +162,7 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
     });
 
@@ -185,8 +188,60 @@ describe('auth and video backend foundation', () => {
         id: 1,
         email: 'crystal@example.com',
         role: 'user',
+        memberType: 'dancer',
       },
     });
+  });
+
+  it('lets admins assign an investor, create a portfolio, and serves the dashboard contract', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const investorAgent = request.agent(app);
+    const investor = await registerUser(investorAgent, 'itsj2@icloud.com');
+
+    const memberTypeResponse = await adminAgent
+      .patch(`/api/admin/users/${investor.id}/member-type`)
+      .send({ memberType: 'investor' });
+    expect(memberTypeResponse.status).toBe(200);
+    expect(memberTypeResponse.body.user.memberType).toBe('investor');
+
+    const portfolioResponse = await adminAgent
+      .post(`/api/admin/investors/${investor.id}/portfolio`)
+      .send({ displayName: 'itsj2 Investor Portfolio', notes: 'Production investor account' });
+    expect(portfolioResponse.status).toBe(201);
+
+    const transactionResponse = await adminAgent
+      .post(`/api/admin/investors/${investor.id}/portfolio/transactions`)
+      .send({
+        assetSymbol: 'BTC',
+        assetName: 'Bitcoin',
+        amountInvested: 1000,
+        purchasePrice: 50000,
+        purchaseShares: 0.02,
+        purchaseDate: '2026-07-01',
+      });
+    expect(transactionResponse.status).toBe(201);
+
+    await investorAgent.post('/api/auth/logout');
+    await loginUser(investorAgent, 'itsj2@icloud.com');
+    const dashboardResponse = await investorAgent.get('/api/investment/me');
+
+    expect(dashboardResponse.status).toBe(200);
+    expect(dashboardResponse.body.portfolio.displayName).toBe('itsj2 Investor Portfolio');
+    expect(dashboardResponse.body.summary).toMatchObject({
+      totalInvested: 1000,
+      portfolioValue: 1000,
+      unrealizedPnL: 0,
+    });
+    expect(dashboardResponse.body.holdings).toEqual([
+      expect.objectContaining({ assetSymbol: 'BTC', currentValue: 1000 }),
+    ]);
+    expect(dashboardResponse.body.livePrices).toEqual([
+      expect.objectContaining({ assetSymbol: 'BTC', currentPrice: 50000 }),
+    ]);
   });
 
   it('rejects duplicate registration and invalid login attempts', async () => {

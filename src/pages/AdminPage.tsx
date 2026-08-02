@@ -70,6 +70,7 @@ import {
   updateAdminMasterClassMoment,
   updateAdminMasterClassTimelineEntry,
   updateAdminPressHighlight,
+  updateAdminUserMemberType,
   uploadAdminVideoFile,
 } from '../services/admin';
 import {
@@ -80,6 +81,7 @@ import {
 } from '../services/contactInquiries';
 import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
 import { deleteAdminAsset, fetchAdminAssets, uploadAdminAsset, type AssetRecord } from '../services/assets';
+import { createAdminInvestmentPortfolio } from '../services/investment';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -3506,8 +3508,40 @@ export default function AdminPage() {
 
                           <div className="mt-5 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                             <span>Role: {user.role}</span>
+                            <span>Member type: {user.memberType}</span>
                             <span>Uploads: {user.uploadCount}</span>
                             <span>Joined: {formatDate(user.createdAt)}</span>
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/60 p-4">
+                            <label className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]" htmlFor={`member-type-${user.id}`}>
+                              Investor access
+                            </label>
+                            <select
+                              id={`member-type-${user.id}`}
+                              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm"
+                              value={user.memberType}
+                              onChange={(event) => {
+                                const memberType = event.target.value as 'dancer' | 'investor';
+                                void updateAdminUserMemberType(user.id, memberType)
+                                  .then(({ user: updatedUser }) => setUsers((current) => current.map((item) => item.id === user.id ? { ...item, memberType: updatedUser.memberType } : item)))
+                                  .catch((err) => setError(err instanceof Error ? err.message : 'Unable to update member type.'));
+                              }}
+                            >
+                              <option value="dancer">Dancer</option>
+                              <option value="investor">Investor</option>
+                            </select>
+                            {user.memberType === 'investor' ? (
+                              <button
+                                type="button"
+                                className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white"
+                                onClick={() => void createAdminInvestmentPortfolio(user.id, { displayName: `${user.email} Portfolio` })
+                                  .then(() => setError(null))
+                                  .catch((err) => setError(err instanceof Error ? err.message : 'Unable to create portfolio.'))}
+                              >
+                                Create portfolio
+                              </button>
+                            ) : null}
                           </div>
 
                           <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
