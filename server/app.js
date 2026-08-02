@@ -933,6 +933,17 @@ export function createApp({
     return res.status(201).json({ portfolio: serializeInvestmentPortfolio(portfolio) });
   });
 
+  app.get('/api/admin/investors/:userId/portfolio', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const portfolio = userId ? db.findInvestmentPortfolioByUserId(userId) : null;
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    return res.json({ portfolio: serializeInvestmentPortfolio(portfolio) });
+  });
+
   app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
     const userId = parseIdParam(req.params.userId);
     const portfolio = userId ? db.findInvestmentPortfolioByUserId(userId) : null;

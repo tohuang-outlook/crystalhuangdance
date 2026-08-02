@@ -81,7 +81,7 @@ import {
 } from '../services/contactInquiries';
 import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
 import { deleteAdminAsset, fetchAdminAssets, uploadAdminAsset, type AssetRecord } from '../services/assets';
-import { createAdminInvestmentPortfolio } from '../services/investment';
+import { createAdminInvestmentPortfolio, fetchAdminInvestmentPortfolio } from '../services/investment';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -573,7 +573,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
-  const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created'>>({});
+  const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created' | 'existing'>>({});
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
@@ -968,6 +968,14 @@ export default function AdminPage() {
     setPortfolioStatuses((current) => ({ ...current, [user.id]: 'creating' }));
 
     try {
+      try {
+        await fetchAdminInvestmentPortfolio(user.id);
+        setPortfolioStatuses((current) => ({ ...current, [user.id]: 'existing' }));
+        return;
+      } catch {
+        // A 404 means this investor has not been provisioned yet.
+      }
+
       await createAdminInvestmentPortfolio(user.id, { displayName: `${user.email} Portfolio` });
       setPortfolioStatuses((current) => ({ ...current, [user.id]: 'created' }));
     } catch (err) {
@@ -3556,8 +3564,15 @@ export default function AdminPage() {
                                   ? 'Creating...'
                                   : portfolioStatuses[user.id] === 'created'
                                     ? 'Portfolio created'
+                                    : portfolioStatuses[user.id] === 'existing'
+                                      ? 'Portfolio exists'
                                     : 'Create portfolio'}
                               </button>
+                            ) : null}
+                            {portfolioStatuses[user.id] === 'created' || portfolioStatuses[user.id] === 'existing' ? (
+                              <span className="text-xs font-medium text-emerald-700">
+                                {portfolioStatuses[user.id] === 'created' ? 'Portfolio created successfully.' : 'Portfolio already exists.'}
+                              </span>
                             ) : null}
                           </div>
 
