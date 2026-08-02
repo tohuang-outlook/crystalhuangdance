@@ -242,6 +242,10 @@ describe('auth and video backend foundation', () => {
     expect(dashboardResponse.body.livePrices).toEqual([
       expect.objectContaining({ assetSymbol: 'BTC', currentPrice: 50000 }),
     ]);
+
+    const reportsResponse = await investorAgent.get('/api/investment/me/reports');
+    expect(reportsResponse.status).toBe(200);
+    expect(reportsResponse.body).toEqual({ reports: [] });
   });
 
   it('rejects duplicate registration and invalid login attempts', async () => {

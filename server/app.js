@@ -906,6 +906,21 @@ export function createApp({
     });
   });
 
+  app.get('/api/investment/me/reports', requireAuth, (req, res) => {
+    const sessionUser = req.session.user;
+    const currentUser = db.findUserById(sessionUser.id) ?? db.findUserByEmail(sessionUser.email);
+
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.memberType !== 'investor')) {
+      return res.status(403).json({ error: 'Investor access is required.' });
+    }
+
+    if (currentUser.id !== sessionUser.id || currentUser.memberType !== sessionUser.memberType) {
+      setSessionUser(req, currentUser);
+    }
+
+    return res.json({ reports: [] });
+  });
+
   app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {
     const userId = parseIdParam(req.params.userId);
     const memberType = String(req.body?.memberType ?? '').trim().toLowerCase();
