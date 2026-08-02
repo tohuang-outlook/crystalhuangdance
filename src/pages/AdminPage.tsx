@@ -573,6 +573,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
+  const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created'>>({});
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
@@ -960,6 +961,19 @@ export default function AdminPage() {
         ...patch,
       },
     }));
+  };
+
+  const handleCreateInvestorPortfolio = async (user: AdminUserRecord) => {
+    setError(null);
+    setPortfolioStatuses((current) => ({ ...current, [user.id]: 'creating' }));
+
+    try {
+      await createAdminInvestmentPortfolio(user.id, { displayName: `${user.email} Portfolio` });
+      setPortfolioStatuses((current) => ({ ...current, [user.id]: 'created' }));
+    } catch (err) {
+      setPortfolioStatuses((current) => ({ ...current, [user.id]: 'idle' }));
+      setError(err instanceof Error ? err.message : 'Unable to create portfolio.');
+    }
   };
 
   const resetDraft = (userId: number, mode?: AdminUploadMode) => {
@@ -3534,12 +3548,15 @@ export default function AdminPage() {
                             {user.memberType === 'investor' ? (
                               <button
                                 type="button"
+                                disabled={portfolioStatuses[user.id] === 'creating' || portfolioStatuses[user.id] === 'created'}
                                 className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white"
-                                onClick={() => void createAdminInvestmentPortfolio(user.id, { displayName: `${user.email} Portfolio` })
-                                  .then(() => setError(null))
-                                  .catch((err) => setError(err instanceof Error ? err.message : 'Unable to create portfolio.'))}
+                                onClick={() => void handleCreateInvestorPortfolio(user)}
                               >
-                                Create portfolio
+                                {portfolioStatuses[user.id] === 'creating'
+                                  ? 'Creating...'
+                                  : portfolioStatuses[user.id] === 'created'
+                                    ? 'Portfolio created'
+                                    : 'Create portfolio'}
                               </button>
                             ) : null}
                           </div>
