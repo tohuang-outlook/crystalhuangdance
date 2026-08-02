@@ -241,27 +241,32 @@ function buildInvestmentSnapshot(transactions, livePricesBySymbol = {}) {
   }
 
   const rawHoldings = [...holdingsBySymbol.values()].map((holding) => {
-    const currentPrice = Number(livePricesBySymbol[holding.assetSymbol]) || (holding.quantity > 0 ? holding.invested / holding.quantity : 0);
+    const averageCost = holding.quantity > 0 ? holding.invested / holding.quantity : 0;
+    const livePrice = Number(livePricesBySymbol[holding.assetSymbol]);
+    const hasLivePrice = Number.isFinite(livePrice) && livePrice > 0;
+    const currentPrice = hasLivePrice ? livePrice : averageCost;
     const currentValue = holding.quantity * currentPrice;
     return {
       assetSymbol: holding.assetSymbol,
       assetName: holding.assetName,
       quantity: roundCurrency(holding.quantity),
       invested: roundCurrency(holding.invested),
-      averageCost: roundCurrency(currentPrice),
+      averageCost: roundCurrency(averageCost),
       currentPrice: roundCurrency(currentPrice),
       currentValue: roundCurrency(currentValue),
-      unrealizedPnL: 0,
+      unrealizedPnL: hasLivePrice ? roundCurrency(currentValue - holding.invested) : 0,
     };
   });
 
   const totalInvested = roundCurrency(rawHoldings.reduce((sum, holding) => sum + holding.invested, 0));
+  const portfolioValue = roundCurrency(rawHoldings.reduce((sum, holding) => sum + holding.currentValue, 0));
+  const unrealizedPnL = roundCurrency(portfolioValue - totalInvested);
   return {
     summary: {
       totalInvested,
-      portfolioValue: totalInvested,
-      unrealizedPnL: 0,
-      totalReturnPercent: 0,
+      portfolioValue,
+      unrealizedPnL,
+      totalReturnPercent: totalInvested > 0 ? roundCurrency((unrealizedPnL / totalInvested) * 100) : 0,
     },
     holdings: rawHoldings.map((holding) => ({
       ...holding,
