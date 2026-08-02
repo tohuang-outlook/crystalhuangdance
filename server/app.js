@@ -37,6 +37,8 @@ const investmentAssetIdsBySymbol = {
   SOL: 'solana',
   DOGE: 'dogecoin',
 };
+const investmentPriceCache = new Map();
+const investmentPriceCacheTtlMs = 5 * 60 * 1000;
 
 async function fetchInvestmentPrices(symbols) {
   const normalizedSymbols = [...new Set(symbols)].filter((symbol) => investmentAssetIdsBySymbol[symbol]);
@@ -44,12 +46,24 @@ async function fetchInvestmentPrices(symbols) {
     return { pricesBySymbol: {}, pricesLastUpdatedAt: null };
   }
 
+  const cacheKey = normalizedSymbols.sort().join(',');
+  const cached = investmentPriceCache.get(cacheKey);
+  if (cached && Date.now() - cached.cachedAt < investmentPriceCacheTtlMs) {
+    return cached.value;
+  }
+
   const url = new URL('https://api.coingecko.com/api/v3/simple/price');
   url.searchParams.set('ids', normalizedSymbols.map((symbol) => investmentAssetIdsBySymbol[symbol]).join(','));
   url.searchParams.set('vs_currencies', 'usd');
   url.searchParams.set('include_last_updated_at', 'true');
-  const response = await fetch(url);
+  const headers = process.env.COINGECKO_API_KEY
+    ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+    : undefined;
+  const response = await fetch(url, { headers });
   if (!response.ok) {
+    if (cached) {
+      return cached.value;
+    }
     throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
   }
 
@@ -64,10 +78,12 @@ async function fetchInvestmentPrices(symbols) {
     if (Number.isFinite(updatedAt)) latestUpdatedAt = latestUpdatedAt === null ? updatedAt : Math.max(latestUpdatedAt, updatedAt);
   }
 
-  return {
+  const value = {
     pricesBySymbol,
-    pricesLastUpdatedAt: latestUpdatedAt === null ? null : new Date(latestUpdatedAt * 1000).toISOString(),
+    pricesLastUpdatedAt: latestUpdatedAt === null ? new Date().toISOString() : new Date(latestUpdatedAt * 1000).toISOString(),
   };
+  investmentPriceCache.set(cacheKey, { cachedAt: Date.now(), value });
+  return value;
 }
 
 function toSafeUser(user) {
