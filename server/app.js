@@ -331,7 +331,13 @@ async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config
     monthlyPerformance: [
       ...db
         .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
-        .filter((report) => report.monthKey < monthKey && Number.isFinite(Number(report.portfolioValue)))
+        .filter(
+          (report) =>
+            report.monthKey < monthKey &&
+            report.portfolioValue !== null &&
+            report.portfolioValue !== undefined &&
+            Number.isFinite(Number(report.portfolioValue)),
+        )
         .map((report) => ({
           month: report.monthKey,
           label: formatInvestmentMonthLabel(report.monthKey),
@@ -1098,7 +1104,12 @@ export function createApp({
       pricesLastUpdatedAt,
       monthlyPerformance: db
         .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
-        .filter((report) => Number.isFinite(Number(report.portfolioValue)))
+        .filter(
+          (report) =>
+            report.portfolioValue !== null &&
+            report.portfolioValue !== undefined &&
+            Number.isFinite(Number(report.portfolioValue)),
+        )
         .map((report) => ({
           month: report.monthKey,
           label: formatInvestmentMonthLabel(report.monthKey),

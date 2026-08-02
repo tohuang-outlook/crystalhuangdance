@@ -483,8 +483,8 @@ export default function MyInvestmentPage() {
                 <p className="eyebrow">Performance</p>
                 <h2 className="mt-4 text-3xl text-[var(--text)]">Monthly Portfolio Value</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
-                  Month-end portfolio totals, seeded from your historical records and extended as
-                  new months close.
+                  Saved portfolio snapshots from generated investor reports. Historical month-end
+                  values will appear once month-end snapshots are recorded.
                 </p>
                 <MonthlyPerformanceChart monthlyPerformance={data.monthlyPerformance} />
               </section>
