@@ -328,13 +328,25 @@ async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config
       currentPrice: holding.currentPrice,
     })),
     pricesLastUpdatedAt,
-    monthlyPerformance: [{ month: monthKey, label, portfolioValue: snapshot.summary.portfolioValue }],
+    monthlyPerformance: [
+      ...db
+        .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
+        .filter((report) => report.monthKey < monthKey && Number.isFinite(Number(report.portfolioValue)))
+        .map((report) => ({
+          month: report.monthKey,
+          label: formatInvestmentMonthLabel(report.monthKey),
+          portfolioValue: roundCurrency(Number(report.portfolioValue)),
+        }))
+        .reverse(),
+      { month: monthKey, label, portfolioValue: snapshot.summary.portfolioValue },
+    ],
   });
   await fs.writeFile(outputPath, Buffer.from(doc.output('arraybuffer')));
 
   return db.upsertInvestmentMonthlyReport({
     portfolioId: portfolio.id,
     monthKey,
+    portfolioValue: snapshot.summary.portfolioValue,
     snapshotDate: currentDate.toISOString().slice(0, 10),
     fileName,
     filePath: relativePath,
@@ -1084,7 +1096,15 @@ export function createApp({
       transactions: transactions.map(serializeInvestmentTransaction),
       livePrices,
       pricesLastUpdatedAt,
-      monthlyPerformance: [],
+      monthlyPerformance: db
+        .listInvestmentMonthlyReportsByPortfolioId(portfolio.id)
+        .filter((report) => Number.isFinite(Number(report.portfolioValue)))
+        .map((report) => ({
+          month: report.monthKey,
+          label: formatInvestmentMonthLabel(report.monthKey),
+          portfolioValue: roundCurrency(Number(report.portfolioValue)),
+        }))
+        .reverse(),
     });
   });
 

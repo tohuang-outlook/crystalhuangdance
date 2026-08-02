@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS investment_monthly_reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   portfolio_id INTEGER NOT NULL,
   month_key TEXT NOT NULL,
+  portfolio_value REAL,
   snapshot_date TEXT NOT NULL,
   file_name TEXT NOT NULL,
   file_path TEXT NOT NULL,

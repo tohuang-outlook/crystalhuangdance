@@ -672,6 +672,7 @@ export function createDatabase(filename) {
       FOREIGN KEY (portfolio_id) REFERENCES investment_portfolios (id) ON DELETE CASCADE
     )
   `);
+  ensureColumn(db, 'investment_monthly_reports', 'portfolio_value', 'REAL');
 
   ensureColumn(db, 'users', 'role', "TEXT NOT NULL DEFAULT 'user'");
   ensureColumn(db, 'users', 'member_type', "TEXT NOT NULL DEFAULT 'dancer'");
@@ -803,14 +804,14 @@ export function createDatabase(filename) {
       'DELETE FROM investment_transactions WHERE id = ? RETURNING id, portfolio_id AS portfolioId'
     ),
     listInvestmentMonthlyReportsByPortfolioId: db.prepare(
-      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, snapshot_date AS snapshotDate,
+      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, portfolio_value AS portfolioValue, snapshot_date AS snapshotDate,
               file_name AS fileName, file_path AS filePath, status, generated_at AS generatedAt,
               error_message AS errorMessage, investor_note AS investorNote, admin_note AS adminNote,
               created_at AS createdAt, updated_at AS updatedAt
        FROM investment_monthly_reports WHERE portfolio_id = ? ORDER BY month_key DESC, id DESC`
     ),
     findInvestmentMonthlyReportByPortfolioIdAndMonth: db.prepare(
-      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, snapshot_date AS snapshotDate,
+      `SELECT id, portfolio_id AS portfolioId, month_key AS monthKey, portfolio_value AS portfolioValue, snapshot_date AS snapshotDate,
               file_name AS fileName, file_path AS filePath, status, generated_at AS generatedAt,
               error_message AS errorMessage, investor_note AS investorNote, admin_note AS adminNote,
               created_at AS createdAt, updated_at AS updatedAt
@@ -818,10 +819,10 @@ export function createDatabase(filename) {
     ),
     upsertInvestmentMonthlyReport: db.prepare(
       `INSERT INTO investment_monthly_reports
-        (portfolio_id, month_key, snapshot_date, file_name, file_path, status, error_message, investor_note, admin_note)
-       VALUES (@portfolioId, @monthKey, @snapshotDate, @fileName, @filePath, @status, @errorMessage, @investorNote, @adminNote)
+        (portfolio_id, month_key, portfolio_value, snapshot_date, file_name, file_path, status, error_message, investor_note, admin_note)
+       VALUES (@portfolioId, @monthKey, @portfolioValue, @snapshotDate, @fileName, @filePath, @status, @errorMessage, @investorNote, @adminNote)
        ON CONFLICT(portfolio_id, month_key) DO UPDATE SET
-         snapshot_date = excluded.snapshot_date, file_name = excluded.file_name, file_path = excluded.file_path,
+         portfolio_value = excluded.portfolio_value, snapshot_date = excluded.snapshot_date, file_name = excluded.file_name, file_path = excluded.file_path,
          status = excluded.status, error_message = excluded.error_message,
          investor_note = COALESCE(excluded.investor_note, investment_monthly_reports.investor_note),
          admin_note = COALESCE(excluded.admin_note, investment_monthly_reports.admin_note),
@@ -832,7 +833,7 @@ export function createDatabase(filename) {
                  created_at AS createdAt, updated_at AS updatedAt`
     ),
     listInvestmentMonthlyReportsForAdmin: db.prepare(
-      `SELECT reports.id, reports.portfolio_id AS portfolioId, reports.month_key AS monthKey,
+      `SELECT reports.id, reports.portfolio_id AS portfolioId, reports.month_key AS monthKey, reports.portfolio_value AS portfolioValue,
               reports.snapshot_date AS snapshotDate, reports.file_name AS fileName, reports.file_path AS filePath,
               reports.status, reports.generated_at AS generatedAt, reports.error_message AS errorMessage,
               reports.investor_note AS investorNote, reports.admin_note AS adminNote,
