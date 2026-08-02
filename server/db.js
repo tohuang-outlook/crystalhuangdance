@@ -726,6 +726,13 @@ export function createDatabase(filename) {
               notes, created_at AS createdAt, updated_at AS updatedAt
        FROM investment_portfolios WHERE user_id = ?`
     ),
+    updateInvestmentPortfolio: db.prepare(
+      `UPDATE investment_portfolios
+       SET display_name = @displayName, notes = @notes, updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING id, user_id AS userId, base_currency AS baseCurrency, display_name AS displayName,
+                 notes, created_at AS createdAt, updated_at AS updatedAt`
+    ),
     createInvestmentTransaction: db.prepare(
       `INSERT INTO investment_transactions (
          portfolio_id, asset_symbol, asset_name, transaction_type, amount_invested,
@@ -748,6 +755,22 @@ export function createDatabase(filename) {
               notes, created_at AS createdAt, updated_at AS updatedAt
        FROM investment_transactions
        WHERE portfolio_id = ? ORDER BY date(purchase_date) DESC, id DESC`
+    ),
+    updateInvestmentTransaction: db.prepare(
+      `UPDATE investment_transactions
+       SET asset_symbol = @assetSymbol, asset_name = @assetName,
+           amount_invested = @amountInvested, purchase_price = @purchasePrice,
+           purchase_shares = @purchaseShares, purchase_date = @purchaseDate,
+           notes = @notes, updated_at = CURRENT_TIMESTAMP
+       WHERE id = @id
+       RETURNING id, portfolio_id AS portfolioId, asset_symbol AS assetSymbol,
+                 asset_name AS assetName, transaction_type AS transactionType,
+                 amount_invested AS amountInvested, purchase_price AS purchasePrice,
+                 purchase_shares AS purchaseShares, purchase_date AS purchaseDate,
+                 notes, created_at AS createdAt, updated_at AS updatedAt`
+    ),
+    deleteInvestmentTransaction: db.prepare(
+      'DELETE FROM investment_transactions WHERE id = ? RETURNING id, portfolio_id AS portfolioId'
     ),
     createVideo: db.prepare(
       `INSERT INTO videos (
@@ -2329,6 +2352,9 @@ export function createDatabase(filename) {
     findInvestmentPortfolioByUserId(userId) {
       return statements.findInvestmentPortfolioByUserId.get(userId) ?? null;
     },
+    updateInvestmentPortfolio({ id, displayName, notes }) {
+      return statements.updateInvestmentPortfolio.get({ id, displayName, notes }) ?? null;
+    },
     createInvestmentTransaction({
       portfolioId, assetSymbol, assetName, transactionType = 'buy', amountInvested,
       purchasePrice, purchaseShares, purchaseDate, notes = null,
@@ -2340,6 +2366,12 @@ export function createDatabase(filename) {
     },
     listInvestmentTransactionsByPortfolioId(portfolioId) {
       return statements.listInvestmentTransactionsByPortfolioId.all(portfolioId);
+    },
+    updateInvestmentTransaction(transaction) {
+      return statements.updateInvestmentTransaction.get(transaction) ?? null;
+    },
+    deleteInvestmentTransaction(transactionId) {
+      return statements.deleteInvestmentTransaction.get(transactionId) ?? null;
     },
     createPasswordResetToken(passwordResetToken) {
       return replacePasswordResetToken(passwordResetToken);

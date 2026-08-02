@@ -323,10 +323,21 @@ export function createAdminInvestmentPortfolio(
   });
 }
 
+export function updateAdminInvestmentPortfolio(
+  userId: number,
+  payload: { displayName: string; notes?: string | null }
+) {
+  return requestJson<InvestmentPortfolioEnvelope>(`/api/admin/investors/${userId}/portfolio`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function createAdminInvestmentTransaction(
   userId: number,
   payload: {
     assetSymbol: string;
+    assetName?: string;
     assetName?: string;
     amountInvested: number;
     purchasePrice: number;

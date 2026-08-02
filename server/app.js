@@ -968,7 +968,27 @@ export function createApp({
       return res.status(404).json({ error: 'Portfolio not found.' });
     }
 
-    return res.json({ portfolio: serializeInvestmentPortfolio(portfolio) });
+    return res.json({
+      portfolio: serializeInvestmentPortfolio(portfolio),
+      transactions: db.listInvestmentTransactionsByPortfolioId(portfolio.id).map(serializeInvestmentTransaction),
+    });
+  });
+
+  app.patch('/api/admin/investors/:userId/portfolio', requireAdmin, (req, res) => {
+    const userId = parseIdParam(req.params.userId);
+    const portfolio = userId ? db.findInvestmentPortfolioByUserId(userId) : null;
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    const updatedPortfolio = db.updateInvestmentPortfolio({
+      id: portfolio.id,
+      displayName: trimOptionalString(req.body?.displayName),
+      notes: trimOptionalString(req.body?.notes),
+    });
+
+    return res.json({ portfolio: serializeInvestmentPortfolio(updatedPortfolio) });
   });
 
   app.post('/api/admin/investors/:userId/portfolio/transactions', requireAdmin, (req, res) => {
@@ -1000,6 +1020,48 @@ export function createApp({
     });
 
     return res.status(201).json({ transaction: serializeInvestmentTransaction(transaction) });
+  });
+
+  app.patch('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
+    const transactionId = parseIdParam(req.params.transactionId);
+    const assetSymbol = String(req.body?.assetSymbol ?? '').trim().toUpperCase();
+    const assetName = String(req.body?.assetName ?? assetSymbol).trim();
+    const amountInvested = Number(req.body?.amountInvested);
+    const purchasePrice = Number(req.body?.purchasePrice);
+    const purchaseShares = Number(req.body?.purchaseShares);
+    const purchaseDate = String(req.body?.purchaseDate ?? '').trim();
+
+    if (!transactionId || !assetSymbol || !assetName || !purchaseDate || ![amountInvested, purchasePrice, purchaseShares].every((value) => Number.isFinite(value) && value > 0)) {
+      return res.status(400).json({ error: 'Valid transaction details are required.' });
+    }
+
+    const transaction = db.updateInvestmentTransaction({
+      id: transactionId,
+      assetSymbol,
+      assetName,
+      amountInvested,
+      purchasePrice,
+      purchaseShares,
+      purchaseDate,
+      notes: trimOptionalString(req.body?.notes),
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+
+    return res.json({ transaction: serializeInvestmentTransaction(transaction) });
+  });
+
+  app.delete('/api/admin/portfolio-transactions/:transactionId', requireAdmin, (req, res) => {
+    const transactionId = parseIdParam(req.params.transactionId);
+    const transaction = transactionId ? db.deleteInvestmentTransaction(transactionId) : null;
+
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+
+    return res.json({ deletedTransactionId: transaction.id });
   });
 
   app.get('/api/admin/assets', requireAdmin, async (_req, res) => {

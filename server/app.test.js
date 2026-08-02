@@ -225,23 +225,51 @@ describe('auth and video backend foundation', () => {
       });
     expect(transactionResponse.status).toBe(201);
 
+    const transactionId = transactionResponse.body.transaction.id;
+    const adminPortfolioResponse = await adminAgent.get(`/api/admin/investors/${investor.id}/portfolio`);
+    expect(adminPortfolioResponse.status).toBe(200);
+    expect(adminPortfolioResponse.body.transactions).toHaveLength(1);
+
+    const portfolioUpdateResponse = await adminAgent
+      .patch(`/api/admin/investors/${investor.id}/portfolio`)
+      .send({ displayName: 'Updated Investor Portfolio', notes: 'Updated notes' });
+    expect(portfolioUpdateResponse.status).toBe(200);
+    expect(portfolioUpdateResponse.body.portfolio.notes).toBe('Updated notes');
+
+    const transactionUpdateResponse = await adminAgent
+      .patch(`/api/admin/portfolio-transactions/${transactionId}`)
+      .send({
+        assetSymbol: 'BTC',
+        assetName: 'Bitcoin',
+        amountInvested: 1200,
+        purchasePrice: 60000,
+        purchaseShares: 0.02,
+        purchaseDate: '2026-07-02',
+      });
+    expect(transactionUpdateResponse.status).toBe(200);
+
     await investorAgent.post('/api/auth/logout');
     await loginUser(investorAgent, 'itsj2@icloud.com');
     const dashboardResponse = await investorAgent.get('/api/investment/me');
 
     expect(dashboardResponse.status).toBe(200);
-    expect(dashboardResponse.body.portfolio.displayName).toBe('itsj2 Investor Portfolio');
+    expect(dashboardResponse.body.portfolio.displayName).toBe('Updated Investor Portfolio');
     expect(dashboardResponse.body.summary).toMatchObject({
-      totalInvested: 1000,
-      portfolioValue: 1000,
+      totalInvested: 1200,
+      portfolioValue: 1200,
       unrealizedPnL: 0,
     });
     expect(dashboardResponse.body.holdings).toEqual([
-      expect.objectContaining({ assetSymbol: 'BTC', currentValue: 1000 }),
+      expect.objectContaining({ assetSymbol: 'BTC', currentValue: 1200 }),
     ]);
     expect(dashboardResponse.body.livePrices).toEqual([
-      expect.objectContaining({ assetSymbol: 'BTC', currentPrice: 50000 }),
+      expect.objectContaining({ assetSymbol: 'BTC', currentPrice: 60000 }),
     ]);
+
+    const deleteTransactionResponse = await adminAgent.delete(`/api/admin/portfolio-transactions/${transactionId}`);
+    expect(deleteTransactionResponse.status).toBe(200);
+    const emptyDashboardResponse = await investorAgent.get('/api/investment/me');
+    expect(emptyDashboardResponse.body.summary.totalInvested).toBe(0);
 
     const reportsResponse = await investorAgent.get('/api/investment/me/reports');
     expect(reportsResponse.status).toBe(200);

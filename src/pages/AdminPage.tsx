@@ -81,7 +81,16 @@ import {
 } from '../services/contactInquiries';
 import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
 import { deleteAdminAsset, fetchAdminAssets, uploadAdminAsset, type AssetRecord } from '../services/assets';
-import { createAdminInvestmentPortfolio, createAdminInvestmentTransaction, fetchAdminInvestmentPortfolio } from '../services/investment';
+import {
+  createAdminInvestmentPortfolio,
+  createAdminInvestmentTransaction,
+  deleteAdminInvestmentTransaction,
+  fetchAdminInvestmentPortfolio,
+  updateAdminInvestmentPortfolio,
+  updateAdminInvestmentTransaction,
+  type InvestmentPortfolioResponse,
+  type InvestmentTransaction,
+} from '../services/investment';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -131,6 +140,14 @@ interface InvestmentTransactionDraft {
   purchasePrice: string;
   purchaseShares: string;
   purchaseDate: string;
+  notes: string;
+  isSubmitting: boolean;
+  success: string | null;
+  error: string | null;
+}
+
+interface InvestmentPortfolioDraft {
+  displayName: string;
   notes: string;
   isSubmitting: boolean;
   success: string | null;
@@ -603,6 +620,9 @@ export default function AdminPage() {
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
   const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created' | 'existing'>>({});
   const [transactionDrafts, setTransactionDrafts] = useState<Record<number, InvestmentTransactionDraft>>({});
+  const [adminPortfolios, setAdminPortfolios] = useState<Record<number, InvestmentPortfolioResponse | null>>({});
+  const [portfolioDrafts, setPortfolioDrafts] = useState<Record<number, InvestmentPortfolioDraft>>({});
+  const [editingTransactionIds, setEditingTransactionIds] = useState<Record<number, boolean>>({});
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
@@ -998,7 +1018,18 @@ export default function AdminPage() {
 
     try {
       try {
-        await fetchAdminInvestmentPortfolio(user.id);
+        const portfolioResponse = await fetchAdminInvestmentPortfolio(user.id);
+        setAdminPortfolios((current) => ({ ...current, [user.id]: portfolioResponse }));
+        setPortfolioDrafts((current) => ({
+          ...current,
+          [user.id]: {
+            displayName: portfolioResponse.portfolio.displayName ?? '',
+            notes: portfolioResponse.portfolio.notes ?? '',
+            isSubmitting: false,
+            success: null,
+            error: null,
+          },
+        }));
         setPortfolioStatuses((current) => ({ ...current, [user.id]: 'existing' }));
         return;
       } catch {
@@ -1006,10 +1037,84 @@ export default function AdminPage() {
       }
 
       await createAdminInvestmentPortfolio(user.id, { displayName: `${user.email} Portfolio` });
+      const portfolioResponse = await fetchAdminInvestmentPortfolio(user.id);
+      setAdminPortfolios((current) => ({ ...current, [user.id]: portfolioResponse }));
+      setPortfolioDrafts((current) => ({
+        ...current,
+        [user.id]: {
+          displayName: portfolioResponse.portfolio.displayName ?? '',
+          notes: portfolioResponse.portfolio.notes ?? '',
+          isSubmitting: false,
+          success: null,
+          error: null,
+        },
+      }));
       setPortfolioStatuses((current) => ({ ...current, [user.id]: 'created' }));
     } catch (err) {
       setPortfolioStatuses((current) => ({ ...current, [user.id]: 'idle' }));
       setError(err instanceof Error ? err.message : 'Unable to create portfolio.');
+    }
+  };
+
+  const handleUpdateInvestmentPortfolio = async (user: AdminUserRecord) => {
+    const draft = portfolioDrafts[user.id];
+    const portfolio = adminPortfolios[user.id]?.portfolio;
+    if (!draft || !portfolio) return;
+
+    setPortfolioDrafts((current) => ({ ...current, [user.id]: { ...draft, isSubmitting: true, error: null, success: null } }));
+    try {
+      const response = await updateAdminInvestmentPortfolio(user.id, {
+        displayName: draft.displayName,
+        notes: draft.notes || null,
+      });
+      setAdminPortfolios((current) => ({
+        ...current,
+        [user.id]: current[user.id] ? { ...current[user.id]!, portfolio: response.portfolio } : current[user.id],
+      }));
+      setPortfolioDrafts((current) => ({ ...current, [user.id]: { ...draft, isSubmitting: false, success: 'Portfolio saved.' } }));
+    } catch (err) {
+      setPortfolioDrafts((current) => ({ ...current, [user.id]: { ...draft, isSubmitting: false, error: err instanceof Error ? err.message : 'Unable to save portfolio.' } }));
+    }
+  };
+
+  const updateTransactionRecord = (userId: number, transactionId: number, patch: Partial<InvestmentTransaction>) => {
+    setAdminPortfolios((current) => {
+      const portfolio = current[userId];
+      if (!portfolio) return current;
+      return {
+        ...current,
+        [userId]: { ...portfolio, transactions: portfolio.transactions.map((transaction) => transaction.id === transactionId ? { ...transaction, ...patch } : transaction) },
+      };
+    });
+  };
+
+  const handleUpdateInvestmentTransaction = async (userId: number, transaction: InvestmentTransaction) => {
+    try {
+      const response = await updateAdminInvestmentTransaction(transaction.id, {
+        assetSymbol: transaction.assetSymbol,
+        assetName: transaction.assetName,
+        amountInvested: transaction.amountInvested,
+        purchasePrice: transaction.purchasePrice,
+        purchaseShares: transaction.purchaseShares,
+        purchaseDate: transaction.purchaseDate,
+        notes: transaction.notes,
+      });
+      updateTransactionRecord(userId, transaction.id, response.transaction);
+      setEditingTransactionIds((current) => ({ ...current, [transaction.id]: false }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save transaction.');
+    }
+  };
+
+  const handleDeleteInvestmentTransaction = async (userId: number, transactionId: number) => {
+    try {
+      await deleteAdminInvestmentTransaction(transactionId);
+      setAdminPortfolios((current) => {
+        const portfolio = current[userId];
+        return portfolio ? { ...current, [userId]: { ...portfolio, transactions: portfolio.transactions.filter((transaction) => transaction.id !== transactionId) } } : current;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete transaction.');
     }
   };
 
@@ -3589,6 +3694,8 @@ export default function AdminPage() {
                       const draft = getDraft(user.id);
                       const isAssigningYoutube = draft.mode === 'youtube';
                       const transactionDraft = transactionDrafts[user.id] ?? createEmptyInvestmentTransactionDraft();
+                      const adminPortfolio = adminPortfolios[user.id];
+                      const portfolioDraft = portfolioDrafts[user.id];
 
                       return (
                         <article
@@ -3717,6 +3824,78 @@ export default function AdminPage() {
                                 {transactionDraft.error ? <span className="text-sm text-red-700">{transactionDraft.error}</span> : null}
                               </div>
                             </form>
+                          ) : null}
+
+                          {adminPortfolio && portfolioDraft ? (
+                            <section className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white/60 p-5">
+                              <p className="eyebrow text-[10px]">Portfolio settings</p>
+                              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                  Display name
+                                  <input
+                                    className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm normal-case tracking-normal text-[var(--text)]"
+                                    value={portfolioDraft.displayName}
+                                    onChange={(event) => setPortfolioDrafts((current) => ({ ...current, [user.id]: { ...portfolioDraft, displayName: event.target.value, success: null, error: null } }))}
+                                  />
+                                </label>
+                                <label className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                  Notes
+                                  <input
+                                    className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm normal-case tracking-normal text-[var(--text)]"
+                                    value={portfolioDraft.notes}
+                                    onChange={(event) => setPortfolioDrafts((current) => ({ ...current, [user.id]: { ...portfolioDraft, notes: event.target.value, success: null, error: null } }))}
+                                  />
+                                </label>
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-3">
+                                <button type="button" disabled={portfolioDraft.isSubmitting} className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white disabled:opacity-60" onClick={() => void handleUpdateInvestmentPortfolio(user)}>
+                                  {portfolioDraft.isSubmitting ? 'Saving...' : 'Save portfolio'}
+                                </button>
+                                {portfolioDraft.success ? <span className="text-sm font-medium text-emerald-700">{portfolioDraft.success}</span> : null}
+                                {portfolioDraft.error ? <span className="text-sm text-red-700">{portfolioDraft.error}</span> : null}
+                              </div>
+
+                              <div className="mt-6 border-t border-[var(--line)] pt-5">
+                                <p className="eyebrow text-[10px]">Transactions</p>
+                                {adminPortfolio.transactions.length === 0 ? <p className="mt-3 text-sm text-[var(--text-muted)]">No transactions yet.</p> : (
+                                  <div className="mt-4 space-y-3">
+                                    {adminPortfolio.transactions.map((transaction) => {
+                                      const isEditing = editingTransactionIds[transaction.id] === true;
+                                      return (
+                                        <article key={transaction.id} className="rounded-xl border border-[var(--line)] bg-white p-4">
+                                          {isEditing ? (
+                                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                              {([
+                                                ['assetSymbol', 'Symbol'],
+                                                ['assetName', 'Name'],
+                                                ['amountInvested', 'Invested'],
+                                                ['purchasePrice', 'Price'],
+                                                ['purchaseShares', 'Shares'],
+                                                ['purchaseDate', 'Date'],
+                                              ] as const).map(([field, label]) => (
+                                                <label key={field} className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}
+                                                  <input className="mt-1 w-full rounded-lg border border-[var(--line)] px-2 py-1 text-sm normal-case tracking-normal" type={field === 'purchaseDate' ? 'date' : ['amountInvested', 'purchasePrice', 'purchaseShares'].includes(field) ? 'number' : 'text'} step="any" value={String(transaction[field])} onChange={(event) => updateTransactionRecord(user.id, transaction.id, { [field]: ['amountInvested', 'purchasePrice', 'purchaseShares'].includes(field) ? Number(event.target.value) : event.target.value })} />
+                                                </label>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                                              <span><strong>{transaction.assetSymbol}</strong> · {transaction.assetName}</span>
+                                              <span>${transaction.amountInvested.toLocaleString()} / {transaction.purchaseShares} shares @ ${transaction.purchasePrice.toLocaleString()}</span>
+                                              <span>{transaction.purchaseDate}</span>
+                                            </div>
+                                          )}
+                                          <div className="mt-3 flex flex-wrap gap-2">
+                                            {isEditing ? <button type="button" className="rounded-full bg-[var(--text)] px-3 py-1.5 text-xs text-white" onClick={() => void handleUpdateInvestmentTransaction(user.id, transaction)}>Save</button> : <button type="button" className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs" onClick={() => setEditingTransactionIds((current) => ({ ...current, [transaction.id]: true }))}>Edit</button>}
+                                            <button type="button" className="rounded-full border border-red-200 px-3 py-1.5 text-xs text-red-700" onClick={() => { if (window.confirm('Delete this transaction?')) void handleDeleteInvestmentTransaction(user.id, transaction.id); }}>Delete</button>
+                                          </div>
+                                        </article>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </section>
                           ) : null}
 
                           <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
