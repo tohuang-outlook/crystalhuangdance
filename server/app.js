@@ -868,8 +868,20 @@ export function createApp({
     res.json({ users });
   });
 
-  app.get('/api/investment/me', requireInvestor, (req, res) => {
-    const portfolio = db.findInvestmentPortfolioByUserId(req.session.user.id);
+  app.get('/api/investment/me', requireAuth, (req, res) => {
+    const sessionUser = req.session.user;
+    const currentUser = db.findUserById(sessionUser.id) ?? db.findUserByEmail(sessionUser.email);
+
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.memberType !== 'investor')) {
+      return res.status(403).json({ error: 'Investor access is required.' });
+    }
+
+    // Refresh stale sessions after an account was recreated or its member type changed.
+    if (currentUser.id !== sessionUser.id || currentUser.memberType !== sessionUser.memberType) {
+      setSessionUser(req, currentUser);
+    }
+
+    const portfolio = db.findInvestmentPortfolioByUserId(currentUser.id);
 
     if (!portfolio) {
       return res.status(404).json({ error: 'Portfolio not found.' });
