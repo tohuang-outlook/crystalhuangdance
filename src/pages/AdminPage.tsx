@@ -3785,6 +3785,14 @@ export default function AdminPage() {
                                   type="button"
                                   disabled={reportGenerationStatus === 'generating'}
                                   className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
+                                  onClick={() => void handleGenerateInvestmentReport('2026-06')}
+                                >
+                                  Generate June 2026 report
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={reportGenerationStatus === 'generating'}
+                                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
                                   onClick={() => void handleGenerateInvestmentReport('2026-07')}
                                 >
                                   {reportGenerationStatus === 'generating'
