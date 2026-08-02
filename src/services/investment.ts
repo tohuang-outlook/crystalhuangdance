@@ -308,8 +308,9 @@ export async function fetchMyInvestmentReports() {
   return normalizeInvestmentMonthlyReports(payload.reports);
 }
 
-export function getMyInvestmentReportDownloadUrl(monthKey: string) {
-  return `${apiBaseUrl}/api/investment/me/reports/${monthKey}/download`;
+export function getMyInvestmentReportDownloadUrl(monthKey: string, cacheKey?: string) {
+  const suffix = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : '';
+  return `${apiBaseUrl}/api/investment/me/reports/${monthKey}/download${suffix}`;
 }
 
 async function requestJson<T>(path: string, init?: RequestInit) {

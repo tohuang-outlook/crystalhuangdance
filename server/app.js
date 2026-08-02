@@ -1115,6 +1115,8 @@ export function createApp({
     if (!report || report.status !== 'ready') return res.status(404).json({ error: 'Report not found.' });
     const absolutePath = path.join(config.reportStorageDirectory, report.filePath);
     try { await fs.access(absolutePath); } catch { return res.status(404).json({ error: 'Report file is missing.' }); }
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
     return res.download(absolutePath, report.fileName);
   });
 

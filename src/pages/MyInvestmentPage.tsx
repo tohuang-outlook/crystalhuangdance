@@ -155,7 +155,7 @@ export default function MyInvestmentPage() {
     setIsDownloadingReport(true);
 
     try {
-      window.location.assign(getMyInvestmentReportDownloadUrl(reports[0].monthKey));
+    window.location.assign(getMyInvestmentReportDownloadUrl(reports[0].monthKey, reports[0].generatedAt));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Unable to download the monthly report right now.';
@@ -529,7 +529,7 @@ export default function MyInvestmentPage() {
                         <div className="mt-5">
                           <a
                             className="inline-flex items-center justify-center rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white transition hover:bg-[var(--text-soft)]"
-                            href={getMyInvestmentReportDownloadUrl(report.monthKey)}
+                            href={getMyInvestmentReportDownloadUrl(report.monthKey, report.generatedAt)}
                           >
                             Download PDF
                           </a>
