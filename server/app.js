@@ -62,10 +62,13 @@ async function fetchInvestmentPrices(symbols) {
     : undefined;
   const response = await fetch(url, { headers });
   if (!response.ok) {
-    if (cached) {
-      return cached.value;
+    const fallback = await fetchOkxInvestmentPrices(normalizedSymbols);
+    if (Object.keys(fallback.pricesBySymbol).length > 0) {
+      investmentPriceCache.set(cacheKey, { cachedAt: Date.now(), value: fallback });
+      return fallback;
     }
-    throw new Error(`CoinGecko pricing request failed with status ${response.status}`);
+    if (cached) return cached.value;
+    throw new Error(`CoinGecko and OKX pricing requests failed (CoinGecko ${response.status})`);
   }
 
   const payload = await response.json();
@@ -85,6 +88,28 @@ async function fetchInvestmentPrices(symbols) {
   };
   investmentPriceCache.set(cacheKey, { cachedAt: Date.now(), value });
   return value;
+}
+
+async function fetchOkxInvestmentPrices(symbols) {
+  const response = await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT');
+  if (!response.ok) {
+    return { pricesBySymbol: {}, pricesLastUpdatedAt: null };
+  }
+
+  const payload = await response.json();
+  const requested = new Set(symbols);
+  const pricesBySymbol = {};
+  for (const ticker of payload.data ?? []) {
+    const match = String(ticker.instId ?? '').match(/^([A-Z]+)-USDT$/);
+    if (!match || !requested.has(match[1])) continue;
+    const price = Number(ticker.last);
+    if (Number.isFinite(price)) pricesBySymbol[match[1]] = price;
+  }
+
+  return {
+    pricesBySymbol,
+    pricesLastUpdatedAt: Object.keys(pricesBySymbol).length > 0 ? new Date().toISOString() : null,
+  };
 }
 
 function toSafeUser(user) {
