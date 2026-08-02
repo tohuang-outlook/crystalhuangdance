@@ -20,11 +20,12 @@ import {
 } from '../services/investorUpdates';
 
 function formatReportDate(value: string) {
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
   return new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(`${value}T12:00:00`));
+  }).format(new Date(normalizedValue));
 }
 
 function formatShortDate(value: string) {

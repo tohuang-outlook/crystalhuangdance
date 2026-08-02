@@ -305,7 +305,7 @@ async function generateInvestmentMonthlyReport({ db, portfolio, monthKey, config
   return db.upsertInvestmentMonthlyReport({
     portfolioId: portfolio.id,
     monthKey,
-    snapshotDate: currentDate.toISOString(),
+    snapshotDate: currentDate.toISOString().slice(0, 10),
     fileName,
     filePath: relativePath,
     status: 'ready',
