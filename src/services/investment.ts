@@ -171,17 +171,42 @@ function normalizeInvestmentPortfolioResponse(
     portfolio: InvestmentPortfolioRecord;
   }
 ): InvestmentPortfolioResponse {
+  const livePrices = normalizeInvestmentLivePrices(payload.livePrices);
+  const livePricesBySymbol = new Map(livePrices.map((price) => [price.assetSymbol, price.currentPrice]));
+  const rawHoldings = Array.isArray(payload.holdings) ? payload.holdings : [];
+  const recalculatedHoldings = rawHoldings.map((holding) => {
+    const quantity = Number(holding.quantity) || 0;
+    const invested = Number(holding.invested) || 0;
+    const currentPrice = livePricesBySymbol.get(holding.assetSymbol) ?? (Number(holding.currentPrice) || 0);
+    const currentValue = quantity * currentPrice;
+    return {
+      ...holding,
+      quantity,
+      invested,
+      averageCost: quantity > 0 ? invested / quantity : 0,
+      currentPrice,
+      currentValue,
+      unrealizedPnL: currentValue - invested,
+    };
+  });
+  const totalInvested = recalculatedHoldings.reduce((sum, holding) => sum + holding.invested, 0);
+  const portfolioValue = recalculatedHoldings.reduce((sum, holding) => sum + holding.currentValue, 0);
+  const unrealizedPnL = portfolioValue - totalInvested;
+
   return {
     portfolio: payload.portfolio,
-    summary: payload.summary ?? {
-      totalInvested: 0,
-      portfolioValue: 0,
-      unrealizedPnL: 0,
-      totalReturnPercent: 0,
+    summary: {
+      totalInvested,
+      portfolioValue,
+      unrealizedPnL,
+      totalReturnPercent: totalInvested > 0 ? (unrealizedPnL / totalInvested) * 100 : 0,
     },
-    holdings: Array.isArray(payload.holdings) ? payload.holdings : [],
+    holdings: recalculatedHoldings.map((holding) => ({
+      ...holding,
+      allocationPercent: portfolioValue > 0 ? (holding.currentValue / portfolioValue) * 100 : 0,
+    })),
     transactions: Array.isArray(payload.transactions) ? payload.transactions : [],
-    livePrices: normalizeInvestmentLivePrices(payload.livePrices),
+    livePrices,
     pricesLastUpdatedAt:
       typeof payload.pricesLastUpdatedAt === 'string' || payload.pricesLastUpdatedAt === null
         ? payload.pricesLastUpdatedAt
