@@ -1046,6 +1046,27 @@ export default function AdminPage() {
     }
   };
 
+  const updateInvestmentTransactionDraft = (
+    userId: number,
+    field: keyof InvestmentTransactionDraft,
+    value: string
+  ) => {
+    setTransactionDrafts((current) => {
+      const draft = current[userId] ?? createEmptyInvestmentTransactionDraft();
+      const nextDraft = { ...draft, [field]: value, error: null, success: null };
+
+      if (field === 'amountInvested' || field === 'purchaseShares') {
+        const amountInvested = Number(field === 'amountInvested' ? value : draft.amountInvested);
+        const purchaseShares = Number(field === 'purchaseShares' ? value : draft.purchaseShares);
+        nextDraft.purchasePrice = amountInvested > 0 && purchaseShares > 0
+          ? String(Number((amountInvested / purchaseShares).toFixed(8)))
+          : '';
+      }
+
+      return { ...current, [userId]: nextDraft };
+    });
+  };
+
   const resetDraft = (userId: number, mode?: AdminUploadMode) => {
     const nextDraft = createDefaultDraft();
     if (mode) {
@@ -3666,10 +3687,8 @@ export default function AdminPage() {
                                       step={['amountInvested', 'purchasePrice', 'purchaseShares'].includes(field) ? 'any' : undefined}
                                       placeholder={placeholder}
                                       value={transactionDraft[field]}
-                                      onChange={(event) => setTransactionDrafts((current) => ({
-                                        ...current,
-                                        [user.id]: { ...transactionDraft, [field]: event.target.value, error: null, success: null },
-                                      }))}
+                                      readOnly={field === 'purchasePrice'}
+                                      onChange={(event) => updateInvestmentTransactionDraft(user.id, field, event.target.value)}
                                       required={field !== 'assetName'}
                                     />
                                   </label>
