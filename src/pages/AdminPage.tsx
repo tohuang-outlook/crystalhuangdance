@@ -1058,11 +1058,11 @@ export default function AdminPage() {
     }
   };
 
-  const handleGenerateAugustInvestmentReport = async () => {
+  const handleGenerateInvestmentReport = async (monthKey: string) => {
     setError(null);
     setReportGenerationStatus('generating');
     try {
-      await generateAdminInvestmentReports('2026-08');
+      await generateAdminInvestmentReports(monthKey);
       setReportGenerationStatus('generated');
     } catch (err) {
       setReportGenerationStatus('idle');
@@ -3780,18 +3780,28 @@ export default function AdminPage() {
                               </span>
                             ) : null}
                             {user.memberType === 'investor' ? (
-                              <button
-                                type="button"
-                                disabled={reportGenerationStatus === 'generating'}
-                                className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
-                                onClick={() => void handleGenerateAugustInvestmentReport()}
-                              >
-                                {reportGenerationStatus === 'generating'
-                                  ? 'Generating Aug 2026...'
-                                  : reportGenerationStatus === 'generated'
-                                    ? 'Aug 2026 report ready'
-                                    : 'Generate Aug 2026 report'}
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={reportGenerationStatus === 'generating'}
+                                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
+                                  onClick={() => void handleGenerateInvestmentReport('2026-07')}
+                                >
+                                  {reportGenerationStatus === 'generating'
+                                    ? 'Generating report...'
+                                    : reportGenerationStatus === 'generated'
+                                      ? 'Report ready'
+                                      : 'Generate July 2026 report'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={reportGenerationStatus === 'generating'}
+                                  className="rounded-full border border-[var(--line)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] disabled:opacity-60"
+                                  onClick={() => void handleGenerateInvestmentReport('2026-08')}
+                                >
+                                  Generate August 2026 report
+                                </button>
+                              </>
                             ) : null}
                           </div>
 
