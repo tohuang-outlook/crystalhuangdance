@@ -81,7 +81,7 @@ import {
 } from '../services/contactInquiries';
 import { createAdminHeroEntryPoint, deleteAdminHeroEntryPoint, fetchAdminHeroEntryPoints, reorderAdminHeroEntryPoints, updateAdminHeroEntryPoint, type HeroEntryPointRecord } from '../services/heroEntryPoints';
 import { deleteAdminAsset, fetchAdminAssets, uploadAdminAsset, type AssetRecord } from '../services/assets';
-import { createAdminInvestmentPortfolio, fetchAdminInvestmentPortfolio } from '../services/investment';
+import { createAdminInvestmentPortfolio, createAdminInvestmentTransaction, fetchAdminInvestmentPortfolio } from '../services/investment';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -122,6 +122,34 @@ interface DancerUploadDraft {
   isSubmitting: boolean;
   error: string | null;
   resetKey: number;
+}
+
+interface InvestmentTransactionDraft {
+  assetSymbol: string;
+  assetName: string;
+  amountInvested: string;
+  purchasePrice: string;
+  purchaseShares: string;
+  purchaseDate: string;
+  notes: string;
+  isSubmitting: boolean;
+  success: string | null;
+  error: string | null;
+}
+
+function createEmptyInvestmentTransactionDraft(): InvestmentTransactionDraft {
+  return {
+    assetSymbol: '',
+    assetName: '',
+    amountInvested: '',
+    purchasePrice: '',
+    purchaseShares: '',
+    purchaseDate: '',
+    notes: '',
+    isSubmitting: false,
+    success: null,
+    error: null,
+  };
 }
 
 function createDefaultDraft(): DancerUploadDraft {
@@ -574,6 +602,7 @@ export default function AdminPage() {
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
   const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created' | 'existing'>>({});
+  const [transactionDrafts, setTransactionDrafts] = useState<Record<number, InvestmentTransactionDraft>>({});
   const [uploadDrafts, setUploadDrafts] = useState<Record<number, DancerUploadDraft>>({});
   const [comingUpEventDrafts, setComingUpEventDrafts] = useState<Record<number, ComingUpEventDraft>>({});
   const [featuredReelDrafts, setFeaturedReelDrafts] = useState<Record<number, FeaturedReelDraft>>({});
@@ -981,6 +1010,39 @@ export default function AdminPage() {
     } catch (err) {
       setPortfolioStatuses((current) => ({ ...current, [user.id]: 'idle' }));
       setError(err instanceof Error ? err.message : 'Unable to create portfolio.');
+    }
+  };
+
+  const handleCreateInvestmentTransaction = async (user: AdminUserRecord) => {
+    const draft = transactionDrafts[user.id] ?? createEmptyInvestmentTransactionDraft();
+    setTransactionDrafts((current) => ({
+      ...current,
+      [user.id]: { ...draft, isSubmitting: true, success: null, error: null },
+    }));
+
+    try {
+      await createAdminInvestmentTransaction(user.id, {
+        assetSymbol: draft.assetSymbol,
+        assetName: draft.assetName || draft.assetSymbol,
+        amountInvested: Number(draft.amountInvested),
+        purchasePrice: Number(draft.purchasePrice),
+        purchaseShares: Number(draft.purchaseShares),
+        purchaseDate: draft.purchaseDate,
+        notes: draft.notes || null,
+      });
+      setTransactionDrafts((current) => ({
+        ...current,
+        [user.id]: { ...createEmptyInvestmentTransactionDraft(), success: 'Transaction added successfully.' },
+      }));
+    } catch (err) {
+      setTransactionDrafts((current) => ({
+        ...current,
+        [user.id]: {
+          ...draft,
+          isSubmitting: false,
+          error: err instanceof Error ? err.message : 'Unable to add transaction.',
+        },
+      }));
     }
   };
 
@@ -3505,6 +3567,7 @@ export default function AdminPage() {
                       const isDeleting = activeDeleteKey === `user-${user.id}`;
                       const draft = getDraft(user.id);
                       const isAssigningYoutube = draft.mode === 'youtube';
+                      const transactionDraft = transactionDrafts[user.id] ?? createEmptyInvestmentTransactionDraft();
 
                       return (
                         <article
@@ -3575,6 +3638,67 @@ export default function AdminPage() {
                               </span>
                             ) : null}
                           </div>
+
+                          {user.memberType === 'investor' ? (
+                            <form
+                              className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white/60 p-5"
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                void handleCreateInvestmentTransaction(user);
+                              }}
+                            >
+                              <p className="eyebrow text-[10px]">Investor portfolio</p>
+                              <h4 className="mt-3 text-2xl text-[var(--text)]">Add investment transaction</h4>
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {([
+                                  ['assetSymbol', 'Asset symbol', 'BTC'],
+                                  ['assetName', 'Asset name', 'Bitcoin'],
+                                  ['amountInvested', 'Amount invested', '1000'],
+                                  ['purchasePrice', 'Purchase price', '50000'],
+                                  ['purchaseShares', 'Purchase shares', '0.02'],
+                                  ['purchaseDate', 'Purchase date', '2026-07-01'],
+                                ] as const).map(([field, label, placeholder]) => (
+                                  <label key={field} className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                    {label}
+                                    <input
+                                      className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm normal-case tracking-normal text-[var(--text)]"
+                                      type={field === 'purchaseDate' ? 'date' : ['amountInvested', 'purchasePrice', 'purchaseShares'].includes(field) ? 'number' : 'text'}
+                                      step={['amountInvested', 'purchasePrice', 'purchaseShares'].includes(field) ? 'any' : undefined}
+                                      placeholder={placeholder}
+                                      value={transactionDraft[field]}
+                                      onChange={(event) => setTransactionDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: { ...transactionDraft, [field]: event.target.value, error: null, success: null },
+                                      }))}
+                                      required={field !== 'assetName'}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <label className="mt-3 block text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                Notes
+                                <textarea
+                                  className="mt-2 min-h-20 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm normal-case tracking-normal text-[var(--text)]"
+                                  value={transactionDraft.notes}
+                                  onChange={(event) => setTransactionDrafts((current) => ({
+                                    ...current,
+                                    [user.id]: { ...transactionDraft, notes: event.target.value, error: null, success: null },
+                                  }))}
+                                />
+                              </label>
+                              <div className="mt-4 flex flex-wrap items-center gap-3">
+                                <button
+                                  type="submit"
+                                  disabled={transactionDraft.isSubmitting}
+                                  className="rounded-full bg-[var(--text)] px-5 py-2 text-xs uppercase tracking-[0.16em] text-white disabled:opacity-60"
+                                >
+                                  {transactionDraft.isSubmitting ? 'Adding...' : 'Add transaction'}
+                                </button>
+                                {transactionDraft.success ? <span className="text-sm font-medium text-emerald-700">{transactionDraft.success}</span> : null}
+                                {transactionDraft.error ? <span className="text-sm text-red-700">{transactionDraft.error}</span> : null}
+                              </div>
+                            </form>
+                          ) : null}
 
                           <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                             <div className="flex flex-wrap items-end justify-between gap-4">

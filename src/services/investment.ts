@@ -327,6 +327,7 @@ export function createAdminInvestmentTransaction(
   userId: number,
   payload: {
     assetSymbol: string;
+    assetName?: string;
     amountInvested: number;
     purchasePrice: number;
     purchaseShares: number;
