@@ -378,8 +378,15 @@ function formatInvestmentMonthLabel(monthKey) {
 function serializeInvestmentMonthlyReport(report) {
   return {
     id: report.id,
+    portfolioId: report.portfolioId,
+    investorEmail: report.investorEmail,
+    portfolioDisplayName: report.portfolioDisplayName,
     monthKey: report.monthKey,
     label: formatInvestmentMonthLabel(report.monthKey),
+    portfolioValue:
+      report.portfolioValue === null || report.portfolioValue === undefined
+        ? null
+        : roundCurrency(Number(report.portfolioValue)),
     snapshotDate: report.snapshotDate,
     status: report.status,
     generatedAt: report.generatedAt,
@@ -1274,6 +1281,12 @@ export function createApp({
       }
     }
     return res.json({ monthKey, summary: { generated, updated: 0, skipped, failed } });
+  });
+
+  app.get('/api/admin/investment/reports', requireAdmin, (_req, res) => {
+    return res.json({
+      reports: db.listInvestmentMonthlyReportsForAdmin().map(serializeInvestmentMonthlyReport),
+    });
   });
 
   app.patch('/api/admin/users/:userId/member-type', requireAdmin, (req, res) => {

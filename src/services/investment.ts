@@ -46,8 +46,12 @@ export interface InvestmentMonthlyPerformancePoint {
 
 export interface InvestmentMonthlyReportRecord {
   id: number;
+  portfolioId?: number;
+  investorEmail?: string;
+  portfolioDisplayName?: string | null;
   monthKey: string;
   label: string;
+  portfolioValue: number | null;
   snapshotDate: string;
   status: 'ready' | 'failed';
   generatedAt: string;
@@ -228,6 +232,23 @@ function normalizeInvestmentMonthlyReports(payload: unknown): InvestmentMonthlyR
     const monthKey = typeof entry.monthKey === 'string' ? entry.monthKey.trim() : '';
     const id = Number(entry.id);
     const label = typeof entry.label === 'string' ? entry.label.trim() : '';
+    const portfolioId = Number(entry.portfolioId);
+    const investorEmail =
+      typeof entry.investorEmail === 'string' ? entry.investorEmail.trim() : '';
+    const portfolioDisplayName =
+      typeof entry.portfolioDisplayName === 'string'
+        ? entry.portfolioDisplayName.trim()
+        : entry.portfolioDisplayName === null
+          ? null
+          : undefined;
+    const rawPortfolioValue =
+      entry.portfolioValue === null || entry.portfolioValue === undefined
+        ? null
+        : Number(entry.portfolioValue);
+    const portfolioValue =
+      rawPortfolioValue === null || Number.isFinite(rawPortfolioValue)
+        ? rawPortfolioValue
+        : null;
     const snapshotDate =
       typeof entry.snapshotDate === 'string' ? entry.snapshotDate.trim() : '';
     const status = entry.status === 'failed' ? 'failed' : entry.status === 'ready' ? 'ready' : '';
@@ -252,8 +273,12 @@ function normalizeInvestmentMonthlyReports(payload: unknown): InvestmentMonthlyR
     return [
       {
         id,
+        ...(Number.isInteger(portfolioId) ? { portfolioId } : {}),
+        ...(investorEmail ? { investorEmail } : {}),
+        ...(portfolioDisplayName !== undefined ? { portfolioDisplayName } : {}),
         monthKey,
         label,
+        portfolioValue,
         snapshotDate,
         status,
         generatedAt,
@@ -297,6 +322,19 @@ export async function fetchMyInvestmentPortfolio() {
 
 export async function fetchMyInvestmentReports() {
   const response = await fetch(`${apiBaseUrl}/api/investment/me/reports`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    await parseError(response);
+  }
+
+  const payload = (await response.json()) as InvestmentReportsEnvelope;
+  return normalizeInvestmentMonthlyReports(payload.reports);
+}
+
+export async function fetchAdminInvestmentReports() {
+  const response = await fetch(`${apiBaseUrl}/api/admin/investment/reports`, {
     credentials: 'include',
   });
 

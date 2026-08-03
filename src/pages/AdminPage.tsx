@@ -85,10 +85,12 @@ import {
   createAdminInvestmentPortfolio,
   createAdminInvestmentTransaction,
   deleteAdminInvestmentTransaction,
+  fetchAdminInvestmentReports,
   fetchAdminInvestmentPortfolio,
   generateAdminInvestmentReports,
   updateAdminInvestmentPortfolio,
   updateAdminInvestmentTransaction,
+  type InvestmentMonthlyReportRecord,
   type InvestmentPortfolioResponse,
   type InvestmentTransaction,
 } from '../services/investment';
@@ -119,6 +121,17 @@ function formatBytes(bytes: number | null) {
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatCurrency(value: number | null) {
+  if (value === null) {
+    return 'Unavailable';
+  }
+
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 type AdminUploadMode = 'youtube' | 'upload';
@@ -614,6 +627,7 @@ export default function AdminPage() {
   const [contactInquiries, setContactInquiries] = useState<ContactInquiryRecord[]>([]);
   const [heroEntryPoints, setHeroEntryPoints] = useState<HeroEntryPointRecord[]>([]);
   const [assets, setAssets] = useState<AssetRecord[]>([]);
+  const [investmentReports, setInvestmentReports] = useState<InvestmentMonthlyReportRecord[]>([]);
   const [activeTab, setActiveTab] = useState<AdminConsoleTab>('coming-up-events');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -780,6 +794,24 @@ export default function AdminPage() {
     return grouped;
   }, [videos]);
 
+  const investmentReportsByEmail = useMemo(() => {
+    const grouped = new Map<string, InvestmentMonthlyReportRecord[]>();
+
+    investmentReports.forEach((report) => {
+      if (!report.investorEmail) return;
+      const key = report.investorEmail.toLowerCase();
+      const current = grouped.get(key) ?? [];
+      current.push(report);
+      grouped.set(key, current);
+    });
+
+    grouped.forEach((entries) => {
+      entries.sort((left, right) => right.monthKey.localeCompare(left.monthKey));
+    });
+
+    return grouped;
+  }, [investmentReports]);
+
   const loadDashboard = async ({ keepLoadingState = false }: { keepLoadingState?: boolean } = {}) => {
     if (keepLoadingState) {
       setIsLoading(true);
@@ -801,6 +833,7 @@ export default function AdminPage() {
         contactInquiriesResponse,
         heroEntryPointsResponse,
         assetsResponse,
+        investmentReportsResponse,
       ] = await Promise.all([
         fetchAdminUsers(),
         fetchAdminVideos(),
@@ -814,6 +847,7 @@ export default function AdminPage() {
         fetchAdminContactInquiries(),
         fetchAdminHeroEntryPoints(),
         fetchAdminAssets(),
+        fetchAdminInvestmentReports(),
       ]);
 
       setUsers(usersResponse.users);
@@ -831,6 +865,7 @@ export default function AdminPage() {
       setContactInquiries(contactInquiriesResponse.inquiries);
       setHeroEntryPoints(heroEntryPointsResponse.entryPoints);
       setAssets(assetsResponse.assets);
+      setInvestmentReports(investmentReportsResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load admin dashboard.');
     } finally {
@@ -1063,6 +1098,7 @@ export default function AdminPage() {
     setReportGenerationStatus('generating');
     try {
       await generateAdminInvestmentReports(monthKey);
+      setInvestmentReports(await fetchAdminInvestmentReports());
       setReportGenerationStatus('generated');
     } catch (err) {
       setReportGenerationStatus('idle');
@@ -3710,6 +3746,8 @@ export default function AdminPage() {
                       const transactionDraft = transactionDrafts[user.id] ?? createEmptyInvestmentTransactionDraft();
                       const adminPortfolio = adminPortfolios[user.id];
                       const portfolioDraft = portfolioDrafts[user.id];
+                      const userInvestmentReports =
+                        investmentReportsByEmail.get(user.email.toLowerCase()) ?? [];
 
                       return (
                         <article
@@ -3812,6 +3850,67 @@ export default function AdminPage() {
                               </>
                             ) : null}
                           </div>
+
+                          {user.memberType === 'investor' ? (
+                            <div className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white/60 p-5">
+                              <div className="flex flex-wrap items-end justify-between gap-3">
+                                <div>
+                                  <p className="eyebrow text-[10px]">Report history</p>
+                                  <h4 className="mt-3 text-2xl text-[var(--text)]">Saved monthly reports</h4>
+                                </div>
+                                <span className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                                  {userInvestmentReports.length} report
+                                  {userInvestmentReports.length === 1 ? '' : 's'}
+                                </span>
+                              </div>
+
+                              {userInvestmentReports.length === 0 ? (
+                                <p className="mt-4 text-sm text-[var(--text-muted)]">
+                                  No generated reports yet for this investor.
+                                </p>
+                              ) : (
+                                <div className="mt-5 overflow-x-auto">
+                                  <table className="min-w-full text-left text-sm">
+                                    <thead className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                      <tr className="border-b border-[var(--line)]">
+                                        <th className="px-3 py-3 font-medium">Month</th>
+                                        <th className="px-3 py-3 font-medium">Snapshot date</th>
+                                        <th className="px-3 py-3 font-medium">Portfolio value</th>
+                                        <th className="px-3 py-3 font-medium">Generated at</th>
+                                        <th className="px-3 py-3 font-medium">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {userInvestmentReports.map((report) => (
+                                        <tr
+                                          key={report.id}
+                                          className="border-b border-[rgba(47,29,24,0.08)] last:border-b-0"
+                                        >
+                                          <td className="px-3 py-4 font-medium text-[var(--text)]">
+                                            {report.label}
+                                          </td>
+                                          <td className="px-3 py-4 text-[var(--text-muted)]">
+                                            {formatDate(report.snapshotDate)}
+                                          </td>
+                                          <td className="px-3 py-4 text-[var(--text)]">
+                                            {formatCurrency(report.portfolioValue)}
+                                          </td>
+                                          <td className="px-3 py-4 text-[var(--text-muted)]">
+                                            {formatDate(report.generatedAt)}
+                                          </td>
+                                          <td className="px-3 py-4">
+                                            <span className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                              {report.status}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
 
                           {user.memberType === 'investor' ? (
                             <form

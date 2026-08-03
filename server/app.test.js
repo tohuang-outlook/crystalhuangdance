@@ -317,6 +317,7 @@ describe('auth and video backend foundation', () => {
     const portfolio = db.findInvestmentPortfolioByUserId(investor.id);
     const julyReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, '2026-07');
     expect(julyReport.snapshotDate).toBe('2026-07-31');
+    expect(julyReport.portfolioValue).toBe(5000);
 
     const augustReportResponse = await adminAgent
       .post('/api/admin/investment/reports/generate-latest')
@@ -325,6 +326,25 @@ describe('auth and video backend foundation', () => {
 
     const augustReport = db.findInvestmentMonthlyReportByPortfolioIdAndMonth(portfolio.id, '2026-08');
     expect(augustReport.snapshotDate).toBe('2026-08-03');
+
+    const adminReportsResponse = await adminAgent.get('/api/admin/investment/reports');
+    expect(adminReportsResponse.status).toBe(200);
+    expect(adminReportsResponse.body.reports).toEqual([
+      expect.objectContaining({
+        investorEmail: 'itsj2@icloud.com',
+        label: 'August 2026',
+        portfolioValue: 5000,
+        snapshotDate: '2026-08-03',
+        status: 'ready',
+      }),
+      expect.objectContaining({
+        investorEmail: 'itsj2@icloud.com',
+        label: 'July 2026',
+        portfolioValue: 5000,
+        snapshotDate: '2026-07-31',
+        status: 'ready',
+      }),
+    ]);
   });
 
   it('rejects duplicate registration and invalid login attempts', async () => {
