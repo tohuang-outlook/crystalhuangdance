@@ -194,6 +194,39 @@ describe('auth and video backend foundation', () => {
     });
   });
 
+  it('persists sessions through the sqlite store across app instances', async () => {
+    const registerResponse = await request(app).post('/api/auth/register').send({
+      email: 'persisted@example.com',
+      password: 'password123',
+    });
+
+    expect(registerResponse.status).toBe(201);
+    const cookies = registerResponse.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+
+    app = createApp({
+      db,
+      sessionSecret: 'test-session-secret',
+      config,
+      now: () => currentTime,
+      sendPasswordResetEmail: async (payload) => {
+        sentResetEmails.push(payload);
+      },
+    });
+
+    const sessionResponse = await request(app).get('/api/auth/session').set('Cookie', cookies);
+    expect(sessionResponse.status).toBe(200);
+    expect(sessionResponse.body).toEqual({
+      authenticated: true,
+      user: {
+        id: 1,
+        email: 'persisted@example.com',
+        role: 'user',
+        memberType: 'dancer',
+      },
+    });
+  });
+
   it('lets admins assign an investor, create a portfolio, and serves the dashboard contract', async () => {
     const adminAgent = request.agent(app);
     await registerUser(adminAgent, 'admin@example.com');

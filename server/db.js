@@ -682,6 +682,16 @@ export function createDatabase(filename) {
   ensureColumn(db, 'videos', 'file_size_bytes', 'INTEGER');
   ensureColumn(db, 'videos', 'updated_at', "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, 'password_reset_tokens', 'used_at', 'TEXT');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      sid TEXT PRIMARY KEY,
+      payload TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.exec('CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at)');
 
   const statements = {
     listHeroEntryPoints: db.prepare(`SELECT id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt FROM hero_entry_points ORDER BY sort_order ASC, id ASC`),
@@ -691,6 +701,19 @@ export function createDatabase(filename) {
     updateHeroEntryPoint: db.prepare(`UPDATE hero_entry_points SET title=@title, title_zh=@titleZh, description=@description, description_zh=@descriptionZh, href=@href, is_visible=@isVisible, sort_order=@sortOrder, updated_at=CURRENT_TIMESTAMP WHERE id=@id RETURNING id, title, title_zh AS titleZh, description, description_zh AS descriptionZh, href, is_visible AS isVisible, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt`),
     deleteHeroEntryPoint: db.prepare('DELETE FROM hero_entry_points WHERE id = ? RETURNING id'),
     updateHeroEntryPointSortOrder: db.prepare('UPDATE hero_entry_points SET sort_order=@sortOrder, updated_at=CURRENT_TIMESTAMP WHERE id=@id'),
+    findSessionById: db.prepare(
+      'SELECT sid, payload, expires_at AS expiresAt FROM sessions WHERE sid = ?'
+    ),
+    upsertSession: db.prepare(
+      `INSERT INTO sessions (sid, payload, expires_at)
+       VALUES (@sid, @payload, @expiresAt)
+       ON CONFLICT(sid) DO UPDATE SET
+         payload = excluded.payload,
+         expires_at = excluded.expires_at,
+         updated_at = CURRENT_TIMESTAMP`
+    ),
+    deleteSessionById: db.prepare('DELETE FROM sessions WHERE sid = ?'),
+    deleteExpiredSessions: db.prepare('DELETE FROM sessions WHERE expires_at <= ?'),
     createContactInquiry: db.prepare(
       `INSERT INTO contact_inquiries (name, email, interest, message)
        VALUES (@name, @email, @interest, @message)
@@ -2737,6 +2760,18 @@ export function createDatabase(filename) {
     },
     reorderGroupChoreographyMoments(orderedIds) {
       return reorderGroupChoreographyMoments(orderedIds);
+    },
+    findSessionById(sid) {
+      return statements.findSessionById.get(sid) ?? null;
+    },
+    upsertSession(sessionRecord) {
+      return statements.upsertSession.run(sessionRecord);
+    },
+    deleteSessionById(sid) {
+      return statements.deleteSessionById.run(sid);
+    },
+    deleteExpiredSessions(expiresAt) {
+      return statements.deleteExpiredSessions.run(expiresAt);
     },
     close() {
       db.close();

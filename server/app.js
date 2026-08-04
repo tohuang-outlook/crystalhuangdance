@@ -837,6 +837,76 @@ function buildResetPasswordUrl(resetPasswordUrlBase, token) {
   return url.toString();
 }
 
+const fallbackSessionTtlMs = 1000 * 60 * 60 * 24 * 7;
+
+class SqliteSessionStore extends session.Store {
+  constructor({ db, now }) {
+    super();
+    this.db = db;
+    this.now = now;
+  }
+
+  get(sid, callback) {
+    try {
+      const record = this.db.findSessionById(sid);
+      if (!record) return callback(null, null);
+
+      if (Number(record.expiresAt) <= this.now().getTime()) {
+        this.db.deleteSessionById(sid);
+        return callback(null, null);
+      }
+
+      return callback(null, JSON.parse(record.payload));
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  set(sid, sessionPayload, callback) {
+    try {
+      const expiresAt = sessionPayload.cookie?.expires
+        ? new Date(sessionPayload.cookie.expires).getTime()
+        : this.now().getTime() + fallbackSessionTtlMs;
+
+      this.db.upsertSession({
+        sid,
+        payload: JSON.stringify(sessionPayload),
+        expiresAt,
+      });
+      this.db.deleteExpiredSessions(this.now().getTime());
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  destroy(sid, callback) {
+    try {
+      this.db.deleteSessionById(sid);
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  touch(sid, sessionPayload, callback) {
+    return this.set(sid, sessionPayload, callback);
+  }
+}
+
+function createPersistentSessionStore(db, now) {
+  if (
+    typeof db.findSessionById !== 'function' ||
+    typeof db.upsertSession !== 'function' ||
+    typeof db.deleteSessionById !== 'function' ||
+    typeof db.deleteExpiredSessions !== 'function'
+  ) {
+    return undefined;
+  }
+
+  return new SqliteSessionStore({ db, now });
+}
+
 function createUploadMiddleware(config) {
   return multer({
     dest: config.uploadTempDirectory,
@@ -897,6 +967,7 @@ export function createApp({
   app.use(
     session({
       name: 'crystal.sid',
+      store: createPersistentSessionStore(db, now),
       secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
