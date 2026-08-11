@@ -173,15 +173,21 @@ export default function MyInvestmentPage() {
     label: string;
   }> = [
     { id: 'investment-page', label: 'Investment Page Updates' },
-    { id: 'monthly-reports', label: 'Monthly Report Updates' },
     { id: 'real-time-quote', label: 'Real-Time Quote Updates' },
   ];
+
+  const publicInvestorUpdates = useMemo(
+    () => investorUpdates.filter((entry) => entry.category !== 'monthly-reports'),
+    [investorUpdates]
+  );
 
   const groupedInvestorUpdates = useMemo(
     () =>
       investorUpdateCategories.reduce<Record<InvestorUpdateCategory, InvestorUpdate[]>>(
         (grouped, category) => {
-          grouped[category.id] = investorUpdates.filter((entry) => entry.category === category.id);
+          grouped[category.id] = publicInvestorUpdates.filter(
+            (entry) => entry.category === category.id
+          );
           return grouped;
         },
         {
@@ -190,26 +196,26 @@ export default function MyInvestmentPage() {
           'real-time-quote': [],
         }
       ),
-    [investorUpdates]
+    [publicInvestorUpdates]
   );
 
   const latestInvestorUpdate = useMemo(() => {
-    if (investorUpdates.length === 0) {
+    if (publicInvestorUpdates.length === 0) {
       return null;
     }
 
-    return [...investorUpdates].sort(
+    return [...publicInvestorUpdates].sort(
       (left, right) =>
         new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
     )[0];
-  }, [investorUpdates]);
+  }, [publicInvestorUpdates]);
 
   const linkedInvestorUpdateCount = useMemo(
     () =>
-      investorUpdates.filter(
+      publicInvestorUpdates.filter(
         (update) => typeof update.href === 'string' && update.href.trim().length > 0
       ).length,
-    [investorUpdates]
+    [publicInvestorUpdates]
   );
 
   const activeInvestorModuleCount = useMemo(
@@ -287,7 +293,7 @@ export default function MyInvestmentPage() {
             </p>
           ) : null}
 
-          {investorUpdates.length > 0 ? (
+          {publicInvestorUpdates.length > 0 ? (
             <section className="mt-10 rounded-[1.7rem] border border-[var(--line)] bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(232,242,255,0.72))] p-6 shadow-[0_18px_46px_rgba(68,102,136,0.10)]">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_20rem]">
                 <div className="space-y-5">
@@ -295,15 +301,17 @@ export default function MyInvestmentPage() {
                     <p className="eyebrow">Investor Updates</p>
                     <h2 className="mt-4 text-3xl text-[var(--text)]">Admin-published updates</h2>
                     <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--text-muted)]">
-                      Structured updates from the admin console, organized by investor page messaging,
-                      monthly report notes, and quote-related guidance.
+                      Structured updates from the admin console, organized by investor page messaging
+                      and quote-related guidance.
                     </p>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <article className="rounded-[1.25rem] border border-[var(--line)] bg-white/72 p-4 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                       <p className="eyebrow text-[10px]">Total Updates</p>
-                      <p className="mt-2 text-3xl text-[var(--text)]">{investorUpdates.length}</p>
+                      <p className="mt-2 text-3xl text-[var(--text)]">
+                        {publicInvestorUpdates.length}
+                      </p>
                     </article>
                     <article className="rounded-[1.25rem] border border-[var(--line)] bg-white/72 p-4 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
                       <p className="eyebrow text-[10px]">Linked Items</p>
