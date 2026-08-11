@@ -633,6 +633,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDeleteKey, setActiveDeleteKey] = useState<string | null>(null);
   const [activeEventActionKey, setActiveEventActionKey] = useState<string | null>(null);
+  const [activeAssetUploadKey, setActiveAssetUploadKey] = useState<string | null>(null);
   const [portfolioStatuses, setPortfolioStatuses] = useState<Record<number, 'idle' | 'creating' | 'created' | 'existing'>>({});
   const [reportGenerationStatus, setReportGenerationStatus] = useState<'idle' | 'generating' | 'generated'>('idle');
   const [transactionDrafts, setTransactionDrafts] = useState<Record<number, InvestmentTransactionDraft>>({});
@@ -1341,6 +1342,39 @@ export default function AdminPage() {
 
   const updateNewGroupChoreographyMomentDraft = (patch: Partial<ArchiveMediaDraft>) => {
     setNewGroupChoreographyMomentDraft((current) => ({ ...current, ...patch }));
+  };
+
+  const handleMasterClassMomentAssetUpload = async (
+    file: File,
+    assetKind: 'image' | 'video',
+    target: 'new' | number
+  ) => {
+    const uploadKey = `master-class-moment-${target}-${assetKind}`;
+    setActiveAssetUploadKey(uploadKey);
+    setError(null);
+
+    try {
+      const response = await uploadAdminAsset(file);
+      setAssets((current) => [
+        response.asset,
+        ...current.filter((asset) => asset.name !== response.asset.name),
+      ]);
+
+      const patch =
+        assetKind === 'image'
+          ? { imageSrc: response.asset.path }
+          : { videoSrc: response.asset.path };
+
+      if (target === 'new') {
+        updateNewMasterClassMomentDraft(patch);
+      } else {
+        updateMasterClassMomentDraft(target, patch);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to upload this asset.');
+    } finally {
+      setActiveAssetUploadKey(null);
+    }
   };
 
   const updatePressHighlightDraft = (highlightId: number, patch: Partial<PressHighlightDraft>) => {
@@ -3487,22 +3521,36 @@ export default function AdminPage() {
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (ZH)" value={newMasterClassMomentDraft.titleZh} onChange={(event) => updateNewMasterClassMomentDraft({ titleZh: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (EN)" value={newMasterClassMomentDraft.subtitle} onChange={(event) => updateNewMasterClassMomentDraft({ subtitle: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (ZH)" value={newMasterClassMomentDraft.subtitleZh} onChange={(event) => updateNewMasterClassMomentDraft({ subtitleZh: event.target.value })} />
-                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
+                          <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
+                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
+                            <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
+                              {activeAssetUploadKey === 'master-class-moment-new-image' ? 'Uploading...' : 'Choose image'}
+                              <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', 'new'); event.currentTarget.value = ''; }} />
+                            </label>
+                          </div>
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (EN)" value={newMasterClassMomentDraft.imageAlt} onChange={(event) => updateNewMasterClassMomentDraft({ imageAlt: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (ZH)" value={newMasterClassMomentDraft.imageAltZh} onChange={(event) => updateNewMasterClassMomentDraft({ imageAltZh: event.target.value })} />
-                          <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" placeholder="Video path (optional)" value={newMasterClassMomentDraft.videoSrc} onChange={(event) => updateNewMasterClassMomentDraft({ videoSrc: event.target.value })} />
+                          <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
+                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Video path (optional)" value={newMasterClassMomentDraft.videoSrc} onChange={(event) => updateNewMasterClassMomentDraft({ videoSrc: event.target.value })} />
+                            <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
+                              {activeAssetUploadKey === 'master-class-moment-new-video' ? 'Uploading...' : 'Choose video'}
+                              <input className="hidden" type="file" accept="video/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'video', 'new'); event.currentTarget.value = ''; }} />
+                            </label>
+                          </div>
                         </div>
                         <div className="mt-4 flex items-center justify-between gap-3">
                           <p className="text-sm text-[var(--text-muted)]">Manage the click-to-open cards in the master class gallery.</p>
                           <button className="rounded-full bg-[var(--text)] px-5 py-3 text-xs uppercase tracking-[0.18em] text-white disabled:opacity-60" disabled={newMasterClassMomentDraft.isSubmitting} onClick={() => void handleCreateMasterClassMoment()} type="button">{newMasterClassMomentDraft.isSubmitting ? 'Adding...' : 'Add master card'}</button>
                         </div>
                         {newMasterClassMomentDraft.error ? <p className="mt-4 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{newMasterClassMomentDraft.error}</p> : null}
-                        <div className="mt-6 space-y-4">
-                          {masterClassArchiveMoments.map((moment, index) => {
-                            const draft = getMasterClassMomentDraft(moment);
-                            const isDeleting = activeEventActionKey === `master-class-moment-delete-${moment.id}`;
-                            const isMoving = activeEventActionKey === `master-class-moment-move-${moment.id}`;
-                            return (
+	                        <div className="mt-6 space-y-4">
+	                          {masterClassArchiveMoments.map((moment, index) => {
+	                            const draft = getMasterClassMomentDraft(moment);
+	                            const isDeleting = activeEventActionKey === `master-class-moment-delete-${moment.id}`;
+	                            const isMoving = activeEventActionKey === `master-class-moment-move-${moment.id}`;
+	                            const imageUploadKey = `master-class-moment-${moment.id}-image`;
+	                            const videoUploadKey = `master-class-moment-${moment.id}-video`;
+	                            return (
                               <article key={moment.id} className="rounded-[1.1rem] border border-[var(--line)] bg-white p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                   <div><p className="eyebrow text-[10px]">Position {index + 1}</p><h4 className="mt-2 text-xl">{draft.title || 'Untitled master card'}</h4></div>
@@ -3518,10 +3566,22 @@ export default function AdminPage() {
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.titleZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { titleZh: event.target.value })} />
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitle} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitle: event.target.value })} />
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitleZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitleZh: event.target.value })} />
-                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
+	                                  <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
+	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
+	                                    <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
+	                                      {activeAssetUploadKey === imageUploadKey ? 'Uploading...' : 'Choose image'}
+	                                      <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', moment.id); event.currentTarget.value = ''; }} />
+	                                    </label>
+	                                  </div>
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAlt} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAlt: event.target.value })} />
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAltZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAltZh: event.target.value })} />
-                                  <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base xl:col-span-2" value={draft.videoSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { videoSrc: event.target.value })} />
+	                                  <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
+	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.videoSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { videoSrc: event.target.value })} />
+	                                    <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
+	                                      {activeAssetUploadKey === videoUploadKey ? 'Uploading...' : 'Choose video'}
+	                                      <input className="hidden" type="file" accept="video/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'video', moment.id); event.currentTarget.value = ''; }} />
+	                                    </label>
+	                                  </div>
                                 </div>
                                 {draft.error ? <p className="mt-3 rounded-2xl border border-[rgba(255,107,107,0.24)] bg-[rgba(255,107,107,0.08)] px-4 py-3 text-sm">{draft.error}</p> : null}
                               </article>
