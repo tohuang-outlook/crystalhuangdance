@@ -606,7 +606,7 @@ export function updateAdminMasterClassTimelineEntry(
 }
 
 export function createAdminMasterClassMoment(payload: AdminArchiveMediaPayload) {
-  return request<{ moment: ArchiveMediaRecord }>('/api/admin/master-class-moments', {
+  return request<{ masterClassMoments: ArchiveMediaRecord[] }>('/api/admin/master-class-moments', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

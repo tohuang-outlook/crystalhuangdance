@@ -2210,7 +2210,7 @@ export default function AdminPage() {
       const response = await createAdminMasterClassMoment(
         toArchiveMediaPayload(newMasterClassMomentDraft)
       );
-      setMasterClassArchiveMoments((current) => [...current, response.moment]);
+      setMasterClassArchiveMoments(response.masterClassMoments);
       setNewMasterClassMomentDraft(createEmptyArchiveMediaDraft());
       await loadDashboard();
     } catch (err) {

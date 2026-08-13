@@ -1832,6 +1832,11 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    shiftMasterClassMomentSortOrdersDown: db.prepare(
+      `UPDATE master_class_moments
+       SET sort_order = sort_order + 1,
+           updated_at = CURRENT_TIMESTAMP`
+    ),
     listGroupChoreographyEntries: db.prepare(
       `SELECT
           id,
@@ -2238,6 +2243,16 @@ export function createDatabase(filename) {
         id,
         sortOrder: index,
       });
+    });
+
+    return statements.listMasterClassMoments.all();
+  });
+
+  const createMasterClassMomentAtTop = db.transaction((moment) => {
+    statements.shiftMasterClassMomentSortOrdersDown.run();
+    statements.createMasterClassMoment.get({
+      ...moment,
+      sortOrder: 0,
     });
 
     return statements.listMasterClassMoments.all();
@@ -2706,7 +2721,7 @@ export function createDatabase(filename) {
       return statements.findMasterClassMomentById.get(id) ?? null;
     },
     createMasterClassMoment(moment) {
-      return statements.createMasterClassMoment.get(moment);
+      return createMasterClassMomentAtTop(moment);
     },
     updateMasterClassMoment(moment) {
       return statements.updateMasterClassMoment.get(moment) ?? null;

@@ -2375,12 +2375,11 @@ export function createApp({
       return res.status(400).json({ error: 'All master class media labels, titles, and image fields are required.' });
     }
 
-    const moment = db.createMasterClassMoment({
+    const masterClassMoments = db.createMasterClassMoment({
       ...payload,
-      sortOrder: db.countMasterClassMoments(),
-    });
+    }).map(serializeArchiveMediaItem);
 
-    return res.status(201).json({ moment: serializeArchiveMediaItem(moment) });
+    return res.status(201).json({ masterClassMoments });
   });
 
   app.put('/api/admin/master-class-moments/:momentId', requireAdmin, (req, res) => {

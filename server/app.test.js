@@ -1311,10 +1311,12 @@ describe('auth and video backend foundation', () => {
       videoSrc: 'https://example.com/master-video',
     });
     expect(createMasterMomentResponse.status).toBe(201);
-    const createdMasterMomentId = createMasterMomentResponse.body.moment.id;
-    expect(createMasterMomentResponse.body.moment).toMatchObject({
+    const [createdMasterMoment] = createMasterMomentResponse.body.masterClassMoments;
+    const createdMasterMomentId = createdMasterMoment.id;
+    expect(createdMasterMoment).toMatchObject({
       title: 'Test Master Class Moment',
       videoSrc: 'https://example.com/master-video',
+      sortOrder: 0,
     });
 
     const updateMasterMomentResponse = await adminAgent
