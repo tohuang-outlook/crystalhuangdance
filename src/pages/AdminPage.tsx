@@ -3467,8 +3467,8 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="mt-6 space-y-8">
-                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                    <div className="mt-6 flex flex-col gap-8">
+                      <div className="order-2 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
                         <p className="eyebrow text-[10px]">Archive Timeline</p>
                         <div className="mt-4 grid gap-4 xl:grid-cols-3">
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Date label (EN)" value={newMasterClassTimelineDraft.dateLabel} onChange={(event) => updateNewMasterClassTimelineDraft({ dateLabel: event.target.value })} />
@@ -3514,7 +3514,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
+                      <div className="order-1 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.72)] p-5">
                         <p className="eyebrow text-[10px]">Selected Master Class Moments</p>
                         <p className="mt-2 text-sm text-[var(--text-muted)]">
                           Upload a thumbnail image and an optional actual video file for each click-to-open master class card.
