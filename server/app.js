@@ -5,6 +5,7 @@ import session from 'express-session';
 import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
+import { spawn } from 'child_process';
 import { buildInvestmentReportFilename, createInvestmentReportPdfDocument } from './investment-report-pdf.js';
 import { processUploadedVideo } from './video-processing.js';
 
@@ -21,6 +22,8 @@ const allowedMimeTypes = new Set([
   'video/x-msvideo',
   'video/avi',
 ]);
+const heicAssetExtensions = new Set(['.heic', '.heif']);
+const heicAssetMimeTypes = new Set(['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence']);
 const inviteCodePattern = /^\d{6}$/;
 const investorUpdateCategories = new Set([
   'investment-page',
@@ -939,6 +942,44 @@ function createAssetUploadMiddleware(config) {
   });
 }
 
+function runCommand(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stderr = '';
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(stderr.trim() || `${command} exited with code ${code}`));
+    });
+  });
+}
+
+function isHeicAsset(file, extension) {
+  return heicAssetExtensions.has(extension) || heicAssetMimeTypes.has(file.mimetype);
+}
+
+async function convertHeicAssetToJpeg(inputPath, outputPath) {
+  await runCommand('ffmpeg', [
+    '-y',
+    '-i',
+    inputPath,
+    '-frames:v',
+    '1',
+    '-q:v',
+    '2',
+    outputPath,
+  ]);
+}
+
 export function createApp({
   db,
   sessionSecret,
@@ -1517,9 +1558,19 @@ export function createApp({
     if (!req.file) return res.status(400).json({ error: 'An image or video file is required.' });
     await fs.mkdir(assetDirectory, { recursive: true });
     const extension = path.extname(req.file.originalname).toLowerCase();
-    const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${extension}`;
-    await fs.rename(req.file.path, path.join(assetDirectory, filename));
-    return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: req.file.size, createdAt: new Date().toISOString() } });
+    const outputExtension = isHeicAsset(req.file, extension) ? '.jpg' : extension;
+    const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${outputExtension}`;
+    const outputPath = path.join(assetDirectory, filename);
+
+    if (isHeicAsset(req.file, extension)) {
+      await convertHeicAssetToJpeg(req.file.path, outputPath);
+      await fs.unlink(req.file.path);
+    } else {
+      await fs.rename(req.file.path, outputPath);
+    }
+
+    const stat = await fs.stat(outputPath);
+    return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: stat.size, createdAt: new Date().toISOString() } });
   });
 
   app.delete('/api/admin/assets/:name', requireAdmin, async (req, res) => {
