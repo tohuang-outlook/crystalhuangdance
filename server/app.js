@@ -931,7 +931,7 @@ function createUploadMiddleware(config) {
 function createAssetUploadMiddleware(config) {
   return multer({
     dest: config.uploadTempDirectory,
-    limits: { fileSize: 50 * 1024 * 1024 },
+    limits: { fileSize: config.uploadFileSizeLimitBytes },
     fileFilter: (_req, file, callback) => {
       if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) return callback(null, true);
       callback(new Error('Only image and video files are allowed.'));
