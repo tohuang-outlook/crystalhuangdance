@@ -3516,24 +3516,27 @@ export default function AdminPage() {
 
                       <div className="rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5">
                         <p className="eyebrow text-[10px]">Selected Master Class Moments</p>
+                        <p className="mt-2 text-sm text-[var(--text-muted)]">
+                          Upload a thumbnail image and an optional actual video file for each click-to-open master class card.
+                        </p>
                         <div className="mt-4 grid gap-4 xl:grid-cols-2">
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (EN)" value={newMasterClassMomentDraft.title} onChange={(event) => updateNewMasterClassMomentDraft({ title: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (ZH)" value={newMasterClassMomentDraft.titleZh} onChange={(event) => updateNewMasterClassMomentDraft({ titleZh: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (EN)" value={newMasterClassMomentDraft.subtitle} onChange={(event) => updateNewMasterClassMomentDraft({ subtitle: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Subtitle (ZH)" value={newMasterClassMomentDraft.subtitleZh} onChange={(event) => updateNewMasterClassMomentDraft({ subtitleZh: event.target.value })} />
                           <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
-                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
+                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Thumbnail image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
                             <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
-                              {activeAssetUploadKey === 'master-class-moment-new-image' ? 'Uploading...' : 'Choose image'}
+                              {activeAssetUploadKey === 'master-class-moment-new-image' ? 'Uploading...' : 'Upload thumbnail'}
                               <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', 'new'); event.currentTarget.value = ''; }} />
                             </label>
                           </div>
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (EN)" value={newMasterClassMomentDraft.imageAlt} onChange={(event) => updateNewMasterClassMomentDraft({ imageAlt: event.target.value })} />
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (ZH)" value={newMasterClassMomentDraft.imageAltZh} onChange={(event) => updateNewMasterClassMomentDraft({ imageAltZh: event.target.value })} />
                           <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
-                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Video path (optional)" value={newMasterClassMomentDraft.videoSrc} onChange={(event) => updateNewMasterClassMomentDraft({ videoSrc: event.target.value })} />
+                            <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Actual video path (optional)" value={newMasterClassMomentDraft.videoSrc} onChange={(event) => updateNewMasterClassMomentDraft({ videoSrc: event.target.value })} />
                             <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
-                              {activeAssetUploadKey === 'master-class-moment-new-video' ? 'Uploading...' : 'Choose video'}
+                              {activeAssetUploadKey === 'master-class-moment-new-video' ? 'Uploading...' : 'Upload actual video'}
                               <input className="hidden" type="file" accept="video/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'video', 'new'); event.currentTarget.value = ''; }} />
                             </label>
                           </div>
@@ -3567,18 +3570,18 @@ export default function AdminPage() {
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitle} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitle: event.target.value })} />
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.subtitleZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { subtitleZh: event.target.value })} />
 	                                  <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
-	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
+	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" aria-label="Thumbnail image path" placeholder="Thumbnail image path" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
 	                                    <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
-	                                      {activeAssetUploadKey === imageUploadKey ? 'Uploading...' : 'Choose image'}
+	                                      {activeAssetUploadKey === imageUploadKey ? 'Uploading...' : 'Upload thumbnail'}
 	                                      <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', moment.id); event.currentTarget.value = ''; }} />
 	                                    </label>
 	                                  </div>
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAlt} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAlt: event.target.value })} />
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAltZh} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAltZh: event.target.value })} />
 	                                  <div className="grid gap-3 xl:col-span-2 sm:grid-cols-[1fr_auto]">
-	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.videoSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { videoSrc: event.target.value })} />
+	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" aria-label="Actual video path" placeholder="Actual video path (optional)" value={draft.videoSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { videoSrc: event.target.value })} />
 	                                    <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
-	                                      {activeAssetUploadKey === videoUploadKey ? 'Uploading...' : 'Choose video'}
+	                                      {activeAssetUploadKey === videoUploadKey ? 'Uploading...' : 'Upload actual video'}
 	                                      <input className="hidden" type="file" accept="video/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'video', moment.id); event.currentTarget.value = ''; }} />
 	                                    </label>
 	                                  </div>
