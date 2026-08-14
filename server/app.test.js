@@ -1475,6 +1475,38 @@ describe('auth and video backend foundation', () => {
     expect(db.findGroupChoreographyMomentById(createdGroupMomentId)).toBeNull();
   });
 
+  it('lets admins upload web-safe assets and rejects unsupported image formats clearly', async () => {
+    const adminAgent = request.agent(app);
+    await registerUser(adminAgent, 'admin@example.com');
+    promoteUserToAdmin(db, 'admin@example.com');
+    await loginUser(adminAgent, 'admin@example.com');
+
+    const thumbnailPath = path.join(config.uploadTempDirectory, 'thumbnail.jpg');
+    fs.writeFileSync(thumbnailPath, Buffer.from([0xff, 0xd8, 0xff, 0xd9]));
+
+    const uploadResponse = await adminAgent
+      .post('/api/admin/assets')
+      .attach('asset', thumbnailPath);
+
+    expect(uploadResponse.status).toBe(201);
+    expect(uploadResponse.body.asset.path).toMatch(/^\/uploads\/assets\/.+\.jpg$/);
+    expect(
+      fs.existsSync(path.join(config.uploadTempDirectory, '..', 'assets', uploadResponse.body.asset.name))
+    ).toBe(true);
+
+    const unsupportedPath = path.join(config.uploadTempDirectory, 'thumbnail.tiff');
+    fs.writeFileSync(unsupportedPath, 'not-web-safe');
+
+    const unsupportedResponse = await adminAgent
+      .post('/api/admin/assets')
+      .attach('asset', unsupportedPath);
+
+    expect(unsupportedResponse.status).toBe(400);
+    expect(unsupportedResponse.body.error).toBe(
+      'Only JPG, PNG, WebP, HEIC, HEIF, and video files are allowed.'
+    );
+  });
+
   it('skips the upload duration limit for admins while preserving it for regular users', async () => {
     const processedPayloads = [];
     app = createApp({

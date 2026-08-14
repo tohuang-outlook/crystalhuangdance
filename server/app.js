@@ -1663,33 +1663,40 @@ export function createApp({
     return res.json({ assets: assets.sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
   });
 
-  app.post('/api/admin/assets', requireAdmin, assetUpload.single('asset'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'An image or video file is required.' });
-    await fs.mkdir(assetDirectory, { recursive: true });
-    const extension = path.extname(req.file.originalname).toLowerCase();
-    const outputExtension = isHeicAsset(req.file, extension) ? '.jpg' : extension;
-    const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${outputExtension}`;
-    const outputPath = path.join(assetDirectory, filename);
-
-    if (isHeicAsset(req.file, extension)) {
-      try {
-        await convertHeicAssetToJpeg(req.file.path, outputPath);
-      } catch (error) {
-        await fs.unlink(req.file.path).catch(() => {});
-        await fs.unlink(outputPath).catch(() => {});
-        return res.status(400).json({
-          error:
-            'This HEIC/HEIF thumbnail could not be converted. Please upload a JPG, PNG, or WebP thumbnail instead.',
-        });
+  app.post('/api/admin/assets', requireAdmin, (req, res) => {
+    assetUpload.single('asset')(req, res, async (uploadError) => {
+      if (uploadError) {
+        const message = uploadError instanceof Error ? uploadError.message : 'Asset upload failed.';
+        return res.status(400).json({ error: message });
       }
 
-      await fs.unlink(req.file.path);
-    } else {
-      await fs.rename(req.file.path, outputPath);
-    }
+      if (!req.file) return res.status(400).json({ error: 'An image or video file is required.' });
+      await fs.mkdir(assetDirectory, { recursive: true });
+      const extension = path.extname(req.file.originalname).toLowerCase();
+      const outputExtension = isHeicAsset(req.file, extension) ? '.jpg' : extension;
+      const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${outputExtension}`;
+      const outputPath = path.join(assetDirectory, filename);
 
-    const stat = await fs.stat(outputPath);
-    return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: stat.size, createdAt: new Date().toISOString() } });
+      if (isHeicAsset(req.file, extension)) {
+        try {
+          await convertHeicAssetToJpeg(req.file.path, outputPath);
+        } catch (error) {
+          await fs.unlink(req.file.path).catch(() => {});
+          await fs.unlink(outputPath).catch(() => {});
+          return res.status(400).json({
+            error:
+              'This HEIC/HEIF thumbnail could not be converted. Please upload a JPG, PNG, or WebP thumbnail instead.',
+          });
+        }
+
+        await fs.unlink(req.file.path);
+      } else {
+        await fs.rename(req.file.path, outputPath);
+      }
+
+      const stat = await fs.stat(outputPath);
+      return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: stat.size, createdAt: new Date().toISOString() } });
+    });
   });
 
   app.delete('/api/admin/assets/:name', requireAdmin, async (req, res) => {
