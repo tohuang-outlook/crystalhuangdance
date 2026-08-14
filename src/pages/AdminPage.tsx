@@ -3019,7 +3019,7 @@ export default function AdminPage() {
                     <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
                       Manage the homepage modules that visitors see first. Press Highlight controls the editorial cards in the press section, and Featured Performance Reels controls the media section.
                     </p>
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div id="admin-content-quick-edit" className="mt-6 scroll-mt-28 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {contentQuickLinks.map((link) => (
                         <a
                           key={link.href}
@@ -3043,8 +3043,11 @@ export default function AdminPage() {
                           Manage the Hero identity line, Hero statement, and the three profile paragraphs shown in the Artist Profile section.
                         </p>
                       </div>
-                      <div className="text-sm text-[var(--text-muted)]">
-                        {artistProfile ? `Updated ${formatDate(artistProfile.updatedAt)}` : 'Loading profile'}
+                      <div className="flex flex-col items-start gap-2 text-sm text-[var(--text-muted)] sm:items-end">
+                        <a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">
+                          Back to quick edit
+                        </a>
+                        <span>{artistProfile ? `Updated ${formatDate(artistProfile.updatedAt)}` : 'Loading profile'}</span>
                       </div>
                     </div>
 
@@ -3116,8 +3119,11 @@ export default function AdminPage() {
                           The first 3 entries become the large left-side cards in Press Highlight. Everything after that becomes the smaller archive cards on the right.
                         </p>
                       </div>
-                      <div className="text-sm text-[var(--text-muted)]">
-                        {pressHighlights.length} item{pressHighlights.length === 1 ? '' : 's'} total
+                      <div className="flex flex-col items-start gap-2 text-sm text-[var(--text-muted)] sm:items-end">
+                        <a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">
+                          Back to quick edit
+                        </a>
+                        <span>{pressHighlights.length} item{pressHighlights.length === 1 ? '' : 's'} total</span>
                       </div>
                     </div>
 
@@ -3283,8 +3289,11 @@ export default function AdminPage() {
                           Manage the chronological archive entries shown in the distinctions section. You can also choose which entry powers the Latest Achievement banner.
                         </p>
                       </div>
-                      <div className="text-sm text-[var(--text-muted)]">
-                        {achievements.length} item{achievements.length === 1 ? '' : 's'}
+                      <div className="flex flex-col items-start gap-2 text-sm text-[var(--text-muted)] sm:items-end">
+                        <a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">
+                          Back to quick edit
+                        </a>
+                        <span>{achievements.length} item{achievements.length === 1 ? '' : 's'}</span>
                       </div>
                     </div>
 
@@ -3433,9 +3442,12 @@ export default function AdminPage() {
                                 : 'These entries appear as the stacked supporting reels on the right side of the media section.'}
                             </p>
                           </div>
-                          <p className="text-sm text-[var(--text-muted)]">
-                            {placementReels.length} item{placementReels.length === 1 ? '' : 's'}
-                          </p>
+                          <div className="flex flex-col items-start gap-2 text-sm text-[var(--text-muted)] sm:items-end">
+                            <a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">
+                              Back to quick edit
+                            </a>
+                            <span>{placementReels.length} item{placementReels.length === 1 ? '' : 's'}</span>
+                          </div>
                         </div>
 
                         <div className="mt-6 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_12px_28px_rgba(68,102,136,0.06)]">
@@ -3558,8 +3570,11 @@ export default function AdminPage() {
                           Manage the full gallery archive section: timeline, master class cards, group choreography credits, and featured group works.
                         </p>
                       </div>
-                      <div className="text-sm text-[var(--text-muted)]">
-                        {masterClassTimelineEntries.length} timeline · {masterClassArchiveMoments.length} master cards · {groupArchiveEntries.length} group credits · {groupArchiveMoments.length} group cards
+                      <div className="flex flex-col items-start gap-2 text-sm text-[var(--text-muted)] sm:items-end">
+                        <a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">
+                          Back to quick edit
+                        </a>
+                        <span>{masterClassTimelineEntries.length} timeline · {masterClassArchiveMoments.length} master cards · {groupArchiveEntries.length} group credits · {groupArchiveMoments.length} group cards</span>
                       </div>
                     </div>
 
@@ -3793,14 +3808,14 @@ export default function AdminPage() {
               {activeTab === 'content' ? (
                 <section aria-labelledby="hero-entry-points-heading">
                   <div id="admin-media-library" className="mb-6 scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
-                    <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow">Shared media library</p><h2 className="mt-3 text-3xl">Images and videos</h2><p className="mt-2 text-sm text-[var(--text-muted)]">Use JPG, PNG, or WebP for thumbnails; videos can be uploaded separately.</p></div><label className="rounded-full bg-[var(--text)] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white cursor-pointer">Upload asset<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,video/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAdminAsset(file).then((response) => setAssets((current) => [response.asset, ...current])).catch((err) => setError(err.message)); event.currentTarget.value = ''; }} /></label></div>
+                    <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow">Shared media library</p><h2 className="mt-3 text-3xl">Images and videos</h2><p className="mt-2 text-sm text-[var(--text-muted)]">Use JPG, PNG, or WebP for thumbnails; videos can be uploaded separately.</p></div><div className="flex flex-wrap items-center gap-2"><a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">Back to quick edit</a><label className="rounded-full bg-[var(--text)] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white cursor-pointer">Upload asset<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,video/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAdminAsset(file).then((response) => setAssets((current) => [response.asset, ...current])).catch((err) => setError(err.message)); event.currentTarget.value = ''; }} /></label></div></div>
                     <p className="mt-3 text-sm text-[var(--text-muted)]">Upload a file, then copy its path into a thumbnail, image, or local video path field.</p>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{assets.slice(0, 12).map((asset) => <article key={asset.name} className="rounded-xl border border-[var(--line)] bg-white p-3"><p className="truncate text-sm">{asset.name}</p><p className="mt-2 break-all text-xs text-[var(--text-muted)]">{asset.path}</p><div className="mt-3 flex gap-2"><button type="button" className="text-xs underline" onClick={() => void navigator.clipboard?.writeText(asset.path)}>Copy path</button><button type="button" className="text-xs text-red-700 underline" onClick={() => void deleteAdminAsset(asset.name).then(() => setAssets((current) => current.filter((item) => item.name !== asset.name))).catch((err) => setError(err.message))}>Delete</button></div></article>)}</div>
                   </div>
                   <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
                     <p className="eyebrow">Homepage navigation</p>
                     <h2 id="hero-entry-points-heading" className="mt-3 scroll-mt-28 text-4xl text-[var(--text)]">Hero entry cards</h2>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-4"><p className="text-sm leading-6 text-[var(--text-muted)]">Edit the homepage cards, choose whether each one is visible, and use arrows to set the display order.</p><button type="button" className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white" onClick={() => void createAdminHeroEntryPoint().then((response) => setHeroEntryPoints((current) => [...current, response.entryPoint])).catch((err) => setError(err.message))}>Add card</button></div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-4"><p className="text-sm leading-6 text-[var(--text-muted)]">Edit the homepage cards, choose whether each one is visible, and use arrows to set the display order.</p><div className="flex flex-wrap items-center gap-2"><a className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--text)]" href="#admin-content-quick-edit">Back to quick edit</a><button type="button" className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white" onClick={() => void createAdminHeroEntryPoint().then((response) => setHeroEntryPoints((current) => [...current, response.entryPoint])).catch((err) => setError(err.message))}>Add card</button></div></div>
                     <div className="mt-6 space-y-4">
                       {heroEntryPoints.map((entry, index) => (
                         <article key={entry.id} className="rounded-[1.25rem] border border-[var(--line)] bg-white p-5">
