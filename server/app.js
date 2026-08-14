@@ -980,6 +980,45 @@ async function convertHeicAssetToJpeg(inputPath, outputPath) {
   ]);
 }
 
+function isHeicPublicAssetPath(value, publicAssetsBasePath) {
+  if (typeof value !== 'string' || !value.startsWith(`${publicAssetsBasePath}/`)) {
+    return false;
+  }
+
+  return heicAssetExtensions.has(path.extname(value).toLowerCase());
+}
+
+async function normalizeHeicMasterClassThumbnails({ db, assetDirectory, publicAssetsBasePath }) {
+  const moments = typeof db.listMasterClassMoments === 'function' ? db.listMasterClassMoments() : [];
+
+  for (const moment of moments) {
+    if (!isHeicPublicAssetPath(moment.imageSrc, publicAssetsBasePath)) {
+      continue;
+    }
+
+    const sourceFilename = moment.imageSrc.slice(`${publicAssetsBasePath}/`.length);
+    const sourcePath = path.join(assetDirectory, sourceFilename);
+    const outputFilename = sourceFilename.replace(/\.(heic|heif)$/i, '.jpg');
+    const outputPath = path.join(assetDirectory, outputFilename);
+    const outputPublicPath = `${publicAssetsBasePath}/${outputFilename}`;
+
+    try {
+      try {
+        await fs.access(outputPath);
+      } catch {
+        await convertHeicAssetToJpeg(sourcePath, outputPath);
+      }
+
+      db.updateMasterClassMoment({
+        ...moment,
+        imageSrc: outputPublicPath,
+      });
+    } catch (error) {
+      console.error(`Unable to convert HEIC master class thumbnail for "${moment.title}".`, error);
+    }
+  }
+}
+
 export function createApp({
   db,
   sessionSecret,
@@ -999,6 +1038,8 @@ export function createApp({
   const assetUpload = createAssetUploadMiddleware(config);
   const assetDirectory = config.assetDirectory ?? path.join(config.uploadTempDirectory, '..', 'assets');
   const publicAssetsBasePath = config.publicAssetsBasePath ?? '/uploads/assets';
+
+  void normalizeHeicMasterClassThumbnails({ db, assetDirectory, publicAssetsBasePath });
 
   if (config.trustProxy) {
     app.set('trust proxy', 1);
