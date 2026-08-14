@@ -1385,7 +1385,27 @@ export default function AdminPage() {
       if (target === 'new') {
         updateNewMasterClassMomentDraft(patch);
       } else {
-        updateMasterClassMomentDraft(target, patch);
+        const moment = masterClassArchiveMoments.find((item) => item.id === target);
+
+        if (!moment) {
+          throw new Error('Unable to find this master class card.');
+        }
+
+        const nextDraft = {
+          ...getMasterClassMomentDraft(moment),
+          ...patch,
+          isSubmitting: false,
+          error: null,
+        };
+        const saved = await updateAdminMasterClassMoment(target, toArchiveMediaPayload(nextDraft));
+
+        setMasterClassArchiveMoments((current) =>
+          current.map((item) => (item.id === target ? saved.moment : item))
+        );
+        setMasterClassMomentDrafts((current) => ({
+          ...current,
+          [target]: createArchiveMediaDraftFromRecord(saved.moment),
+        }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to upload this asset.');
