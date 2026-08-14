@@ -1258,6 +1258,7 @@ describe('auth and video backend foundation', () => {
     promoteUserToAdmin(db, 'admin@example.com');
     await loginUser(adminAgent, 'admin@example.com');
 
+    const previousFirstTimelineId = db.listMasterClassTimelineEntries()[0]?.id;
     const createTimelineResponse = await adminAgent.post('/api/admin/master-class-timeline').send({
       dateLabel: 'August 2026',
       dateLabelZh: '2026 年 8 月',
@@ -1272,6 +1273,12 @@ describe('auth and video backend foundation', () => {
       title: 'Test Master Class Timeline',
       location: 'Taipei',
     });
+    expect(createTimelineResponse.body.entry.sortOrder).toBe(0);
+    expect(createTimelineResponse.body.timelineEntries[0].id).toBe(createdTimelineId);
+    if (previousFirstTimelineId) {
+      expect(createTimelineResponse.body.timelineEntries[1].id).toBe(previousFirstTimelineId);
+      expect(createTimelineResponse.body.timelineEntries[1].sortOrder).toBe(1);
+    }
 
     const updateTimelineResponse = await adminAgent
       .put(`/api/admin/master-class-timeline/${createdTimelineId}`)

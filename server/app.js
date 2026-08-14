@@ -2470,12 +2470,15 @@ export function createApp({
       return res.status(400).json({ error: 'All English and Chinese timeline fields are required.' });
     }
 
-    const entry = db.createMasterClassTimelineEntry({
+    const timelineEntries = db.createMasterClassTimelineEntry({
       ...payload,
-      sortOrder: db.countMasterClassTimelineEntries(),
+      sortOrder: 0,
     });
 
-    return res.status(201).json({ entry: serializeMasterClassTimelineEntry(entry) });
+    return res.status(201).json({
+      entry: serializeMasterClassTimelineEntry(timelineEntries[0]),
+      timelineEntries: timelineEntries.map(serializeMasterClassTimelineEntry),
+    });
   });
 
   app.put('/api/admin/master-class-timeline/:entryId', requireAdmin, (req, res) => {

@@ -2156,9 +2156,12 @@ export default function AdminPage() {
       const response = await createAdminMasterClassTimelineEntry(
         toMasterClassTimelinePayload(newMasterClassTimelineDraft)
       );
-      setMasterClassTimelineEntries((current) => [...current, response.entry]);
+      setMasterClassTimelineEntries(response.timelineEntries);
+      setMasterClassTimelineDrafts((current) => ({
+        ...current,
+        [response.entry.id]: createMasterClassTimelineDraftFromRecord(response.entry),
+      }));
       setNewMasterClassTimelineDraft(createEmptyMasterClassTimelineDraft());
-      await loadDashboard();
     } catch (err) {
       updateNewMasterClassTimelineDraft({
         isSubmitting: false,

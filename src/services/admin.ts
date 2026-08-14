@@ -586,7 +586,10 @@ export function updateAdminArtistProfile(payload: AdminArtistProfilePayload) {
 }
 
 export function createAdminMasterClassTimelineEntry(payload: AdminMasterClassTimelineEntryPayload) {
-  return request<{ entry: MasterClassTimelineEntryRecord }>('/api/admin/master-class-timeline', {
+  return request<{
+    entry: MasterClassTimelineEntryRecord;
+    timelineEntries: MasterClassTimelineEntryRecord[];
+  }>('/api/admin/master-class-timeline', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

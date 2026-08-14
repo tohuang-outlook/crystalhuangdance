@@ -1712,6 +1712,11 @@ export function createDatabase(filename) {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = @id`
     ),
+    shiftMasterClassTimelineSortOrdersDown: db.prepare(
+      `UPDATE master_class_timeline_entries
+       SET sort_order = sort_order + 1,
+           updated_at = CURRENT_TIMESTAMP`
+    ),
     listMasterClassMoments: db.prepare(
       `SELECT
           id,
@@ -2237,6 +2242,16 @@ export function createDatabase(filename) {
     return statements.listMasterClassTimelineEntries.all();
   });
 
+  const createMasterClassTimelineEntryAtTop = db.transaction((entry) => {
+    statements.shiftMasterClassTimelineSortOrdersDown.run();
+    statements.createMasterClassTimelineEntry.get({
+      ...entry,
+      sortOrder: 0,
+    });
+
+    return statements.listMasterClassTimelineEntries.all();
+  });
+
   const reorderMasterClassMoments = db.transaction((orderedIds) => {
     orderedIds.forEach((id, index) => {
       statements.updateMasterClassMomentSortOrder.run({
@@ -2699,7 +2714,7 @@ export function createDatabase(filename) {
       return statements.findMasterClassTimelineEntryById.get(id) ?? null;
     },
     createMasterClassTimelineEntry(entry) {
-      return statements.createMasterClassTimelineEntry.get(entry);
+      return createMasterClassTimelineEntryAtTop(entry);
     },
     updateMasterClassTimelineEntry(entry) {
       return statements.updateMasterClassTimelineEntry.get(entry) ?? null;
