@@ -980,6 +980,21 @@ async function convertHeicAssetToJpeg(inputPath, outputPath) {
   ]);
 }
 
+async function createVideoThumbnail(inputPath, outputPath) {
+  await runCommand('ffmpeg', [
+    '-y',
+    '-ss',
+    '1',
+    '-i',
+    inputPath,
+    '-frames:v',
+    '1',
+    '-q:v',
+    '2',
+    outputPath,
+  ]);
+}
+
 function isHeicPublicAssetPath(value, publicAssetsBasePath) {
   if (typeof value !== 'string' || !value.startsWith(`${publicAssetsBasePath}/`)) {
     return false;
@@ -988,7 +1003,29 @@ function isHeicPublicAssetPath(value, publicAssetsBasePath) {
   return heicAssetExtensions.has(path.extname(value).toLowerCase());
 }
 
-async function normalizeHeicMasterClassThumbnails({ db, assetDirectory, publicAssetsBasePath }) {
+function resolveLocalPublicAssetPath(value, { assetDirectory, publicAssetsBasePath, processedVideosDirectory, publicVideosBasePath }) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  if (value.startsWith(`${publicAssetsBasePath}/`)) {
+    return path.join(assetDirectory, value.slice(`${publicAssetsBasePath}/`.length));
+  }
+
+  if (value.startsWith(`${publicVideosBasePath}/`)) {
+    return path.join(processedVideosDirectory, value.slice(`${publicVideosBasePath}/`.length));
+  }
+
+  return null;
+}
+
+async function normalizeHeicMasterClassThumbnails({
+  db,
+  assetDirectory,
+  publicAssetsBasePath,
+  processedVideosDirectory,
+  publicVideosBasePath,
+}) {
   const moments = typeof db.listMasterClassMoments === 'function' ? db.listMasterClassMoments() : [];
 
   for (const moment of moments) {
@@ -1006,7 +1043,22 @@ async function normalizeHeicMasterClassThumbnails({ db, assetDirectory, publicAs
       try {
         await fs.access(outputPath);
       } catch {
-        await convertHeicAssetToJpeg(sourcePath, outputPath);
+        try {
+          await convertHeicAssetToJpeg(sourcePath, outputPath);
+        } catch (error) {
+          const videoPath = resolveLocalPublicAssetPath(moment.videoSrc, {
+            assetDirectory,
+            publicAssetsBasePath,
+            processedVideosDirectory,
+            publicVideosBasePath,
+          });
+
+          if (!videoPath) {
+            throw error;
+          }
+
+          await createVideoThumbnail(videoPath, outputPath);
+        }
       }
 
       db.updateMasterClassMoment({
@@ -1039,7 +1091,13 @@ export function createApp({
   const assetDirectory = config.assetDirectory ?? path.join(config.uploadTempDirectory, '..', 'assets');
   const publicAssetsBasePath = config.publicAssetsBasePath ?? '/uploads/assets';
 
-  void normalizeHeicMasterClassThumbnails({ db, assetDirectory, publicAssetsBasePath });
+  void normalizeHeicMasterClassThumbnails({
+    db,
+    assetDirectory,
+    publicAssetsBasePath,
+    processedVideosDirectory: config.processedVideosDirectory,
+    publicVideosBasePath: config.publicVideosBasePath,
+  });
 
   if (config.trustProxy) {
     app.set('trust proxy', 1);
