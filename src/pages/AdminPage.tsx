@@ -748,6 +748,44 @@ export default function AdminPage() {
     },
   ];
 
+  const contentQuickLinks = [
+    {
+      label: 'Artist Profile',
+      description: 'Hero text and profile narrative',
+      href: '#admin-artist-profile',
+    },
+    {
+      label: 'Press Highlight',
+      description: 'Featured press cards',
+      href: '#admin-press-highlight',
+    },
+    {
+      label: 'Featured Reels',
+      description: 'Large and small media cards',
+      href: '#admin-featured-reels',
+    },
+    {
+      label: 'Archive Timeline',
+      description: 'Milestones and latest achievement',
+      href: '#admin-archive-timeline',
+    },
+    {
+      label: 'Master Class',
+      description: 'Timeline, thumbnails, and videos',
+      href: '#admin-master-class-archive',
+    },
+    {
+      label: 'Media Library',
+      description: 'Uploaded images and videos',
+      href: '#admin-media-library',
+    },
+    {
+      label: 'Hero Cards',
+      description: 'Homepage entry cards',
+      href: '#hero-entry-points-heading',
+    },
+  ];
+
   const investorUpdatesByCategory = useMemo(
     () =>
       investorCategories.reduce<Record<InvestorUpdateCategory, InvestorUpdateRecord[]>>(
@@ -2981,9 +3019,22 @@ export default function AdminPage() {
                     <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--text-muted)]">
                       Manage the homepage modules that visitors see first. Press Highlight controls the editorial cards in the press section, and Featured Performance Reels controls the media section.
                     </p>
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {contentQuickLinks.map((link) => (
+                        <a
+                          key={link.href}
+                          className="group rounded-[1.1rem] border border-[var(--line)] bg-[rgba(255,255,255,0.72)] px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--text)] hover:bg-white hover:shadow-[0_14px_32px_rgba(68,102,136,0.12)]"
+                          href={link.href}
+                        >
+                          <span className="eyebrow text-[10px] text-[var(--text-muted)]">Quick edit</span>
+                          <span className="mt-3 block text-lg text-[var(--text)]">{link.label}</span>
+                          <span className="mt-2 block text-sm leading-5 text-[var(--text-muted)]">{link.description}</span>
+                        </a>
+                      ))}
+                    </div>
                   </div>
 
-                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                  <article id="admin-artist-profile" className="scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       <div>
                         <p className="eyebrow">Artist Profile</p>
@@ -3056,7 +3107,7 @@ export default function AdminPage() {
                     ) : null}
                   </article>
 
-                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                  <article id="admin-press-highlight" className="scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       <div>
                         <p className="eyebrow">Press Highlight</p>
@@ -3223,7 +3274,7 @@ export default function AdminPage() {
                     )}
                   </article>
 
-                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                  <article id="admin-archive-timeline" className="scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       <div>
                         <p className="eyebrow">Archive Timeline</p>
@@ -3367,7 +3418,8 @@ export default function AdminPage() {
                     return (
                       <article
                         key={placement}
-                        className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
+                        id={placement === 'featured' ? 'admin-featured-reels' : undefined}
+                        className="scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6"
                       >
                         <div className="flex flex-wrap items-end justify-between gap-4">
                           <div>
@@ -3497,7 +3549,7 @@ export default function AdminPage() {
                     );
                   })}
 
-                  <article className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
+                  <article id="admin-master-class-archive" className="scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_20px_55px_rgba(68,102,136,0.09)] sm:p-6">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       <div>
                         <p className="eyebrow">Master Class Archive</p>
@@ -3740,14 +3792,14 @@ export default function AdminPage() {
 
               {activeTab === 'content' ? (
                 <section aria-labelledby="hero-entry-points-heading">
-                  <div className="mb-6 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
+                  <div id="admin-media-library" className="mb-6 scroll-mt-28 rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
                     <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="eyebrow">Shared media library</p><h2 className="mt-3 text-3xl">Images and videos</h2><p className="mt-2 text-sm text-[var(--text-muted)]">Use JPG, PNG, or WebP for thumbnails; videos can be uploaded separately.</p></div><label className="rounded-full bg-[var(--text)] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white cursor-pointer">Upload asset<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,video/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAdminAsset(file).then((response) => setAssets((current) => [response.asset, ...current])).catch((err) => setError(err.message)); event.currentTarget.value = ''; }} /></label></div>
                     <p className="mt-3 text-sm text-[var(--text-muted)]">Upload a file, then copy its path into a thumbnail, image, or local video path field.</p>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{assets.slice(0, 12).map((asset) => <article key={asset.name} className="rounded-xl border border-[var(--line)] bg-white p-3"><p className="truncate text-sm">{asset.name}</p><p className="mt-2 break-all text-xs text-[var(--text-muted)]">{asset.path}</p><div className="mt-3 flex gap-2"><button type="button" className="text-xs underline" onClick={() => void navigator.clipboard?.writeText(asset.path)}>Copy path</button><button type="button" className="text-xs text-red-700 underline" onClick={() => void deleteAdminAsset(asset.name).then(() => setAssets((current) => current.filter((item) => item.name !== asset.name))).catch((err) => setError(err.message))}>Delete</button></div></article>)}</div>
                   </div>
                   <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_20px_55px_rgba(68,102,136,0.09)]">
                     <p className="eyebrow">Homepage navigation</p>
-                    <h2 id="hero-entry-points-heading" className="mt-3 text-4xl text-[var(--text)]">Hero entry cards</h2>
+                    <h2 id="hero-entry-points-heading" className="mt-3 scroll-mt-28 text-4xl text-[var(--text)]">Hero entry cards</h2>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-4"><p className="text-sm leading-6 text-[var(--text-muted)]">Edit the homepage cards, choose whether each one is visible, and use arrows to set the display order.</p><button type="button" className="rounded-full bg-[var(--text)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-white" onClick={() => void createAdminHeroEntryPoint().then((response) => setHeroEntryPoints((current) => [...current, response.entryPoint])).catch((err) => setError(err.message))}>Add card</button></div>
                     <div className="mt-6 space-y-4">
                       {heroEntryPoints.map((entry, index) => (
