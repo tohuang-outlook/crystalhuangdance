@@ -557,6 +557,23 @@ function createArchiveMediaDraftFromRecord(item: ArchiveMediaRecord): ArchiveMed
   };
 }
 
+function mergeArchiveMediaDraftWithRecord(
+  draft: ArchiveMediaDraft | undefined,
+  item: ArchiveMediaRecord
+): ArchiveMediaDraft {
+  if (!draft) {
+    return createArchiveMediaDraftFromRecord(item);
+  }
+
+  return {
+    ...draft,
+    imageSrc: draft.imageSrc.trim() || item.imageSrc,
+    imageAlt: draft.imageAlt.trim() || item.imageAlt,
+    imageAltZh: draft.imageAltZh.trim() || item.imageAltZh,
+    videoSrc: draft.videoSrc.trim() || item.videoSrc || '',
+  };
+}
+
 function createEmptyGroupChoreographyEntryDraft(): GroupChoreographyEntryDraft {
   return {
     seasonLabel: '',
@@ -984,7 +1001,7 @@ export default function AdminPage() {
       const nextDrafts: Record<number, ArchiveMediaDraft> = {};
 
       masterClassArchiveMoments.forEach((moment) => {
-        nextDrafts[moment.id] = current[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
+        nextDrafts[moment.id] = mergeArchiveMediaDraftWithRecord(current[moment.id], moment);
       });
 
       return nextDrafts;
@@ -1008,7 +1025,7 @@ export default function AdminPage() {
       const nextDrafts: Record<number, ArchiveMediaDraft> = {};
 
       groupArchiveMoments.forEach((moment) => {
-        nextDrafts[moment.id] = current[moment.id] ?? createArchiveMediaDraftFromRecord(moment);
+        nextDrafts[moment.id] = mergeArchiveMediaDraftWithRecord(current[moment.id], moment);
       });
 
       return nextDrafts;
