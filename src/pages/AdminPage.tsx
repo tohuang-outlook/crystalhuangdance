@@ -1408,7 +1408,14 @@ export default function AdminPage() {
         }));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to upload this asset.');
+      const message = err instanceof Error ? err.message : 'Unable to upload this asset.';
+      setError(message);
+
+      if (target === 'new') {
+        updateNewMasterClassMomentDraft({ error: message });
+      } else {
+        updateMasterClassMomentDraft(target, { error: message });
+      }
     } finally {
       setActiveAssetUploadKey(null);
     }
@@ -3554,7 +3561,7 @@ export default function AdminPage() {
                       <div className="order-1 rounded-[1.25rem] border border-[var(--line)] bg-[rgba(255,255,255,0.72)] p-5">
                         <p className="eyebrow text-[10px]">Selected Master Class Moments</p>
                         <p className="mt-2 text-sm text-[var(--text-muted)]">
-                          Upload a thumbnail image and an optional actual video file for each click-to-open master class card.
+                          Upload a JPG, PNG, or WebP thumbnail and an optional actual video file for each click-to-open master class card.
                         </p>
                         <div className="mt-4 grid gap-4 xl:grid-cols-2">
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Title (EN)" value={newMasterClassMomentDraft.title} onChange={(event) => updateNewMasterClassMomentDraft({ title: event.target.value })} />
@@ -3565,7 +3572,7 @@ export default function AdminPage() {
                             <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Thumbnail image path" value={newMasterClassMomentDraft.imageSrc} onChange={(event) => updateNewMasterClassMomentDraft({ imageSrc: event.target.value })} />
                             <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
                               {activeAssetUploadKey === 'master-class-moment-new-image' ? 'Uploading...' : 'Upload thumbnail'}
-                              <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', 'new'); event.currentTarget.value = ''; }} />
+                              <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', 'new'); event.currentTarget.value = ''; }} />
                             </label>
                           </div>
                           <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" placeholder="Image alt (EN)" value={newMasterClassMomentDraft.imageAlt} onChange={(event) => updateNewMasterClassMomentDraft({ imageAlt: event.target.value })} />
@@ -3610,7 +3617,7 @@ export default function AdminPage() {
 	                                    <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" aria-label="Thumbnail image path" placeholder="Thumbnail image path" value={draft.imageSrc} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageSrc: event.target.value })} />
 	                                    <label className="flex cursor-pointer items-center justify-center rounded-full border border-[var(--line)] bg-white px-5 py-3 text-xs uppercase tracking-[0.16em]">
 	                                      {activeAssetUploadKey === imageUploadKey ? 'Uploading...' : 'Upload thumbnail'}
-	                                      <input className="hidden" type="file" accept="image/*" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', moment.id); event.currentTarget.value = ''; }} />
+	                                      <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={activeAssetUploadKey !== null} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleMasterClassMomentAssetUpload(file, 'image', moment.id); event.currentTarget.value = ''; }} />
 	                                    </label>
 	                                  </div>
                                   <input className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base" value={draft.imageAlt} onChange={(event) => updateMasterClassMomentDraft(moment.id, { imageAlt: event.target.value })} />

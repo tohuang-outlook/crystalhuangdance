@@ -24,6 +24,8 @@ const allowedMimeTypes = new Set([
 ]);
 const heicAssetExtensions = new Set(['.heic', '.heif']);
 const heicAssetMimeTypes = new Set(['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence']);
+const webSafeAssetImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const webSafeAssetImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const inviteCodePattern = /^\d{6}$/;
 const investorUpdateCategories = new Set([
   'investment-page',
@@ -936,8 +938,16 @@ function createAssetUploadMiddleware(config) {
     dest: config.uploadTempDirectory,
     limits: { fileSize: config.uploadFileSizeLimitBytes },
     fileFilter: (_req, file, callback) => {
-      if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) return callback(null, true);
-      callback(new Error('Only image and video files are allowed.'));
+      const extension = path.extname(file.originalname).toLowerCase();
+      const isWebSafeImage =
+        webSafeAssetImageExtensions.has(extension) || webSafeAssetImageMimeTypes.has(file.mimetype);
+      const isConvertibleHeic = isHeicAsset(file, extension);
+
+      if (isWebSafeImage || isConvertibleHeic || file.mimetype.startsWith('video/')) {
+        return callback(null, true);
+      }
+
+      callback(new Error('Only JPG, PNG, WebP, HEIC, HEIF, and video files are allowed.'));
     },
   });
 }
@@ -1662,7 +1672,17 @@ export function createApp({
     const outputPath = path.join(assetDirectory, filename);
 
     if (isHeicAsset(req.file, extension)) {
-      await convertHeicAssetToJpeg(req.file.path, outputPath);
+      try {
+        await convertHeicAssetToJpeg(req.file.path, outputPath);
+      } catch (error) {
+        await fs.unlink(req.file.path).catch(() => {});
+        await fs.unlink(outputPath).catch(() => {});
+        return res.status(400).json({
+          error:
+            'This HEIC/HEIF thumbnail could not be converted. Please upload a JPG, PNG, or WebP thumbnail instead.',
+        });
+      }
+
       await fs.unlink(req.file.path);
     } else {
       await fs.rename(req.file.path, outputPath);
