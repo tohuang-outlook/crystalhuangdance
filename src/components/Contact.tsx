@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { CheckCircle, Instagram, Mail, MapPin, Music2, Youtube } from 'lucide-react';
+import { CheckCircle, Instagram, MapPin, Music2, Youtube } from 'lucide-react';
 import { siteConfig } from '../data/siteData';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -51,25 +51,13 @@ export default function Contact() {
             <h2 className="text-4xl sm:text-5xl">{t('Professional Inquiries', '專業洽詢')}</h2>
             <p className="max-w-xl text-base leading-8 text-[var(--text-muted)]">
               {t(
-                'For auditions, collaborations, choreography, teaching engagements, and press inquiries, please use the form below or email directly.',
-                '如需試演、合作、編舞、教學邀約或媒體洽詢，請使用下列表單或直接來信。'
+                'For auditions, collaborations, choreography, teaching engagements, and press inquiries, please use the form below.',
+                '如需試演、合作、編舞、教學邀約或媒體洽詢，請使用下列表單。'
               )}
             </p>
           </div>
 
           <div className="space-y-6 border border-[var(--line)] bg-[var(--surface)] p-6">
-            <div className="flex items-start gap-4">
-              <div className="rounded-xl border border-[var(--line)] p-3 text-[var(--accent)]">
-                <Mail className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-sm uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  {t('Email', '電子郵件')}
-                </h3>
-                <p className="mt-2 text-[var(--text)]">{siteConfig.email}</p>
-              </div>
-            </div>
-
             <div className="flex items-start gap-4">
               <div className="rounded-xl border border-[var(--line)] p-3 text-[var(--accent)]">
                 <MapPin className="h-5 w-5" />
@@ -187,13 +175,9 @@ export default function Contact() {
           {status === 'error' && (
             <p className="text-sm text-red-400">
               {t(
-                'Something went wrong. Please try again, or email directly at',
-                '系統出現錯誤，請再試一次，或直接來信至'
-              )}{' '}
-              <a href={`mailto:${siteConfig.email}`} className="underline">
-                {siteConfig.email}
-              </a>
-              .
+                'Something went wrong. Please try again.',
+                '系統出現錯誤，請再試一次。'
+              )}
             </p>
           )}
         </form>
