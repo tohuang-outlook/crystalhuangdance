@@ -35,6 +35,7 @@ const investorUpdateCategories = new Set([
 const featuredReelPlacements = new Set(['featured', 'supporting']);
 const contactInquiryStatuses = new Set(['new', 'resolved']);
 const allowedMemberTypes = new Set(['dancer', 'investor']);
+const uploadTempFileMaxAgeMs = 24 * 60 * 60 * 1000;
 const investmentAssetIdsBySymbol = {
   BTC: 'bitcoin',
   ETH: 'ethereum',
@@ -952,6 +953,46 @@ function createAssetUploadMiddleware(config) {
   });
 }
 
+function isNoSpaceError(error) {
+  return error?.code === 'ENOSPC' || /no space left on device/i.test(String(error?.message ?? error));
+}
+
+function formatUploadErrorMessage(error, fallbackMessage) {
+  if (isNoSpaceError(error)) {
+    return 'Upload storage is full. Please try again after an administrator clears storage space.';
+  }
+
+  return error instanceof Error ? error.message : fallbackMessage;
+}
+
+async function cleanupUploadTempDirectory(uploadTempDirectory, { maxAgeMs = uploadTempFileMaxAgeMs } = {}) {
+  await fs.mkdir(uploadTempDirectory, { recursive: true });
+  const entries = await fs.readdir(uploadTempDirectory, { withFileTypes: true });
+  const staleBefore = Date.now() - maxAgeMs;
+
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile())
+      .map(async (entry) => {
+        const filePath = path.join(uploadTempDirectory, entry.name);
+        const stat = await fs.stat(filePath).catch(() => null);
+        if (!stat || stat.mtimeMs > staleBefore) {
+          return;
+        }
+
+        await fs.rm(filePath, { force: true }).catch(() => {});
+      })
+  );
+}
+
+async function cleanupUploadTempDirectoryQuietly(uploadTempDirectory) {
+  try {
+    await cleanupUploadTempDirectory(uploadTempDirectory);
+  } catch (error) {
+    console.warn('Unable to clean upload temp directory:', error);
+  }
+}
+
 function runCommand(command, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -1101,6 +1142,7 @@ export function createApp({
   const assetDirectory = config.assetDirectory ?? path.join(config.uploadTempDirectory, '..', 'assets');
   const publicAssetsBasePath = config.publicAssetsBasePath ?? '/uploads/assets';
 
+  void cleanupUploadTempDirectoryQuietly(config.uploadTempDirectory);
   void normalizeHeicMasterClassThumbnails({
     db,
     assetDirectory,
@@ -1663,39 +1705,48 @@ export function createApp({
     return res.json({ assets: assets.sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
   });
 
-  app.post('/api/admin/assets', requireAdmin, (req, res) => {
+  app.post('/api/admin/assets', requireAdmin, async (req, res) => {
+    await cleanupUploadTempDirectoryQuietly(config.uploadTempDirectory);
     assetUpload.single('asset')(req, res, async (uploadError) => {
       if (uploadError) {
-        const message = uploadError instanceof Error ? uploadError.message : 'Asset upload failed.';
+        const message = formatUploadErrorMessage(uploadError, 'Asset upload failed.');
         return res.status(400).json({ error: message });
       }
 
       if (!req.file) return res.status(400).json({ error: 'An image or video file is required.' });
-      await fs.mkdir(assetDirectory, { recursive: true });
       const extension = path.extname(req.file.originalname).toLowerCase();
       const outputExtension = isHeicAsset(req.file, extension) ? '.jpg' : extension;
       const filename = `${Date.now()}-${randomBytes(6).toString('hex')}${outputExtension}`;
       const outputPath = path.join(assetDirectory, filename);
 
-      if (isHeicAsset(req.file, extension)) {
-        try {
-          await convertHeicAssetToJpeg(req.file.path, outputPath);
-        } catch (error) {
-          await fs.unlink(req.file.path).catch(() => {});
-          await fs.unlink(outputPath).catch(() => {});
-          return res.status(400).json({
-            error:
-              'This HEIC/HEIF thumbnail could not be converted. Please upload a JPG, PNG, or WebP thumbnail instead.',
-          });
+      try {
+        await fs.mkdir(assetDirectory, { recursive: true });
+
+        if (isHeicAsset(req.file, extension)) {
+          try {
+            await convertHeicAssetToJpeg(req.file.path, outputPath);
+          } catch (error) {
+            await fs.unlink(req.file.path).catch(() => {});
+            await fs.unlink(outputPath).catch(() => {});
+            return res.status(400).json({
+              error:
+                'This HEIC/HEIF thumbnail could not be converted. Please upload a JPG, PNG, or WebP thumbnail instead.',
+            });
+          }
+
+          await fs.unlink(req.file.path);
+        } else {
+          await fs.rename(req.file.path, outputPath);
         }
 
-        await fs.unlink(req.file.path);
-      } else {
-        await fs.rename(req.file.path, outputPath);
+        const stat = await fs.stat(outputPath);
+        return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: stat.size, createdAt: new Date().toISOString() } });
+      } catch (error) {
+        await fs.unlink(req.file.path).catch(() => {});
+        await fs.unlink(outputPath).catch(() => {});
+        const message = formatUploadErrorMessage(error, 'Asset upload failed.');
+        return res.status(400).json({ error: message });
       }
-
-      const stat = await fs.stat(outputPath);
-      return res.status(201).json({ asset: { name: filename, path: `${publicAssetsBasePath}/${filename}`, size: stat.size, createdAt: new Date().toISOString() } });
     });
   });
 
@@ -2882,10 +2933,11 @@ export function createApp({
     });
   });
 
-  app.post('/api/admin/users/:userId/videos/upload', requireAdmin, (req, res) => {
+  app.post('/api/admin/users/:userId/videos/upload', requireAdmin, async (req, res) => {
+    await cleanupUploadTempDirectoryQuietly(config.uploadTempDirectory);
     upload.single('video')(req, res, async (uploadError) => {
       if (uploadError) {
-        const message = uploadError instanceof Error ? uploadError.message : 'Upload failed.';
+        const message = formatUploadErrorMessage(uploadError, 'Upload failed.');
         return res.status(400).json({ error: message });
       }
 
@@ -2986,10 +3038,11 @@ export function createApp({
     return res.status(201).json({ video: serializeVideo(video) });
   });
 
-  app.post('/api/videos/upload', requireAuth, (req, res) => {
+  app.post('/api/videos/upload', requireAuth, async (req, res) => {
+    await cleanupUploadTempDirectoryQuietly(config.uploadTempDirectory);
     upload.single('video')(req, res, async (uploadError) => {
       if (uploadError) {
-        const message = uploadError instanceof Error ? uploadError.message : 'Upload failed.';
+        const message = formatUploadErrorMessage(uploadError, 'Upload failed.');
         return res.status(400).json({ error: message });
       }
 
